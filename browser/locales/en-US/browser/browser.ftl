@@ -17,9 +17,9 @@
 #  $content-title (String): the title of the web content.
 browser-main-window-window-titles =
   .data-title-default = { -brand-full-name }
-  .data-title-private = { -brand-full-name } Private Browsing
+  .data-title-private = { -brand-full-name } (Private Browsing)
   .data-content-title-default = { $content-title } — { -brand-full-name }
-  .data-content-title-private = { $content-title } — { -brand-full-name } Private Browsing
+  .data-content-title-private = { $content-title } — { -brand-full-name } (Private Browsing)
 
 # These are the default window titles on macOS.
 # .data-title-default and .data-title-private are used when the web content
