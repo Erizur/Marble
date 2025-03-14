@@ -1433,7 +1433,6 @@ LayoutDeviceIntMargin Theme::GetWidgetBorder(nsDeviceContext* aContext,
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:
     case StyleAppearance::Button:
-    case StyleAppearance::Toolbarbutton:
       // Return the border size from the UA sheet, even though what we paint
       // doesn't actually match that. We know this is the UA sheet border
       // because we disable native theming when different border widths are
@@ -1500,7 +1499,6 @@ bool Theme::GetWidgetOverflow(nsDeviceContext* aContext, nsIFrame* aFrame,
     case StyleAppearance::MenulistButton:
     case StyleAppearance::Menulist:
     case StyleAppearance::Button:
-    case StyleAppearance::Toolbarbutton:
       // 2px for each segment, plus 1px separation, but we paint 1px inside
       // the border area so 4px overflow.
       overflow.SizeTo(4, 4, 4, 4);
@@ -1666,7 +1664,6 @@ bool Theme::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* aFrame,
     case StyleAppearance::ScrollbarVertical:
     case StyleAppearance::Scrollcorner:
     case StyleAppearance::Button:
-    case StyleAppearance::Toolbarbutton:
     case StyleAppearance::Listbox:
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:

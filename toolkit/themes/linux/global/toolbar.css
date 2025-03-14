@@ -14,24 +14,26 @@ toolbox {
 }
 
 toolbar {
-  background-color: -moz-headerbar;
-  color: -moz-headerbartext;
+  appearance: auto;
+  -moz-default-appearance: toolbar;
   min-width: 1px;
   min-height: 20px;
   padding: 2px 0;
+}
 
-  &:-moz-window-inactive {
-    background-color: -moz-headerbarinactive;
-    color: -moz-headerbarinactivetext;
-  }
+toolbar[type="menubar"] {
+  appearance: none;
+  padding: 1px 0;
+}
 
-  &[type="menubar"] {
-    background-color: transparent;
-    padding: 1px 0;
-  }
+toolbar:-moz-lwtheme {
+  appearance: none;
 }
 
 toolbarseparator {
+  appearance: auto;
+  -moz-default-appearance: separator;
+  margin: 0;
   min-width: 2px;
 }
 

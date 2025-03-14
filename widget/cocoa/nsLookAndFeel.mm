@@ -238,9 +238,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozButtonhoverface:
     case ColorID::MozButtonactiveface:
     case ColorID::MozButtondisabledface:
-    case ColorID::MozColheader:
-    case ColorID::MozColheaderhover:
-    case ColorID::MozColheaderactive:
       color = GetColorFromNSColor(NSColor.controlColor);
       if (!NS_GET_A(color)) {
         color = GetColorFromNSColor(NSColor.controlBackgroundColor);
@@ -302,8 +299,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozCellhighlighttext:
     case ColorID::MozColheadertext:
     case ColorID::MozColheaderhovertext:
-    case ColorID::MozColheaderactivetext:
-    case ColorID::MozSidebartext:
       color = GetColorFromNSColor(NSColor.controlTextColor);
       break;
     case ColorID::MozMacFocusring:

@@ -2368,6 +2368,8 @@ Maybe<nsNativeThemeCocoa::WidgetInfo> nsNativeThemeCocoa::ComputeWidgetInfo(
 
     case StyleAppearance::Treeheader:
       // do nothing, taken care of by individual header cells
+    case StyleAppearance::Treeheadersortarrow:
+      // do nothing, taken care of by treeview header
     case StyleAppearance::Treeline:
       // do nothing, these lines don't exist on macos
       break;
@@ -3155,6 +3157,7 @@ bool nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::Treeview:
     case StyleAppearance::Treeheader:
     case StyleAppearance::Treeheadercell:
+    case StyleAppearance::Treeheadersortarrow:
     case StyleAppearance::Treeitem:
     case StyleAppearance::Treeline:
 
