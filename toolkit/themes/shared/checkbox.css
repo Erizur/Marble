@@ -117,6 +117,13 @@ checkbox[native][disabled="true"] {
     color: GrayText;
   }
 
+  @media (-moz-windows-classic) {
+    checkbox[native][disabled="true"] {
+      color: ThreeDShadow;
+      text-shadow: 1px 1px ThreeDHighlight;
+    }
+  }
+
   /* ::::: checkmark image ::::: */
 
   .checkbox-check[native] {

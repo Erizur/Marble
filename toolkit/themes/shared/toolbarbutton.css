@@ -42,6 +42,17 @@ toolbarbutton {
         text-shadow: inherit;
       }
     }
+
+    @media (-moz-windows-classic) {
+      @media not (prefers-contrast) {
+        &:where([disabled="true"]) {
+          text-shadow: 1px 1px ThreeDHighlight;
+        }
+      }
+      &:where([disabled="true"]) {
+        color: ThreeDShadow;
+      }
+    }
   }
 
   @media (-moz-platform: linux) {

@@ -4,6 +4,144 @@
 
 @namespace html url("http://www.w3.org/1999/xhtml");
 
+:root,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: clip;
+}
+
+:root {
+  text-rendering: optimizeLegibility;
+  min-height: 95px;
+  min-width: 95px;
+
+  /* z-indices that fight on the browser stack */
+  --browser-stack-z-index-devtools-splitter: 1;
+  --browser-stack-z-index-dialog-stack: 2;
+  --browser-stack-z-index-rdm-toolbar: 3;
+}
+
+:root:-moz-locale-dir(rtl) {
+  direction: rtl;
+}
+
+:root:not([chromehidden~="toolbar"]) {
+  min-width: 450px;
+  min-height: 120px;
+}
+
+#appcontent,
+#browser,
+#tabbrowser-tabbox,
+#tabbrowser-tabpanels,
+.browserSidebarContainer {
+  /* Allow devtools with large specified width/height to shrink */
+  min-width: 0;
+  min-height: 0;
+}
+
+/* We set large flex on both containers to allow the devtools toolbox to
+ * set a flex value itself. We don't want the toolbox to actually take up free
+ * space, but we do want it to collapse when the window shrinks, and with
+ * flex: 0 it can't.
+ *
+ * When the toolbox is on the bottom it's a sibling of browserStack, and when
+ * it's on the side it's a sibling of browserContainer.
+ */
+.browserContainer {
+  flex: 10000 10000;
+  /* To contain the status panel */
+  position: relative;
+
+  /* .browserContainer only contains the devtools when docked horizontally */
+  min-height: 0;
+}
+
+.browserStack {
+  flex: 10000 10000;
+  /* Prevent shrinking the page content to 0 height and width */
+  min-height: 25px;
+  min-width: 25px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+:root[lwtheme] #navigator-toolbox {
+  background-image: var(--lwt-additional-images);
+  background-repeat: var(--lwt-background-tiling);
+  background-position: var(--lwt-background-alignment);
+}
+
+/* TODO bug 1695280: Remove these media selectors and merge the rule below
+   with the ruleset above. We must set background properties on :root and not
+   #navigator-toolbox on Windows 7/8 due to a WebRender bug that hides the
+   minimize/maximize/close buttons. */
+@media not (-moz-platform: windows-win7) {
+  @media not (-moz-platform: windows-win8) {
+    #navigator-toolbox[lwtheme] {
+      background-color: var(--lwt-accent-color);
+    }
+
+    /* When a theme defines both theme_frame and additional_backgrounds, show
+       the latter atop the former. */
+   :root[lwtheme-image] #navigator-toolbox {
+     background-image: var(--lwt-header-image), var(--lwt-additional-images);
+     background-repeat: no-repeat, var(--lwt-background-tiling);
+     background-position: right top, var(--lwt-background-alignment);
+   }
+
+   :root[lwtheme] #navigator-toolbox:-moz-window-inactive {
+     background-color: var(--lwt-accent-color-inactive, var(--lwt-accent-color));
+   }
+  }
+}
+/* TODO bug 1695280: Remove this block. */
+@media (-moz-platform: windows-win7),
+       (-moz-platform: windows-win8) {
+  :root[lwtheme] {
+    background-color: var(--lwt-accent-color);
+    background-image: var(--lwt-additional-images);
+    background-repeat: var(--lwt-background-tiling);
+    background-position: var(--lwt-background-alignment);
+  }
+
+  :root[lwtheme-image] {
+    background-image: var(--lwt-header-image, linear-gradient(transparent, transparent)),  var(--lwt-additional-images) !important;
+    background-repeat: no-repeat, var(--lwt-background-tiling);
+    background-position: right top, var(--lwt-background-alignment) !important;
+  }
+
+  :root[lwtheme]:-moz-window-inactive {
+    background-color: var(--lwt-accent-color-inactive, var(--lwt-accent-color));
+  }
+}
+
+#titlebar {
+  -moz-window-dragging: drag;
+}
+
+#toolbar-menubar[autohide="true"] {
+  overflow: hidden;
+}
+
+#toolbar-menubar[autohide="true"][inactive="true"]:not([customizing="true"]) {
+  min-height: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  appearance: none !important;
+}
+
+#toolbar-menubar:not([autohide]) {
+  visibility: collapse;
+}
+
 panelmultiview {
   align-items: flex-start;
   min-width: 0;
