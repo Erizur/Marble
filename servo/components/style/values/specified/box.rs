@@ -1484,23 +1484,39 @@ pub enum Appearance {
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Dualbutton,
     /// A groupbox.
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Groupbox,
+    /// Menu Bar background
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menubar,
     /// <menu> and <menuitem> appearances
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menuitem,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Checkmenuitem,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Radiomenuitem,
     /// For text on non-iconic menuitems only
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuitemtext,
     /// The text part of a dropdown list, to left of button.
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MenulistText,
     /// Menu Popup background.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menupopup,
-    /// Menu item arrow.
+    /// menu checkbox/radio appearances
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menucheckbox,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuradio,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuseparator,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menuarrow,
+    /// An image in the menu gutter, like in bookmarks or history.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuimage,
     /// The meter bar's meter indicator.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Meterchunk,
@@ -1518,15 +1534,15 @@ pub enum Appearance {
     Progresschunk,
     /// A generic container that always repaints on state changes. This is a
     /// hack to make XUL checkboxes and radio buttons work.
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     CheckboxContainer,
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     RadioContainer,
     /// The label part of a checkbox or radio button, used for painting a focus
     /// outline.
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     CheckboxLabel,
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     RadioLabel,
     /// nsRangeFrame and its subparts
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
@@ -1641,11 +1657,11 @@ pub enum Appearance {
     Treeview,
 
     /// Vista Rebars.
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozWinCommunicationsToolbox,
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozWinMediaToolbox,
-    #[parse(condition = "ParserContext::in_ua_or_chrome_sheet")]
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozWinBrowsertabbarToolbox,
 
     /// Mac help button.

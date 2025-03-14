@@ -1221,6 +1221,41 @@ void nsNativeThemeCocoa::DrawMenuItem(CGContextRef cgContext,
   }
 }
 
+void nsNativeThemeCocoa::DrawMenuSeparator(CGContextRef cgContext, const CGRect& inBoxRect,
+                                           const MenuItemParams& aParams) {
+  // Workaround for visual artifacts issues with
+  // HIThemeDrawMenuSeparator on macOS Big Sur.
+  if (nsCocoaFeatures::OnBigSurOrLater()) {
+    CGRect separatorRect = inBoxRect;
+    separatorRect.size.height = 1;
+    separatorRect.size.width -= 42;
+    separatorRect.origin.x += 21;
+    if (!IsDarkAppearance(NSAppearance.currentAppearance)) {
+      // Use transparent black with an alpha similar to the native separator.
+      // The values 231 (menu background) and 205 (separator color) have been
+      // sampled from a window screenshot of a native context menu.
+      CGContextSetRGBFillColor(cgContext, 0.0, 0.0, 0.0, (231 - 205) / 231.0);
+    } else {
+      // Similar to above, use white with an alpha. The values 45 (menu
+      // background) and 81 (separator color) were sampled on macOS 12 with the
+      // "Reduce transparency" system setting turned on.
+      CGContextSetRGBFillColor(cgContext, 1.0, 1.0, 1.0, 1.0 + ((45 - 81) / 45.0));
+    }
+    CGContextFillRect(cgContext, separatorRect);
+    return;
+  }
+
+  ThemeMenuState menuState;
+  if (aParams.disabled) {
+    menuState = kThemeMenuDisabled;
+  } else {
+    menuState = aParams.selected ? kThemeMenuSelected : kThemeMenuActive;
+  }
+
+  HIThemeMenuItemDrawInfo midi = {0, kThemeMenuItemPlain, menuState};
+  HIThemeDrawMenuSeparator(&inBoxRect, &inBoxRect, &midi, cgContext, HITHEME_ORIENTATION);
+}
+
 static bool ShouldUnconditionallyDrawFocusRingIfFocused(nsIFrame* aFrame) {
   // Mac always draws focus rings for textboxes and lists.
   switch (aFrame->StyleDisplay()->EffectiveAppearance()) {
@@ -2303,6 +2338,9 @@ Maybe<nsNativeThemeCocoa::WidgetInfo> nsNativeThemeCocoa::ComputeWidgetInfo(
           aFrame, elementState,
           aAppearance == StyleAppearance::Checkmenuitem)));
 
+    case StyleAppearance::Menuseparator:
+      return Some(WidgetInfo::MenuSeparator(ComputeMenuItemParams(aFrame, elementState, false)));
+
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown: {
       MenuIcon icon = aAppearance == StyleAppearance::ButtonArrowUp
@@ -2674,6 +2712,11 @@ void nsNativeThemeCocoa::RenderWidget(const WidgetInfo& aWidgetInfo,
           DrawMenuItem(cgContext, macRect, params);
           break;
         }
+        case Widget::eMenuSeparator: {
+          MenuItemParams params = aWidgetInfo.Params<MenuItemParams>();
+          DrawMenuSeparator(cgContext, macRect, params);
+          break;
+        }
         case Widget::eCheckbox: {
           CheckboxOrRadioParams params =
               aWidgetInfo.Params<CheckboxOrRadioParams>();
@@ -2824,6 +2867,7 @@ bool nsNativeThemeCocoa::CreateWebRenderCommandsForWidget(
     case StyleAppearance::Menuarrow:
     case StyleAppearance::Menuitem:
     case StyleAppearance::Checkmenuitem:
+    case StyleAppearance::Menuseparator:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
     case StyleAppearance::Checkbox:
@@ -3310,6 +3354,7 @@ bool nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::Menupopup:
     case StyleAppearance::Menuarrow:
     case StyleAppearance::Menuitem:
+    case StyleAppearance::Menuseparator:
     case StyleAppearance::Tooltip:
 
     case StyleAppearance::Checkbox:
@@ -3420,6 +3465,7 @@ bool nsNativeThemeCocoa::WidgetAppearanceDependsOnWindowFocus(
     case StyleAppearance::Menupopup:
     case StyleAppearance::Menuarrow:
     case StyleAppearance::Menuitem:
+    case StyleAppearance::Menuseparator:
     case StyleAppearance::Tooltip:
     case StyleAppearance::Spinner:
     case StyleAppearance::SpinnerUpbutton:
