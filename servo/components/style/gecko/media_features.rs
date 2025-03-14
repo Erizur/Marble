@@ -586,12 +586,6 @@ pub enum Platform {
     Macos,
     /// Matches any Windows version.
     Windows,
-    /// Matches only Windows 7.
-    WindowsWin7,
-    /// Matches only Windows 8.
-    WindowsWin8,
-    /// Matches windows 10 and actually matches windows 11 too, as of right now.
-    WindowsWin10,
 }
 
 fn eval_moz_platform(_: &Context, query_value: Option<Platform>) -> bool {
@@ -648,6 +642,10 @@ fn eval_scripting(context: &Context, query_value: Option<Scripting>) -> bool {
         Some(v) => v == scripting,
         None => scripting != Scripting::None,
     }
+}
+
+fn eval_moz_native_controls(_context: &Context) -> bool {
+    true
 }
 
 fn eval_moz_windows_non_native_menus(context: &Context) -> bool {
@@ -1000,6 +998,13 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 68] = [
         Evaluator::String(eval_moz_bool_pref),
         FeatureFlags::CHROME_AND_UA_ONLY,
     ),
+    // Custom feature for native controls patch for userstyles to detect it:
+    feature!(
+        atom!("-moz-native-controls"),
+        AllowsRanges::No,
+        Evaluator::BoolInteger(eval_moz_native_controls),
+        FeatureFlags::CHROME_AND_UA_ONLY,
+    ),
     lnf_int_feature!(
         atom!("-moz-scrollbar-start-backward"),
         ScrollArrowStyle,
@@ -1032,6 +1037,7 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 68] = [
     lnf_int_feature!(atom!("-moz-windows-compositor"), DWMCompositor),
     lnf_int_feature!(atom!("-moz-windows-classic"), WindowsClassic),
     lnf_int_feature!(atom!("-moz-windows-glass"), WindowsGlass),
+    lnf_int_feature!(atom!("-moz-windows-modern"), WindowsModern),
     lnf_int_feature!(atom!("-moz-swipe-animation-enabled"), SwipeAnimationEnabled),
     lnf_int_feature!(atom!("-moz-gtk-csd-available"), GTKCSDAvailable),
     lnf_int_feature!(atom!("-moz-gtk-csd-minimize-button"), GTKCSDMinimizeButton),

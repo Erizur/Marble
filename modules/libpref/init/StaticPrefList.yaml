@@ -16419,6 +16419,36 @@
 #---------------------------------------------------------------------------
 # Prefs starting with "widget."
 #---------------------------------------------------------------------------
+  
+- name: widget.native-controls.force-dwm-report-off
+  type: bool
+  value: false
+  mirror: always
+  
+- name: widget.native-controls.force-glass-reporting
+  type: int32_t
+  value: 0
+  mirror: always
+  
+- name: widget.native-controls.override-aero-caption-buttons-mask-width
+  type: int32_t
+  value: 0
+  mirror: always
+  
+- name: widget.native-controls.override-aero-caption-buttons-mask-height
+  type: int32_t
+  value: 0
+  mirror: always
+  
+- name: widget.native-controls.scrollbar-style
+  type: int32_t
+  value: 0
+  mirror: always
+  
+- name: widget.native-controls.tooltip-style
+  type: int32_t
+  value: 0
+  mirror: always
 
 # Global user preference for disabling native theme in content processes.
 #
@@ -16426,7 +16456,13 @@
 # entry in python/mozbuild/mozbuild/mozinfo.py and test_fission_autostart.py
 - name: widget.non-native-theme.enabled
   type: RelaxedAtomicBool
-  value: true
+  value: false
+  mirror: always
+
+# Whether enable windows-modern mode for stylesheets
+- name: widget.windows-style.modern
+  type: bool
+  value: false
   mirror: always
 
 # Whether the non-native theme should always use system colors. Useful mostly

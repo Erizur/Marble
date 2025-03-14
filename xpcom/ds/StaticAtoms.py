@@ -2251,10 +2251,6 @@ STATIC_ATOMS = [
     Atom("forcemessagemanager", "forcemessagemanager"),
     Atom("initialBrowsingContextGroupId", "initialBrowsingContextGroupId"),
     Atom("initiallyactive", "initiallyactive"),
-    # windows media query names
-    Atom("windows_win7", "windows-win7"),
-    Atom("windows_win8", "windows-win8"),
-    Atom("windows_win10", "windows-win10"),
     Atom("manualactiveness", "manualactiveness"),
     # Names for system metrics.
     Atom("_moz_bool_pref", "-moz-bool-pref"),
@@ -2275,7 +2271,9 @@ STATIC_ATOMS = [
     Atom("_moz_windows_compositor", "-moz-windows-compositor"),
     Atom("_moz_windows_classic", "-moz-windows-classic"),
     Atom("_moz_windows_glass", "-moz-windows-glass"),
+    Atom("_moz_windows_modern", "-moz-windows-modern"),
     Atom("_moz_windows_non_native_menus", "-moz-windows-non-native-menus"),
+    Atom("_moz_native_controls", "-moz-native-controls"),
     Atom("_moz_menubar_drag", "-moz-menubar-drag"),
     Atom("_moz_device_pixel_ratio", "-moz-device-pixel-ratio"),
     Atom("_moz_device_orientation", "-moz-device-orientation"),

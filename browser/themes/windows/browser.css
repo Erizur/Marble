@@ -21,7 +21,7 @@
   }
 }
 
-:root:-moz-lwtheme {
+:root[lwtheme] {
   --chrome-content-separator-color: rgba(0,0,0,.3);
 }
 
@@ -50,28 +50,26 @@
  * illegible.
  */
 @media (-moz-windows-default-theme) {
-  @media not (-moz-platform: windows-win7) {
-    #toolbar-menubar:not(:-moz-lwtheme):-moz-window-inactive {
+  @media not (-moz-windows-glass) {
+    #toolbar-menubar:not([lwtheme]):-moz-window-inactive {
       color: ThreeDShadow;
     }
   }
 }
 
-@media not (-moz-platform: windows-win7) {
-  @media not (-moz-platform: windows-win8) {
-    /* On Windows 10, when temporarily showing the menu bar, make it at least as
-     * tall as the tab bar such that the window controls don't appear to move up. */
-    :root[tabsintitlebar] #toolbar-menubar[autohide="true"] {
-      height: calc(var(--tab-min-height) - var(--tabs-navbar-shadow-size));
-    }
-    :root[tabsintitlebar][sizemode="normal"] #toolbar-menubar[autohide="true"] {
-      height: calc(var(--tab-min-height) - var(--tabs-navbar-shadow-size));
-    }
+@media not (-moz-windows-modern) {
+  /* On Windows 10, when temporarily showing the menu bar, make it at least as
+    * tall as the tab bar such that the window controls don't appear to move up. */
+  :root[tabsintitlebar] #toolbar-menubar[autohide="true"] {
+    height: calc(var(--tab-min-height) - var(--tabs-navbar-shadow-size));
+  }
+  :root[tabsintitlebar][sizemode="normal"] #toolbar-menubar[autohide="true"] {
+    height: calc(var(--tab-min-height) - var(--tabs-navbar-shadow-size));
   }
 }
 
 /* Add 4px extra margin on top of the tabs toolbar on Windows 7. */
-@media (-moz-platform: windows-win7) {
+@media (-moz-windows-glass) {
   :root[sizemode="normal"][chromehidden~="menubar"] #TabsToolbar > .toolbar-items,
   :root[sizemode="normal"] #toolbar-menubar[autohide="true"][inactive] + #TabsToolbar > .toolbar-items {
     padding-top: 4px;
@@ -90,25 +88,24 @@
 }
 
 /* Add a fog for background tabs to be visible on Windows 7 glass window background */
-@media (-moz-platform: windows-win7) {
+@media (-moz-windows-glass) {
   @media (-moz-windows-default-theme) {
-    #TabsToolbar:not(:-moz-lwtheme) {
+    #TabsToolbar:not([lwtheme]) {
       background-image: radial-gradient(ellipse at bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.5) 80%, transparent);
     }
   }
 }
 
-@media (-moz-windows-compositor: 0),
-       (-moz-windows-default-theme: 0),
-       (-moz-platform: windows-win8) {
+@media not (-moz-windows-compositor),
+       not (-moz-windows-default-theme) {
   /* Please keep the menu text colors in this media block in sync with
-   * light-dark-overrides.css, minus the :not(:-moz-lwtheme) condition - see Bug 1165718.
+   * light-dark-overrides.css, minus the :not([lwtheme]) condition - see Bug 1165718.
    */
-  :root[tabsintitlebar]:not(:-moz-lwtheme) {
+  :root[tabsintitlebar]:not([lwtheme]) {
     color: CaptionText;
   }
 
-  :root[tabsintitlebar]:not(:-moz-lwtheme):-moz-window-inactive {
+  :root[tabsintitlebar]:not([lwtheme]):-moz-window-inactive {
     color: InactiveCaptionText;
   }
 }
@@ -120,24 +117,24 @@
    * titlebar. We side-step this issue by layering our own background underneath
    * the tabs.
    */
-  :root[tabsintitlebar]:not([sizemode=fullscreen]) #TabsToolbar:not(:-moz-lwtheme) {
+  :root[tabsintitlebar]:not([sizemode=fullscreen]) #TabsToolbar:not([lwtheme]) {
     background-image: linear-gradient(transparent, ActiveCaption);
     background-size: auto 200%;
   }
 
-  :root[tabsintitlebar]:not([sizemode=fullscreen]) #TabsToolbar:not(:-moz-lwtheme):-moz-window-inactive {
+  :root[tabsintitlebar]:not([sizemode=fullscreen]) #TabsToolbar:not([lwtheme]):-moz-window-inactive {
     background-image: linear-gradient(transparent, InactiveCaption);
   }
 
   /* Add a window top border for webextension themes */
-  :root[tabsintitlebar][sizemode="normal"] #navigator-toolbox:-moz-lwtheme {
+  :root[tabsintitlebar][sizemode="normal"] #navigator-toolbox[lwtheme] {
     background-image: linear-gradient(to bottom,
           ThreeDLightShadow 0, ThreeDLightShadow 1px,
           ThreeDHighlight 1px, ThreeDHighlight 2px,
           ActiveBorder 2px, ActiveBorder 4px, transparent 4px);
   }
 
-  :root[tabsintitlebar] :is(#TabsToolbar, #toolbar-menubar) toolbarbutton:not(:-moz-lwtheme) {
+  :root[tabsintitlebar] :is(#TabsToolbar, #toolbar-menubar) toolbarbutton:not([lwtheme]) {
     color: inherit;
   }
 }
@@ -147,21 +144,21 @@
   position: relative;
 }
 
-@media (-moz-windows-default-theme: 0) {
-  #nav-bar:not(:-moz-lwtheme) {
+@media not (-moz-windows-default-theme) {
+  #nav-bar:not([lwtheme]) {
     box-shadow: 0 calc(-1 * var(--tabs-navbar-shadow-size)) 0 ThreeDShadow;
   }
 }
-#nav-bar:-moz-lwtheme {
+#nav-bar[lwtheme] {
   box-shadow: 0 calc(-1 * var(--tabs-navbar-shadow-size)) 0 var(--lwt-tabs-border-color, rgba(0,0,0,.3));
 }
-@media (-moz-windows-compositor: 0) {
+@media not (-moz-windows-compositor) {
   #nav-bar[tabs-hidden="true"] {
     box-shadow: none;
   }
 }
 
-#print-preview-toolbar:not(:-moz-lwtheme) {
+#print-preview-toolbar:not([lwtheme]) {
   appearance: auto;
   -moz-default-appearance: toolbox;
 }
@@ -178,7 +175,7 @@
   -moz-default-appearance: -moz-window-titlebar-maximized;
 }
 
-@media (-moz-windows-compositor: 0) {
+@media not (-moz-windows-compositor) {
   /**
    * Anytime we're not using the compositor on Windows, the -moz-window-titlebar
    * and -moz-window-titlebar-maximized values for -moz-appearance override
@@ -186,11 +183,11 @@
    * it's children visible in order to hide the background but keep the margin and
    * padding that comes from those -moz-window-titlebar rules.
    */
-  :root:not([inFullscreen]) #titlebar:-moz-lwtheme {
+  :root:not([inFullscreen]) #titlebar[lwtheme] {
     visibility: hidden;
   }
-  :root:not([inFullscreen], [chromehidden~="menubar"]) #toolbar-menubar:-moz-lwtheme,
-  :root:not([inFullscreen], [chromehidden~="toolbar"]) #TabsToolbar:-moz-lwtheme {
+  :root:not([inFullscreen], [chromehidden~="menubar"]) #toolbar-menubar[lwtheme],
+  :root:not([inFullscreen], [chromehidden~="toolbar"]) #TabsToolbar[lwtheme] {
     visibility: visible;
   }
 }
@@ -221,8 +218,7 @@
   align-items: stretch;
 }
 
-@media (-moz-platform: windows-win7),
-       (-moz-platform: windows-win8) {
+@media (-moz-windows-glass) {
   /* Preserve window control buttons position at the top of the button box. */
   .titlebar-buttonbox-container {
     align-items: flex-start;
@@ -251,7 +247,7 @@
   -moz-default-appearance: -moz-window-button-close;
 }
 
-@media (-moz-windows-classic: 0) {
+@media not (-moz-windows-classic) {
   .titlebar-min {
     margin-inline-end: 2px;
   }
@@ -292,7 +288,7 @@
 /* Address bar */
 
 @media not (prefers-contrast) {
-  :root:not(:-moz-lwtheme) #urlbar {
+  :root:not([lwtheme]) #urlbar {
     --urlbar-box-bgcolor: white;
   }
 }
@@ -319,7 +315,7 @@
   }
 }
 
-@media (-moz-windows-default-theme: 0) {
+@media not (-moz-windows-default-theme) {
   /* Windows HCM conventions use these colors for chiclets. We can't use them on
      other platforms because AccentColor can be shown atop SelectedItem,
      which has zero contrast. */
@@ -329,17 +325,17 @@
     --urlbar-box-hover-text-color: SelectedItemText;
   }
 
-  #urlbar:not(:-moz-lwtheme, [focused="true"]) > #urlbar-background,
-  #searchbar:not(:-moz-lwtheme, :focus-within),
-  .findbar-textbox:not(:-moz-lwtheme, :focus) {
+  #urlbar:not([lwtheme], [focused="true"]) > #urlbar-background,
+  #searchbar:not([lwtheme], :focus-within),
+  .findbar-textbox:not([lwtheme], :focus) {
     border-color: ThreeDShadow;
   }
 }
 
 /* Address bar results view */
 
-@media (-moz-windows-default-theme: 0) {
-  :root:not(:-moz-lwtheme) {
+@media not (-moz-windows-default-theme) {
+  :root:not([lwtheme]) {
     --urlbar-popup-action-color: -moz-nativehyperlinktext;
   }
 }
@@ -357,7 +353,7 @@
   padding: 0;
 }
 
-@media (-moz-windows-default-theme: 0) {
+@media not (-moz-windows-default-theme) {
   /* For high contrast themes. */
   #tabbrowser-tabpanels,
   :root[privatebrowsingmode=temporary] #tabbrowser-tabpanels {
@@ -405,7 +401,7 @@ toolbarbutton.bookmark-item[dragover="true"][open="true"] {
   }
 }
 
-@media (-moz-content-prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
   #statuspanel-label {
     background-color: hsl(240, 1%, 20%);
     border-color: hsl(240, 1%, 40%);

@@ -71,6 +71,7 @@
 #include "nsIAnonymousContentCreator.h"
 #include "nsIFormControl.h"
 #include "nsIFrameInlines.h"
+#include "nsFileControlFrame.h"
 #include "nsImageFrame.h"
 #include "nsInlineFrame.h"
 #include "nsIObjectLoadingContent.h"
