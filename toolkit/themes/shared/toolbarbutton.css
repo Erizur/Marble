@@ -26,6 +26,22 @@ toolbarbutton {
       outline: var(--default-focusring);
       outline-offset: calc(-1 * var(--default-focusring-width) - 1px);
     }
+
+    @media (-moz-windows-default-theme) {
+      :root[lwtheme-image] & {
+        text-shadow: none;
+      }
+    
+      :root[lwtheme-image] &:not([disabled="true"]) {
+        text-shadow: inherit;
+      }
+    }
+    
+    @media not (-moz-windows-default-theme) {
+      :root[lwtheme-image] &:not([disabled="true"]) {
+        text-shadow: inherit;
+      }
+    }
   }
 
   @media (-moz-platform: linux) {
