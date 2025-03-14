@@ -1312,7 +1312,50 @@ DWORD nsWindow::WindowStyle() {
       break;
   }
 
-  style &= ~WindowStylesRemovedForBorderStyle(mBorderStyle);
+  if (mBorderStyle != BorderStyle::Default &&
+      mBorderStyle != BorderStyle::All) {
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & BorderStyle::Border))
+      style &= ~WS_BORDER;
+
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & BorderStyle::Title)) {
+      style &= ~WS_DLGFRAME;
+    }
+
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & BorderStyle::Close))
+      style &= ~0;
+    // XXX The close box can only be removed by changing the window class,
+    // as far as I know   --- roc+moz@cs.cmu.edu
+
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & (BorderStyle::Menu | BorderStyle::Close)))
+      style &= ~WS_SYSMENU;
+    // Looks like getting rid of the system menu also does away with the
+    // close box. So, we only get rid of the system menu if you want neither it
+    // nor the close box. How does the Windows "Dialog" window class get just
+    // closebox and no sysmenu? Who knows.
+
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & BorderStyle::ResizeH))
+      style &= ~WS_THICKFRAME;
+
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & BorderStyle::Minimize))
+      style &= ~WS_MINIMIZEBOX;
+
+    if (mBorderStyle == BorderStyle::None ||
+        !(mBorderStyle & BorderStyle::Maximize))
+      style &= ~WS_MAXIMIZEBOX;
+
+    if (IsPopupWithTitleBar()) {
+      style |= WS_CAPTION;
+      if (mBorderStyle & BorderStyle::Close) {
+        style |= WS_SYSMENU;
+      }
+    }
+  }
 
   if (mIsChildWindow) {
     style |= WS_CLIPCHILDREN;
@@ -3705,7 +3748,7 @@ LayoutDeviceIntPoint nsWindow::WidgetToScreenOffset() {
 }
 
 LayoutDeviceIntMargin nsWindow::ClientToWindowMargin() {
-  if (mWindowType == WindowType::Popup) {
+  if (mWindowType == WindowType::Popup && !IsPopupWithTitleBar()) {
     return {};
   }
 
