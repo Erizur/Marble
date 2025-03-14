@@ -26,10 +26,15 @@ using namespace mozilla;
 static NSVisualEffectState VisualEffectStateForVibrancyType(
     VibrancyType aType) {
   switch (aType) {
-    case VibrancyType::Titlebar:
-      break;
+    case VibrancyType::TOOLTIP:
+    case VibrancyType::MENU:
+    case VibrancyType::HIGHLIGHTED_MENUITEM:
+      // Tooltip and menu windows are never "key", so we need to tell the
+      // vibrancy effect to look active regardless of window state.
+      return NSVisualEffectStateActive;
+    default:
+      return NSVisualEffectStateFollowsWindowActiveState;
   }
-  return NSVisualEffectStateFollowsWindowActiveState;
 }
 
 static NSVisualEffectMaterial VisualEffectMaterialForVibrancyType(
@@ -43,10 +48,18 @@ static NSVisualEffectMaterial VisualEffectMaterialForVibrancyType(
 static NSVisualEffectBlendingMode VisualEffectBlendingModeForVibrancyType(
     VibrancyType aType) {
   switch (aType) {
-    case VibrancyType::Titlebar:
-      return StaticPrefs::widget_macos_titlebar_blend_mode_behind_window()
-                 ? NSVisualEffectBlendingModeBehindWindow
-                 : NSVisualEffectBlendingModeWithinWindow;
+    case VibrancyType::TOOLTIP:
+      return (NSVisualEffectMaterial)NSVisualEffectMaterialToolTip;
+    case VibrancyType::MENU:
+      return NSVisualEffectMaterialMenu;
+    case VibrancyType::SOURCE_LIST:
+      return NSVisualEffectMaterialSidebar;
+    case VibrancyType::SOURCE_LIST_SELECTION:
+      return NSVisualEffectMaterialSelection;
+    case VibrancyType::HIGHLIGHTED_MENUITEM:
+    case VibrancyType::ACTIVE_SOURCE_LIST_SELECTION:
+      *aOutIsEmphasized = YES;
+      return NSVisualEffectMaterialSelection;
   }
 }
 
