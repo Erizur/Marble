@@ -2469,9 +2469,11 @@ Maybe<nsNativeThemeCocoa::WidgetInfo> nsNativeThemeCocoa::ComputeWidgetInfo(
 
     case StyleAppearance::MozMenulistArrowButton:
       return Some(WidgetInfo::Button(
-          ButtonParams{ComputeControlParams(aFrame, elementState),
-                       ButtonType::eArrowButton}));
+          ButtonParams{ComputeControlParams(aFrame, elementState), ButtonType::eArrowButton}));
 
+    case StyleAppearance::Groupbox:
+      return Some(WidgetInfo::GroupBox());
+      
     case StyleAppearance::Textfield:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
@@ -2841,6 +2843,7 @@ bool nsNativeThemeCocoa::CreateWebRenderCommandsForWidget(
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:
     case StyleAppearance::MozMenulistArrowButton:
+    case StyleAppearance::Groupbox:
     case StyleAppearance::Textfield:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
@@ -3235,6 +3238,7 @@ nsNativeThemeCocoa::WidgetStateChanged(nsIFrame* aFrame,
     case StyleAppearance::Tabpanels:
     case StyleAppearance::Tabpanel:
     case StyleAppearance::Menupopup:
+    case StyleAppearance::Groupbox:
     case StyleAppearance::Progresschunk:
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Meter:
@@ -3293,6 +3297,7 @@ bool nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:
     case StyleAppearance::MozMenulistArrowButton:
+    case StyleAppearance::MenulistText:
       if (aFrame && aFrame->GetWritingMode().IsVertical()) {
         return false;
       }
@@ -3310,6 +3315,8 @@ bool nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::Checkbox:
     case StyleAppearance::CheckboxContainer:
     case StyleAppearance::Radio:
+    case StyleAppearance::RadioContainer:
+    case StyleAppearance::Groupbox:
     case StyleAppearance::MozMacHelpButton:
     case StyleAppearance::MozMacDisclosureButtonOpen:
     case StyleAppearance::MozMacDisclosureButtonClosed:
@@ -3404,6 +3411,8 @@ bool nsNativeThemeCocoa::ThemeNeedsComboboxDropmarker() { return false; }
 bool nsNativeThemeCocoa::WidgetAppearanceDependsOnWindowFocus(
     StyleAppearance aAppearance) {
   switch (aAppearance) {
+    case StyleAppearance::Dialog:
+    case StyleAppearance::Groupbox:
     case StyleAppearance::Tabpanels:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
