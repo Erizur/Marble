@@ -136,7 +136,7 @@ void nsWindow::ForcePresent() {
 }
 
 bool nsWindow::OnPaint(HDC aDC, uint32_t aNestingLevel) {
-  DeviceResetReason resetReason = DeviceResetReason::OK;
+  gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
   if (gfxWindowsPlatform::GetPlatform()->DidRenderingDeviceReset(
           &resetReason)) {
     gfxCriticalNote << "(nsWindow) Detected device reset: " << (int)resetReason;

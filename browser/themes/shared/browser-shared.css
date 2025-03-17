@@ -183,15 +183,21 @@ body {
   /* Toolbar / content area border */
   border-bottom: 0.01px solid var(--chrome-content-separator-color);
 
-  background-color: var(--toolbox-non-lwt-bgcolor);
   color: var(--toolbox-non-lwt-textcolor);
 
-  will-change: background-color;
-  transition: background-color var(--inactive-window-transition);
-
   &:-moz-window-inactive {
-    background-color: var(--toolbox-non-lwt-bgcolor-inactive);
     color: var(--toolbox-non-lwt-textcolor-inactive);
+  }
+
+  @media not (-moz-windows-glass) {
+    background-color: var(--toolbox-non-lwt-bgcolor);
+    
+    will-change: background-color;
+    transition: background-color var(--inactive-window-transition);
+
+    &:-moz-window-inactive {
+      background-color: var(--toolbox-non-lwt-bgcolor-inactive);
+    }
   }
 
   &[fullscreenShouldAnimate] {
@@ -215,7 +221,7 @@ body {
   }
 
   /* When a theme defines both theme_frame and additional_backgrounds, show
-     the latter atop the former. */
+    the latter atop the former. */
   :root[lwtheme-image] & {
     background-image: var(--lwt-header-image), var(--lwt-additional-images);
     background-repeat: no-repeat, var(--lwt-background-tiling);
@@ -466,8 +472,8 @@ toolbarpaletteitem > #personal-bookmarks > #PlacesToolbar,
   #navigator-toolbox {
     /* Overlap the content area by the height of the bookmarks toolbar so that
        temporarily showing the toolbar for new tabs doesn't resize the content
-       area for all tabs. */
-    margin-bottom: calc(-1 * var(--bookmarks-toolbar-overlapping-browser-height));
+       area for all tabs. 
+    margin-bottom: calc(-1 * var(--bookmarks-toolbar-overlapping-browser-height));*/
     z-index: 1;
   }
 

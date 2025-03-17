@@ -90,29 +90,21 @@ menupopup {
   --panel-padding: var(--panel-padding-block);
 
   @media (-moz-platform: windows) {
-    > menu,
-    > menuitem {
-      padding-block: 0.5em;
-      padding-inline-start: 1em;
-    }
+    appearance: auto;
+    -moz-default-appearance: menupopup;
 
-    @media not (-moz-windows-non-native-menus) {
-      & {
-        appearance: auto;
-        -moz-default-appearance: menupopup;
-    
-        /* Native menus are always light */
-        color-scheme: light !important;
-    
-        /* We set the background-color / border here so that it doesn't interfere with native styling. */
-        background-color: Menu;
-        border: 1px solid ThreeDShadow;
-        --panel-background: transparent;
-        --panel-border-color: transparent;
-        --nested-margin: -3px;
-        --panel-shadow-margin: 0px;
-      }
-    }
+    /* Native menus are always light */
+    color-scheme: light !important;
+ 
+    /* We set the background-color / border here so that it doesn't interfere with native styling. */
+    background-color: Menu;
+    border: 1px solid ThreeDShadow;
+    --panel-background: transparent;
+    --panel-border-color: transparent;
+    --panel-border-radius: 0px;
+    --nested-margin: -3px;
+    --panel-shadow-margin: 0px;
+    --panel-padding: 0;
   }
 
   > menu > menupopup {

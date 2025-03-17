@@ -31,11 +31,13 @@ menuseparator {
   }
 }
 
-menuseparator::before {
-  border-top: 1px solid var(--panel-separator-color);
-  content: "";
-  display: block;
-  flex: 1;
+@media not (-moz-platform: windows) {
+  menuseparator::before {
+    border-top: 1px solid var(--panel-separator-color);
+    content: "";
+    display: block;
+    flex: 1;
+  }
 }
 
 /* Accel text */

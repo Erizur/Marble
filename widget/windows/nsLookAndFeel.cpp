@@ -412,6 +412,8 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
   EnsureInit();
   nsresult res = NS_OK;
 
+  int reportingPref = StaticPrefs::widget_native_controls_force_glass_reporting();
+
   switch (aID) {
     case IntID::ScrollButtonLeftMouseButtonAction:
       aResult = 0;
@@ -508,7 +510,6 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
         break;
       }
 
-      int reportingPref = StaticPrefs::widget_native_controls_force_glass_reporting();
       if (reportingPref != 0) {
         aResult = (reportingPref == 1) ? 1 : 0;
         break;

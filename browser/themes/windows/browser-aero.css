@@ -267,17 +267,17 @@
     color: white;
   }
 
-  #appcontent:not([lwtheme]) {
+  :root:not([lwtheme]) #appcontent {
     background-color: -moz-dialog;
   }
 }
 
 @media (-moz-windows-glass) {
-  #toolbar-menubar:not([lwtheme]) {
+  :root:not([lwtheme]) #toolbar-menubar {
     text-shadow: 0 0 .5em white, 0 0 .5em white, 0 1px 0 rgba(255,255,255,.4);
   }
 
-  #main-menubar:not([lwtheme], :-moz-window-inactive) {
+  :root:not([lwtheme], :-moz-window-inactive) #main-menubar {
     background-color: rgba(255,255,255,.5);
     color: black;
     border-radius: 4px;
@@ -286,13 +286,13 @@
   /* Artificially draw window borders that are covered by lwtheme, see bug 591930.
    * We use a different border for win8, and this win10+ only needs this if
    * drawing in the titlebar (-moz-windows-accent-color-in-titlebar). */
-  #main-window[sizemode="normal"] #navigator-toolbox[lwtheme] {
+  :root[lwtheme] #main-window[sizemode="normal"] #navigator-toolbox {
     border-top: 1px solid var(--glass-active-border-color);
     padding-top: 1px;
     box-shadow: 0 1px 0 rgba(255,255,255,.6) inset;
   }
 
-  #main-window[sizemode="normal"] #navigator-toolbox[lwtheme]:-moz-window-inactive {
+  :root[lwtheme] #main-window[sizemode="normal"] #navigator-toolbox:-moz-window-inactive {
     border-top-color: var(--glass-inactive-border-color);
   }
 }
@@ -308,20 +308,20 @@
     }
 
     /* Render a window top border for lwthemes: */
-    #main-window[tabsintitlebar][sizemode="normal"] #navigator-toolbox[lwtheme] {
+    :root[lwtheme][tabsintitlebar][sizemode="normal"] #navigator-toolbox {
       background-image: linear-gradient(to bottom,
             var(--glass-active-border-color) 0, var(--glass-active-border-color) 1px,
             rgba(255,255,255,.6) 1px, rgba(255,255,255,.6) 2px, transparent 2px);
     }
 
-    #main-window[tabsintitlebar][sizemode="normal"] #navigator-toolbox[lwtheme]:-moz-window-inactive {
+    :root[lwtheme][tabsintitlebar][sizemode="normal"] #navigator-toolbox:-moz-window-inactive {
       background-image: linear-gradient(to bottom,
             var(--glass-inactive-border-color) 0, var(--glass-inactive-border-color) 1px,
             rgba(255,255,255,.6) 1px, rgba(255,255,255,.6) 2px, transparent 2px);
     }
   }
 
-  #print-preview-toolbar:not([lwtheme]) {
+  :root:not([lwtheme]) #print-preview-toolbar {
     appearance: auto;
     -moz-default-appearance: -moz-win-browsertabbar-toolbox;
   }

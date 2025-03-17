@@ -16465,6 +16465,12 @@
   value: false
   mirror: always
 
+# Whether enable the Windows fog for stylesheets
+- name: widget.windows-style.fog
+  type: bool
+  value: false
+  mirror: always
+
 # Whether the non-native theme should always use system colors. Useful mostly
 # for testing forced colors mode.
 - name: widget.non-native-theme.always-high-contrast

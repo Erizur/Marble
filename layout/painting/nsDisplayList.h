@@ -1801,11 +1801,6 @@ class nsDisplayListBuilder {
   // partial display list builds don't touch this.
   nsDisplayItem* mGlassDisplayItem;
 
-  // The display item for the Windows window glass background, if any
-  // Set during full display list builds or during display list merging only,
-  // partial display list builds don't touch this.
-  nsDisplayItem* mGlassDisplayItem;
-
   nsIFrame* mCaretFrame;
   // A temporary list that we append scroll info items to while building
   // display items for the contents of frames with SVG effects.

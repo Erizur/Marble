@@ -5485,6 +5485,7 @@ PresShell::CanvasBackground PresShell::ComputeCanvasBackground() const {
     return {color, color, false};
   }
 
+  auto viewportBg = ComputeSingleCanvasBackground(canvas);
   const nsIFrame* bgFrame = nsCSSRendering::FindBackgroundFrame(canvas);
   nscolor color = NS_RGBA(0, 0, 0, 0);
   bool drawBackgroundImage = false;

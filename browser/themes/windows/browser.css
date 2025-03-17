@@ -90,8 +90,10 @@
 /* Add a fog for background tabs to be visible on Windows 7 glass window background */
 @media (-moz-windows-glass) {
   @media (-moz-windows-default-theme) {
-    #TabsToolbar:not([lwtheme]) {
-      background-image: radial-gradient(ellipse at bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.5) 80%, transparent);
+    @media (-moz-bool-pref: "widget.windows-style.fog") {
+      #TabsToolbar:not([lwtheme]) {
+        background-image: radial-gradient(ellipse at bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.5) 45%, transparent);
+      }
     }
   }
 }
@@ -183,11 +185,11 @@
    * it's children visible in order to hide the background but keep the margin and
    * padding that comes from those -moz-window-titlebar rules.
    */
-  :root:not([inFullscreen]) #titlebar[lwtheme] {
+  :root:not([inFullscreen])[lwtheme] #titlebar {
     visibility: hidden;
   }
-  :root:not([inFullscreen], [chromehidden~="menubar"]) #toolbar-menubar[lwtheme],
-  :root:not([inFullscreen], [chromehidden~="toolbar"]) #TabsToolbar[lwtheme] {
+  :root:not([inFullscreen], [chromehidden~="menubar"])[lwtheme] #toolbar-menubar,
+  :root:not([inFullscreen], [chromehidden~="toolbar"])[lwtheme] #TabsToolbar {
     visibility: visible;
   }
 }
@@ -287,9 +289,34 @@
 
 /* Address bar */
 
-@media not (prefers-contrast) {
-  :root:not([lwtheme]) #urlbar {
-    --urlbar-box-bgcolor: white;
+#urlbar,
+#searchbar {
+  font-size: 1.15em;
+}
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media (-moz-bool-pref: "browser.urlbar.experimental.expandTextOnFocus") {
+  #urlbar[breakout-extend] {
+    font-size: 1.25em;
+  }
+}
+
+@media not (-moz-windows-default-theme) {
+  :root {
+    /* Windows HCM conventions use these colors for chiclets. We can't use them on
+       other platforms because AccentColor can be shown atop SelectedItem,
+       which has zero contrast. */
+    --urlbar-box-hover-bgcolor: SelectedItem;
+    --urlbar-box-active-bgcolor: SelectedItem;
+    --urlbar-box-hover-text-color: SelectedItemText;
+  }
+
+  :root:not([lwtheme]) {
+    #urlbar:not([focused]) > #urlbar-background,
+    #searchbar:not(:focus-within),
+    .findbar-textbox:not(:focus) {
+      border-color: ThreeDShadow;
+    }
   }
 }
 
