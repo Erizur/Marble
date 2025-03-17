@@ -103,6 +103,10 @@ bool Gecko_MediaFeatures_WindowsNonNativeMenus(const Document* aDocument) {
          aDocument->ShouldAvoidNativeTheme();
 }
 
+bool Gecko_MediaFeatures_ShouldUseProton(const Document* aDocument) {
+  return LookAndFeel::ProtonThemeEnabled();
+}
+
 bool Gecko_MediaFeatures_IsResourceDocument(const Document* aDocument) {
   return aDocument->IsResourceDoc();
 }

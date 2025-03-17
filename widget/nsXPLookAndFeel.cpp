@@ -497,6 +497,10 @@ bool LookAndFeel::WindowsNonNativeMenusEnabled() {
   }
 }
 
+bool LookAndFeel::ProtonThemeEnabled() {
+  return StaticPrefs::browser_proton_enabled();
+}
+
 static constexpr struct {
   nsLiteralCString mName;
   widget::ThemeChangeKind mChangeKind =

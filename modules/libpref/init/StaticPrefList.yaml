@@ -1556,6 +1556,12 @@
   value: true
   mirror: always
 
+# Enables the default Firefox Proton theme.
+- name: browser.proton.enabled
+  type: bool
+  value: false
+  mirror: always
+
 # Open PDFs in Edge with the --app flag if it is the default.
 - name: browser.pdf.launchDefaultEdgeAsApp
   type: bool

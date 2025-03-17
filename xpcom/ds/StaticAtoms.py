@@ -2294,6 +2294,7 @@ STATIC_ATOMS = [
     Atom("_moz_content_preferred_color_scheme", "-moz-content-preferred-color-scheme"),
     Atom("_moz_system_dark_theme", "-moz-system-dark-theme"),
     Atom("_moz_panel_animations", "-moz-panel-animations"),
+    Atom("_moz_proton", "-moz-proton"),
     # application commands
     Atom("Back", "Back"),
     Atom("Forward", "Forward"),

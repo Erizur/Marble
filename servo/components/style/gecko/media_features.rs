@@ -565,6 +565,10 @@ fn eval_moz_non_native_content_theme(context: &Context) -> bool {
     unsafe { bindings::Gecko_MediaFeatures_ShouldAvoidNativeTheme(context.device().document()) }
 }
 
+fn eval_moz_proton(context: &Context) -> bool {
+    unsafe { bindings::Gecko_MediaFeatures_ShouldUseProton(context.device().document()) }
+}
+
 fn eval_moz_is_resource_document(context: &Context) -> bool {
     unsafe { bindings::Gecko_MediaFeatures_IsResourceDocument(context.device().document()) }
 }
@@ -710,7 +714,7 @@ macro_rules! lnf_int_feature {
 /// to support new types in these entries and (2) ensuring that either
 /// nsPresContext::MediaFeatureValuesChanged is called when the value that
 /// would be returned by the evaluator function could change.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 68] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 69] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -978,6 +982,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 68] = [
         atom!("-moz-non-native-content-theme"),
         AllowsRanges::No,
         Evaluator::BoolInteger(eval_moz_non_native_content_theme),
+        FeatureFlags::CHROME_AND_UA_ONLY,
+    ),
+    feature!(
+        atom!("-moz-proton"),
+        AllowsRanges::No,
+        Evaluator::BoolInteger(eval_moz_proton),
         FeatureFlags::CHROME_AND_UA_ONLY,
     ),
     feature!(
