@@ -1769,7 +1769,7 @@ static nsresult PinCurrentAppToTaskbarAsyncImpl(bool aCheckOnly,
 
   nsAutoString aumid;
   if (NS_WARN_IF(!mozilla::widget::WinTaskbar::GetAppUserModelID(
-          aumid, aPrivateBrowsing))) {
+          aumid))) {
     return NS_ERROR_FAILURE;
   }
 
@@ -1787,20 +1787,7 @@ static nsresult PinCurrentAppToTaskbarAsyncImpl(bool aCheckOnly,
   // a separate shortcuts log. As with non-private shortcuts they have a known
   // name - so there's no need to look through logs to find them.
   nsAutoString shortcutName;
-  if (aPrivateBrowsing) {
-    nsTArray<nsCString> resIds = {
-        "branding/brand.ftl"_ns,
-        "browser/browser.ftl"_ns,
-    };
-    RefPtr<Localization> l10n = Localization::Create(resIds, true);
-    nsAutoCString pbStr;
-    IgnoredErrorResult rv;
-    l10n->FormatValueSync("private-browsing-shortcut-text-2"_ns, {}, pbStr, rv);
-    shortcutName.Append(NS_ConvertUTF8toUTF16(pbStr));
-    shortcutName.AppendLiteral(".lnk");
-  } else {
-    shortcutName.AppendLiteral(MOZ_APP_DISPLAYNAME ".lnk");
-  }
+  shortcutName.AppendLiteral(MOZ_APP_DISPLAYNAME ".lnk");
 
   nsCOMPtr<nsIFile> greDir, updRoot, programsDir, shortcutsLogDir;
   nsresult nsrv = NS_GetSpecialDirectory(NS_GRE_DIR, getter_AddRefs(greDir));

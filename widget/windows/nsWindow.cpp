@@ -1001,34 +1001,19 @@ nsresult nsWindow::Create(nsIWidget* aParent, nsNativeWidget aNativeParent,
     }
   }
 
-  if (Preferences::GetBool("browser.privateWindowSeparation.enabled", true) &&
-      (aInitData->mIsPrivate)) {
-    // Although permanent Private Browsing mode is indeed Private Browsing,
-    // we choose to make it look like regular Firefox in terms of the icon
-    // it uses (which also means we shouldn't use the Private Browsing
-    // AUMID).
-    if (!StaticPrefs::browser_privatebrowsing_autostart()) {
-      RefPtr<IPropertyStore> pPropStore;
-      if (!FAILED(SHGetPropertyStoreForWindow(mWnd, IID_IPropertyStore,
-                                              getter_AddRefs(pPropStore)))) {
-        PROPVARIANT pv;
-        nsAutoString aumid;
-        // make sure we're using the private browsing AUMID so that taskbar
-        // grouping works properly
-        Unused << NS_WARN_IF(
-            !mozilla::widget::WinTaskbar::GenerateAppUserModelID(aumid, true));
-        if (!FAILED(InitPropVariantFromString(aumid.get(), &pv))) {
-          if (!FAILED(pPropStore->SetValue(PKEY_AppUserModel_ID, pv))) {
-            pPropStore->Commit();
-          }
-
-          PropVariantClear(&pv);
-        }
+  RefPtr<IPropertyStore> pPropStore;
+  if (!FAILED(SHGetPropertyStoreForWindow(mWnd, IID_IPropertyStore,
+                                          getter_AddRefs(pPropStore)))) {
+    PROPVARIANT pv;
+    nsAutoString aumid;
+    Unused << NS_WARN_IF(
+        !mozilla::widget::WinTaskbar::GenerateAppUserModelID(aumid));
+    if (!FAILED(InitPropVariantFromString(aumid.get(), &pv))) {
+      if (!FAILED(pPropStore->SetValue(PKEY_AppUserModel_ID, pv))) {
+        pPropStore->Commit();
       }
-      HICON icon = ::LoadIconW(::GetModuleHandleW(nullptr),
-                               MAKEINTRESOURCEW(IDI_PBMODE));
-      SetBigIcon(icon);
-      SetSmallIcon(icon);
+
+      PropVariantClear(&pv);
     }
   }
 
