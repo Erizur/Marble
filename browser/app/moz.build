@@ -7,7 +7,7 @@
 with Files("**"):
     BUG_COMPONENT = ("Firefox", "General")
 
-with Files("firefox.exe.manifest"):
+with Files("marble.exe.manifest"):
     BUG_COMPONENT = ("Core", "Widget: Win32")
 with Files("module.ver"):
     BUG_COMPONENT = ("Core", "Widget: Win32")
