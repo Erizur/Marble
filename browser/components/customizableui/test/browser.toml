@@ -251,8 +251,6 @@ skip-if = ["verify"]
 
 ["browser_customizemode_contextmenu_menubuttonstate.js"]
 
-["browser_customizemode_lwthemes.js"]
-
 ["browser_customizemode_uidensity.js"]
 
 ["browser_disable_commands_customize.js"]
