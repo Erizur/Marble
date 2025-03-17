@@ -93,6 +93,12 @@ main-context-menu-page-save =
     .label = Save Page As…
     .accesskey = P
 
+## Send Page
+
+main-context-menu-page-send =
+    .label = Send Page Link…
+    .accesskey = e
+
 ## Simple menu items
 
 main-context-menu-bookmark-page =
@@ -154,7 +160,7 @@ main-context-menu-open-link-new-private-window =
     .accesskey = P
 
 main-context-menu-bookmark-link-2 =
-    .label = Bookmark Link…
+    .label = Bookmark This Link…
     .accesskey = B
 
 main-context-menu-save-link =
@@ -178,7 +184,7 @@ main-context-menu-copy-phone =
     .accesskey = o
 
 main-context-menu-copy-link-simple =
-    .label = Copy Link
+    .label = Copy Link Location
     .accesskey = L
 
 # This command copies the link, removing additional
@@ -265,12 +271,12 @@ main-context-menu-image-reload =
     .label = Reload Image
     .accesskey = R
 
-main-context-menu-image-view-new-tab =
-    .label = Open Image in New Tab
+main-context-menu-image-view =
+    .label = View Image
     .accesskey = I
 
-main-context-menu-video-view-new-tab =
-    .label = Open Video in New Tab
+main-context-menu-video-view =
+    .label = View Video
     .accesskey = i
 
 main-context-menu-image-copy =
@@ -340,6 +346,10 @@ main-context-menu-save-to-pocket =
 main-context-menu-send-to-device =
     .label = Send Page to Device
     .accesskey = n
+
+main-context-menu-view-background-image =
+    .label = View Background Image
+    .accesskey = w
 
 # Displayed when there are saved passwords and the user clicks inside a username or password field
 main-context-menu-use-saved-password =
@@ -426,6 +436,10 @@ main-context-menu-view-page-source =
     .label = View Page Source
     .accesskey = V
 
+main-context-menu-view-page-info =
+    .label = View Page Info
+    .accesskey = I
+
 main-context-menu-bidi-switch-text =
     .label = Switch Text Direction
     .accesskey = w
@@ -435,7 +449,7 @@ main-context-menu-bidi-switch-page =
     .accesskey = D
 
 main-context-menu-inspect =
-    .label = Inspect
+    .label = Inspect Element
     .accesskey = Q
 
 main-context-menu-inspect-a11y-properties =
