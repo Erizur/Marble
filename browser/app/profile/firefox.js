@@ -1878,6 +1878,11 @@ pref("toolkit.startup.max_resumed_crashes", 3);
   pref("toolkit.winRegisterApplicationRestart", true);
 #endif
 
+// Disable DirectComposition by default.
+#if defined(XP_WIN)
+  pref("gfx.webrender.dcomp-win.enabled", false);
+#endif
+
 // The values of preferredAction and alwaysAskBeforeHandling before pdf.js
 // became the default.
 pref("pdfjs.previousHandler.preferredAction", 0);

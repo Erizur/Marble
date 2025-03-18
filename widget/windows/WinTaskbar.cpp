@@ -393,8 +393,7 @@ WinTaskbar::GetOverlayIconController(
 }
 
 NS_IMETHODIMP
-WinTaskbar::CreateLegacyJumpListBuilder(
-    bool aPrivateBrowsing, nsILegacyJumpListBuilder** aJumpListBuilder) {
+WinTaskbar::CreateLegacyJumpListBuilder(nsILegacyJumpListBuilder** aJumpListBuilder) {
   nsresult rv;
 
   if (LegacyJumpListBuilder::sBuildingList) return NS_ERROR_ALREADY_INITIALIZED;
@@ -406,7 +405,7 @@ WinTaskbar::CreateLegacyJumpListBuilder(
   NS_IF_ADDREF(*aJumpListBuilder = builder);
 
   nsAutoString aumid;
-  GenerateAppUserModelID(aumid, aPrivateBrowsing);
+  GenerateAppUserModelID(aumid);
   builder->SetAppUserModelID(aumid);
 
   return NS_OK;

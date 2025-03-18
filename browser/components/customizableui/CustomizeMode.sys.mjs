@@ -1556,7 +1556,7 @@ CustomizeMode.prototype = {
       return tbb;
     }
 
-    let themes = await AddonManager.getAddonsByTypes(["theme"]);
+    let themes = await lazy.AddonManager.getAddonsByTypes(["theme"]);
     let currentTheme = themes.find(theme => theme.isActive);
 
     // Move the current theme (if any) and the default themes to the start:

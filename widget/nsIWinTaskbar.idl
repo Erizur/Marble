@@ -125,7 +125,7 @@ interface nsIWinTaskbar : nsISupports
    * @throws NS_ERROR_ALREADY_INITIALIZED if an nsILegacyJumpListBuilder instance is
    * currently building a list.
    */
-  nsILegacyJumpListBuilder createLegacyJumpListBuilder(in boolean aPrivateBrowsing);
+  nsILegacyJumpListBuilder createLegacyJumpListBuilder();
 
   /**
    * Retrieves a Windows Jump List builder. This jump list builder can be used
