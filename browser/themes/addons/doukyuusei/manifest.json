@@ -1,0 +1,132 @@
+{
+  "manifest_version": 2,
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "marble-doukyuusei@mozilla.org"
+    }
+  },
+
+  "name": "Douykuusei",
+  "description": "A jazzy appereance for your browser, inspired by Asumiko Nakamura's artwork.",
+  "version": "1.0",
+  "icons": { "32": "icon.svg" },
+
+  "theme": {
+    "images": {
+      "additional_backgrounds": [
+        "doukyuusei_light.png"
+      ]
+    },
+
+    "properties": {
+      "additional_backgrounds_alignment": [
+        "left center"
+      ],
+      "additional_backgrounds_tiling": ["repeat"],
+      "zap_gradient": "linear-gradient(90deg, #f0f564 0%, #46494a 100%)"
+    },
+    "colors": {
+      "frame": "rgba(241, 252, 255, 0.64)",
+      "toolbar": "rgba(241, 252, 255, 0.64)",
+      "button_background_active": "hsla(240, 26%, 11%, .16)",
+      "button_background_hover": "hsla(240, 26%, 11%, .08)",
+      "icons": "rgb(65, 84, 130)",
+      "icons_attention": "hsla(180, 100%, 32%, 1)",
+      "toolbar_text": "hsla(261, 53%, 15%, 1)",
+      "toolbar_vertical_separator": "hsla(261, 53%, 15%, .2)",
+      "toolbar_field": "hsla(0, 0%, 100%, .8)",
+      "toolbar_field_focus": "rgb(241, 255, 252)",
+      "toolbar_field_text": "rgb(32, 18, 59)",
+      "toolbar_field_text_focus": "rgb(32, 18, 59)",
+      "toolbar_field_border": "rgba(162, 191, 202, 0.75)",
+      "toolbar_field_border_focus": "rgb(170, 196, 223)",
+      "toolbar_field_highlight": "hsla(265, 100%, 72%, .32)",
+      "toolbar_top_separator": "rgba(0, 0, 0, 0.3)",
+      "toolbar_bottom_separator": "hsla(261, 53%, 15%, .32)",
+      "bookmark_text": "hsla(261, 53%, 15%, 1)",
+      "tab_text": "hsla(261, 53%, 15%, 1)",
+      "tab_background_text": "rgb(41, 97, 106)",
+      "tab_background_separator": "hsla(261, 53%, 15%, 1)",
+      "tab_line": "rgb(147, 163, 202)",
+      "tab_loading": "hsla(265, 100%, 72%, 1)",
+      "ntp_background": "#F9F9FB",
+      "ntp_text": "hsla(261, 53%, 15%, 1)",
+      "popup": "rgb(241, 255, 252)",
+      "popup_text": "rgb(70, 68, 64)",
+      "popup_border": "rgba(117, 135, 136, 0.32)",
+      "popup_highlight": "hsla(255, 100%, 94%, .12)",
+      "popup_highlight_text": "hsla(0, 0%, 100%, 1)",
+      "sidebar": "hsla(240, 15%, 95%, 1)",
+      "sidebar_text": "hsla(261, 53%, 15%, 1)",
+      "sidebar_border": "hsla(261, 53%, 15%, .24)",
+      "sidebar_highlight": "hsla(265, 100%, 72%, 1)",
+      "sidebar_highlight_text": "hsla(0, 0%, 100%, 1)",
+      "focus_outline": "hsla(258, 65%, 48%, 1)"
+    }
+  },
+  "dark_theme": {
+    "images": {
+      "additional_backgrounds": [
+        "doukyuusei_dark.png"
+      ]
+    },
+
+    "properties": {
+      "color_scheme": "dark",
+      "additional_backgrounds_alignment": [
+        "right center"
+      ],
+      "additional_backgrounds_tiling": ["repeat"],
+      "zap_gradient": "linear-gradient(90deg, #f0f564 0%, #46494a 100%)"
+    },
+    "colors": {
+      "frame": "rgba(13, 43, 20, 0.85)",
+      "toolbar": "rgba(13, 43, 20, 0.85)",
+      "button_background_active": "hsla(255, 100%, 94%, .24)",
+      "button_background_hover": "hsla(255, 100%, 94%, .12)",
+      "icons": "rgb(172, 204, 180)",
+      "icons_attention": "hsla(157, 100%, 66%, 1)",
+      "toolbar_text": "rgb(232, 240, 235)",
+      "toolbar_vertical_separator": "hsla(271, 100%, 77%, .4)",
+      "toolbar_field": "rgb(29, 51, 33)",
+      "toolbar_field_focus": "rgba(27, 51, 37, 0.98)",
+      "toolbar_field_text": "hsla(255, 100%, 94%, 1)",
+      "toolbar_field_text_focus": "rgb(242, 255, 224)",
+      "toolbar_field_border": "rgba(105, 119, 81, 0.33)",
+      "toolbar_field_border_focus": "rgb(91, 104, 82)",
+      "toolbar_field_highlight": "hsla(265, 100%, 72%, .32)",
+      "toolbar_top_separator": "rgba(48, 77, 19, 0.96)",
+      "toolbar_bottom_separator": "rgba(84, 116, 52, 0.96)",
+      "bookmark_text": "hsla(255, 100%, 94%, 1)",
+      "tab_selected": "rgb(60, 31, 123)",
+      "tab_text": "hsla(255, 100%, 94%, 1)",
+      "tab_background_text": "hsla(255, 100%, 94%, 1)",
+      "tab_background_separator": "hsla(255, 100%, 94%, 1)",
+      "tab_line": "rgb(69, 138, 125)",
+      "tab_loading": "hsla(265, 100%, 72%, 1)",
+      "ntp_background": "#2A2A2E",
+      "ntp_text": "hsla(255, 100%, 94%, 1)",
+      "popup": "rgb(30, 53, 25)",
+      "popup_text": "rgb(250, 255, 224)",
+      "popup_border": "rgba(76, 176, 106, 0.32)",
+      "popup_highlight": "hsla(255, 100%, 94%, .12)",
+      "popup_highlight_text": "hsla(0, 0%, 100%, 1)",
+      "sidebar": "hsla(250, 43%, 25%, 1)",
+      "sidebar_text": "hsla(255, 100%, 94%, 1)",
+      "sidebar_border": "hsla(255, 100%, 94%, .24)",
+      "sidebar_highlight": "hsla(259, 76%, 58%, 1)",
+      "sidebar_highlight_text": "hsla(0, 0%, 100%, 1)",
+      "focus_outline": "rgb(34, 121, 64)"
+    }
+  },
+
+  "theme_experiment": {
+    "colors": {
+      "focus_outline": "--focus-outline-color"
+    },
+    "properties": {
+      "zap_gradient": "--panel-separator-zap-gradient"
+    }
+  }
+}

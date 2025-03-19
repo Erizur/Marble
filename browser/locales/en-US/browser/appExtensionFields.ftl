@@ -17,6 +17,12 @@ extension-firefox-compact-dark-description=A theme with a dark color scheme.
 extension-firefox-alpenglow-name=Firefox Alpenglow
 extension-firefox-alpenglow-description=Use a colorful appearance for buttons, menus, and windows.
 
+extension-marble-canica-name=Marble Canica
+extension-marble-canica-description=Use a fresh and stylish appearance for buttons, menus, and windows.
+
+extension-marble-doukyuusei-name=Doukyuusei
+extension-marble-doukyuusei-description=A jazzy appereance for your browser, inspired by Asumiko Nakamura's artwork.
+
 ## Colorway Themes
 ## These themes are variants of a colorway. The colorway is specified in the
 ## $colorway-name variable.

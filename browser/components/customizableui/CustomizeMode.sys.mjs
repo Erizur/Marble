@@ -1589,11 +1589,6 @@ CustomizeMode.prototype = {
       button.addEventListener("command", async () => {
         onThemeSelected(panel);
         await button.theme.enable();
-        AMTelemetry.recordActionEvent({
-          object: "customize",
-          action: "enable",
-          extra: { type: "theme", addonId: theme.id },
-        });
       });
       panel.insertBefore(button, footer);
     }

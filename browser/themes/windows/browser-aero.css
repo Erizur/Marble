@@ -236,6 +236,34 @@
         list-style-image: url(chrome://browser/skin/window-controls/close-highcontrast.svg);
       }
     }
+
+    @media not (-moz-proton) {
+      :root[tabsintitlebar]:not([lwtheme]) #TabsToolbar {
+          background-color: hsl(235,33%,19%);
+          @media (prefers-color-scheme: dark) {
+            background-color: rgb(12, 12, 13);
+          }
+  
+          @media (-moz-windows-accent-color-in-titlebar) {
+            background-color: -moz-win-accentcolor;
+          }
+      }
+  
+      :root[tabsintitlebar]:not([lwtheme]) {
+        .titlebar-button {
+          stroke: white;
+        }
+  
+        @media not (prefers-color-scheme: dark) {
+          .titlebar-button:not(.titlebar-close):hover {
+            background-color: hsla(0,0%,100%,.22);
+          }
+          .titlebar-button:not(.titlebar-close):hover:active {
+            background-color: hsla(0,0%,100%,.32);
+          }
+        }
+      }
+    }
   }
 
   @media (-moz-windows-glass) {
@@ -287,13 +315,12 @@
    * We use a different border for win8, and this win10+ only needs this if
    * drawing in the titlebar (-moz-windows-accent-color-in-titlebar). */
   :root[lwtheme][sizemode="normal"] #navigator-toolbox {
-    border-top: 1px solid var(--glass-active-border-color);
-    padding-top: 1px;
+    border-top: 1px solid var(--glass-active-border-color) !important;
     box-shadow: 0 1px 0 rgba(255,255,255,.6) inset;
   }
 
   :root[lwtheme][sizemode="normal"] #navigator-toolbox:-moz-window-inactive {
-    border-top-color: var(--glass-inactive-border-color);
+    border-top-color: var(--glass-inactive-border-color) !important;
   }
 }
 

@@ -16,6 +16,14 @@ browser.jar:
   content/builtin-themes/light                     (light/*.css)
   content/builtin-themes/light/manifest.json       (light/manifest.json)
 
+  content/builtin-themes/doukyuusei				         (doukyuusei/*.png)
+  content/builtin-themes/doukyuusei				         (doukyuusei/*.svg)
+  content/builtin-themes/doukyuusei/manifest.json  (doukyuusei/manifest.json)
+ 
+  content/builtin-themes/canica					           (canica/*.png)
+  content/builtin-themes/canica					           (canica/*.svg)
+  content/builtin-themes/canica/manifest.json	     (canica/manifest.json)
+
   content/builtin-themes/colorways/2021lush/soft                          (colorways/2021-life-in-color/lush/soft/*.svg)
   content/builtin-themes/colorways/2021lush/soft/manifest.json            (colorways/2021-life-in-color/lush/soft/manifest.json)
   content/builtin-themes/colorways/2021lush/balanced                      (colorways/2021-life-in-color/lush/balanced/*.svg)
