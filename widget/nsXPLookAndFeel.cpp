@@ -507,6 +507,8 @@ static constexpr struct {
       widget::ThemeChangeKind::MediaQueriesOnly;
 } kMediaQueryPrefs[] = {
     {"browser.display.windows.non_native_menus"_ns},
+    {"browser.proton.enabled"_ns,
+      widget::ThemeChangeKind::Style},
     // Affects whether standins are used for the accent color.
     {"widget.non-native-theme.use-theme-accent"_ns,
      widget::ThemeChangeKind::Style},
@@ -515,6 +517,8 @@ static constexpr struct {
      widget::ThemeChangeKind::Style},
     {"widget.windows.uwp-system-colors.highlight-accent"_ns,
      widget::ThemeChangeKind::Style},
+    {"widget.windows-style.modern"_ns,
+      widget::ThemeChangeKind::StyleAndLayout},
     // Affects env().
     {"layout.css.prefers-color-scheme.content-override"_ns,
      widget::ThemeChangeKind::Style},
