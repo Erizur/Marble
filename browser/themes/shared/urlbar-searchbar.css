@@ -1081,3 +1081,76 @@ moz-input-box > menupopup .context-menu-add-engine > .menu-iconic-left::after {
 .searchbar-engine-one-off-add-engine[image]:hover > .button-box > .button-icon {
   opacity: 1;
 }
+
+@media not (-moz-proton) {
+  :root {
+    --urlbar-container-padding: 0px !important;
+    --urlbar-min-height: 30px !important;
+    --urlbar-icon-padding: 6px !important; /* (30px - 2px border - 16px icon) / 2 */
+  }
+  :root[uidensity=compact] {
+    --urlbar-min-height: 26px !important;
+    --urlbar-icon-padding: 4px !important; /* (26px - 2px border - 16px icon) / 2 */
+  }
+  :root[uidensity=touch] {
+    --urlbar-min-height: 32px !important;
+    --urlbar-icon-padding: 7px !important; /* (32px - 2px border - 16px icon) / 2 */
+  }
+
+  #urlbar-background, #searchbar {
+    background-clip: padding-box !important;
+    border-radius: var(--toolbarbutton-border-radius) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+  }
+  #urlbar-background:not(:-moz-lwtheme), #searchbar:not(:-moz-lwtheme) {
+    background-color: Field !important;
+  }
+  
+  #urlbar-container {
+    --urlbar-container-height: 40.00px !important;
+  }
+  :root[uidensity=compact] #urlbar-container {
+    --urlbar-container-height: 32.00px !important;
+  }
+  :root[uidensity=touch] #urlbar-container {
+    --urlbar-container-height: 40.00px !important;
+  }
+
+  @keyframes urlbar-grow-phroton {
+    0% {
+      transform: scaleX(0.99) scaleY(0.95);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  #urlbar {
+    --urlbar-height: 30.00px !important;
+    --urlbar-toolbar-height: 40.00px !important;
+  }
+  :root[uidensity=compact] #urlbar {
+    --urlbar-height: 26.00px !important;
+    --urlbar-toolbar-height: 32.00px !important;
+  }
+  :root[uidensity=touch] #urlbar {
+    --urlbar-height: 32.00px !important;
+    --urlbar-toolbar-height: 40.00px !important;
+  }
+  #urlbar[open] #urlbar-background {
+    border-color: var(--toolbar-field-focus-border-color) !important;
+  }
+  #urlbar[breakout][breakout-extend] {
+    top: -2px !important;
+    left: -7px !important;
+    width: calc(100% + 10px + 4px) !important;
+  }
+  #urlbar[breakout][breakout-extend] > #urlbar-background {
+    animation-name: urlbar-grow-phroton !important;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.2) !important;
+  }
+  #urlbar[breakout][breakout-extend] > #urlbar-input-container {
+    height: calc(var(--urlbar-toolbar-height) + 4px) !important;
+    padding-block: calc(2px + (var(--urlbar-toolbar-height) - var(--urlbar-height)) / 2) !important;
+    padding-inline: 7px !important;
+  }
+}

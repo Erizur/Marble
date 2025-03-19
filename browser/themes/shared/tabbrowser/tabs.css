@@ -965,3 +965,177 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
     }
   }
 }
+
+/* Taken from Aubrey's Photon theme ^_^ */
+@media not (-moz-proton) {
+  :root {
+    --tab-border-radius: 2px !important;
+    --inline-tab-padding: 9px !important;
+    --tab-min-height: 33px !important;
+  }
+  :root[uidensity=compact] {
+    --tab-min-height: 29px !important;
+  }
+  :root[uidensity=touch] {
+    --tab-min-height: 41px !important;
+  }
+  
+  :root[sizemode=normal][tabsintitlebar] #navigator-toolbox {
+    border-top: 0 !important;
+  }
+  
+  @media (-moz-windows-compositor) and (-moz-windows-modern) {
+    .titlebar-button {
+      min-height: 30px !important;
+    }
+  }
+  .titlebar-spacer[type=pre-tabs] {
+    border-inline-end: 1px solid var(--lwt-background-tab-separator-color, currentColor);
+    opacity: 0.2;
+  }
+  
+  #tabbrowser-tabs:not([overflow=true], [hashiddentabs]) ~ #alltabs-button {
+    display: none !important;
+  }
+  
+  .all-tabs-close-button {
+    list-style-image: url("chrome://global/skin/icons/close.svg") !important;
+  }
+  
+  #TabsToolbar {
+    --toolbarbutton-inner-padding: inherit !important;
+  }
+  #TabsToolbar .toolbarbutton-animatable-box, #TabsToolbar .toolbarbutton-1 {
+    fill: currentColor !important;
+  }
+  #TabsToolbar .toolbar-items {
+    padding-top: 0 !important;
+  }
+  
+  .tabbrowser-tab {
+    max-height: var(--tab-min-height) !important;
+    margin-inline-start: 0 !important;
+    padding: 0 !important;
+  }
+  .tabbrowser-tab[visuallyselected=true] {
+    z-index: 2 !important;
+  }
+  .tabbrowser-tab::after {
+    content: "";
+    display: block;
+    margin-block: 5px 4px;
+    border-left: 1px solid var(--lwt-background-tab-separator-color, currentColor);
+    opacity: 0.3;
+  }
+  .tabbrowser-tab[visuallyselected]::before {
+    content: "";
+    display: block;
+    border-left: 1px solid var(--lwt-background-tab-separator-color, currentColor);
+    margin-inline-start: -1px;
+  }
+  .tabbrowser-tab:hover::after, .tabbrowser-tab[beforehovered]::after, :root[tabsintitlebar]:not([extradragspace]) #toolbar-menubar[autohide=true] + #TabsToolbar .tabbrowser-tab::after, #tabbrowser-tabs:not([movingtab]) > #tabbrowser-arrowscrollbox > .tabbrowser-tab[beforehovered]::after, .tabbrowser-tab[multiselected]::after, #tabbrowser-tabs:not([movingtab]) > #tabbrowser-arrowscrollbox > .tabbrowser-tab[before-multiselected]::after {
+    margin-top: var(--tabs-top-border-width, 0);
+    margin-bottom: 0;
+  }
+  #tabbrowser-tabs:not([movingtab]) > #tabbrowser-arrowscrollbox > .tabbrowser-tab[beforeselected-visible]::after, 
+  #tabbrowser-tabs:not([movingtab]) > #tabbrowser-arrowscrollbox > .tabbrowser-tab[beforeselected-visible]::before, 
+  .tabbrowser-tab[visuallyselected]::before, .tabbrowser-tab[visuallyselected]::after {
+    border-color: var(--tabs-border-color);
+    margin-top: 0;
+    margin-bottom: var(--tabs-navbar-shadow-size);
+    opacity: 1;
+  }
+  
+  .tab-background {
+    margin: 0 !important;
+    outline: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+  .tab-background:is([selected], [multiselected]) {
+    background-color: var(--toolbar-bgcolor) !important;
+  }
+  .tab-background::before {
+    content: "";
+    display: flex;
+    height: 2px;
+  }
+  .tab-background:not([selected], [multiselected])::before {
+    opacity: 0;
+    transform: scaleX(0);
+    transition: transform 250ms var(--animation-easing-function), opacity 250ms var(--animation-easing-function);
+  }
+  .tabbrowser-tab:hover .tab-background:not([selected], [multiselected])::before {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    opacity: 1;
+    transform: none;
+  }
+  #TabsToolbar[brighttext] .tabbrowser-tab:hover .tab-background:not([selected], [multiselected])::before {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  .tab-background:is([selected], [multiselected])::before {
+    background-color: var(--lwt-tab-line-color, currentColor) !important;
+  }
+  
+  :root:not([uidensity=compact]) .tab-content[pinned] {
+    padding: 0 10px !important;
+  }
+  
+  .tab-close-button {
+    width: 20px !important;
+    height: 20px !important;
+    box-sizing: border-box !important;
+    padding: 4px !important;
+    margin-inline-end: -2px !important;
+    appearance: none;
+    color: inherit;
+    fill: currentColor;
+  }
+  
+  .tab-secondary-label {
+    display: none !important;
+  }
+  
+  .tab-icon-overlay {
+    background-color: transparent !important;
+    padding: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin-inline-end: 0 !important;
+  }
+  .tab-icon-overlay:not(:hover) {
+    opacity: 0.8 !important;
+  }
+  .tab-icon-overlay:hover {
+    opacity: 1 !important;
+  }
+  .tab-icon-overlay[pinned] {
+    border-radius: 10px;
+    opacity: 1 !important;
+    margin-inline-start: -13px !important;
+    top: -3.5px !important;
+  }
+  .tab-icon-overlay[pinned]:hover {
+    fill: black !important;
+    background-color: white !important;
+  }
+  
+  :root:not([uidensity=compact]) .tabbrowser-tab:is([soundplaying], [muted], [activemedia-blocked]) .tab-content {
+    padding-inline-end: 7px !important;
+  }
+  :root[uidensity=compact] .tabbrowser-tab:is([soundplaying], [muted], [activemedia-blocked]) .tab-content {
+    padding-inline-end: 6px !important;
+  }
+  
+  .tabbrowser-tab:hover .tab-icon-stack[indicator-replaces-favicon] > :not(.tab-icon-overlay) {
+    opacity: 1 !important;
+  }
+  
+  :root[privatebrowsingmode=temporary] #private-browsing-indicator-with-label {
+    display: none !important;
+  }
+  :root[privatebrowsingmode=temporary] .private-browsing-indicator {
+    display: flex !important;
+  }
+}

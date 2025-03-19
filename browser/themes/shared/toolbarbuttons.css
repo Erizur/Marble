@@ -419,3 +419,52 @@ toolbar:not(#TabsToolbar) > #personal-bookmarks {
     background: url(chrome://global/skin/icons/badge-blue.svg);
   }
 }
+
+@media not (-moz-proton) {
+  :root:not([uidensity="compact"]) #back-button {
+    padding-block: 3px !important;
+    padding-inline: 3px 0 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    border-radius: 0 10000px 10000px 0 !important;
+  }
+  :root:not([uidensity="compact"]) #back-button:-moz-locale-dir(rtl) {
+    border-radius: 10000px 0 0 10000px !important;
+  }
+  :root:not([uidensity="compact"]) #back-button > .toolbarbutton-icon {
+    background-color: var(--backbutton-background) !important;
+    background-origin: padding-box !important;
+    background-clip: padding-box !important;
+    border: 1px solid var(--backbutton-border-color) !important;
+    border-radius: 10000px !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 8px !important;
+    transition-property: box-shadow !important;
+    transition-duration: var(--toolbarbutton-hover-transition-duration) !important;
+  }
+  :root:not([uidensity="compact"]) #back-button:not([disabled], [open]):hover > .toolbarbutton-icon {
+    background-color: var(--backbutton-hover-background) !important;
+    box-shadow: 0 1px 6px hsla(0, 0%, 0%, 0.1) !important;
+    border-color: hsla(240, 5%, 5%, 0.35) !important;
+  }
+  :root:not([uidensity="compact"]) #back-button[open] > .toolbarbutton-icon, :root:not([uidensity="compact"]) #back-button:not([disabled]):hover:active > .toolbarbutton-icon {
+    background-color: var(--backbutton-active-background) !important;
+    border-color: hsla(240, 5%, 5%, 0.4) !important;
+  }
+  :root[uidensity="touch"] #back-button {
+    padding-block: 1px !important;
+    padding-inline-start: 1px !important;
+  }
+  :root[uidensity="touch"] #back-button > .toolbarbutton-icon {
+    width: 38px !important;
+    height: 38px !important;
+    padding: 10px !important;
+  }
+  :root[uidensity="touch"] #back-button:-moz-focusring > .toolbarbutton-icon {
+    outline-offset: calc(var(--outline-offset-width) * -1 - 2px) !important;
+  }
+  #main-window #back-button > menupopup {
+    margin-top: -1px !important;
+  }
+}

@@ -11,11 +11,11 @@
  * assets for zoom/fullscreen/sync.
  */
 #appMenu-zoomEnlarge-button2 {
-  list-style-image: url(chrome://browser/skin/add-circle-fill.svg);
+  list-style-image: url(chrome://global/skin/icons/plus.svg);
 }
 
 #appMenu-zoomReduce-button2 {
-  list-style-image: url(chrome://browser/skin/subtract-circle-fill.svg);
+  list-style-image: url(chrome://global/skin/icons/minus.svg);
 }
 
 #appMenu-fullscreen-button2 {
@@ -24,4 +24,211 @@
 
 #appMenu-fullscreen-button2[checked] {
   list-style-image: url(chrome://browser/skin/fullscreen-exit.svg);
+}
+
+@media not (-moz-proton) {
+  :root {
+    --appmenu-icon-inline-end: 8px;
+    --appmenu-noicon-inline-end: 24px;
+  }
+
+  #appMenu-multiView .subviewbutton::before,
+  #appMenu-proton-update-banner::before,
+  #downloadsHistory .button-icon,
+  .subviewbutton:not([class*="identity-color"]) > image {
+    fill: currentColor !important;
+    fill-opacity: var(--toolbarbutton-icon-fill-opacity) !important;
+    -moz-context-properties: fill !important;
+  }
+
+  #appMenu-fxa-status2:not([fxastatus="signedin"], [fxastatus="unverified"], [fxastatus="login-failed"])::before {
+    content: "";
+    display: -moz-inline-box;
+    width: 18px !important;
+    height: 18px !important;
+    background-size: 18px;
+    background-image: url("chrome://browser/skin/fxa/avatar-empty.svg");
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+    margin-inline-start: 2px !important;
+    -moz-context-properties: fill !important;
+  }
+  #appMenu-fxa-status2:not([fxastatus="signedin"], [fxastatus="unverified"], [fxastatus="login-failed"])
+    #appMenu-fxa-label2 {
+    margin-inline-end: -4px !important;
+  }
+  #appMenu-fxa-status2:is([fxastatus="signedin"], [fxastatus="unverified"], [fxastatus="login-failed"])
+    #appMenu-fxa-label2::before {
+    content: "";
+    display: -moz-inline-box;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50%;
+    background-size: 18px;
+    background-image: var(--avatar-image-url);
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+    margin-inline-start: 2px !important;
+    outline: solid #ffffff33 1px;
+  }
+
+  #appMenu-new-tab-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/new-tab.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  
+  #appMenu-new-window-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/new-window.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  
+  #appMenu-new-private-window-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/privateBrowsing.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+
+  /* Second section */
+  #appMenu-bookmarks-button .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/bookmark-star-on-tray.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-history-button .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/history.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-downloads-button .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/downloads/downloads.svg#arrow-with-bar") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-passwords-button .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/login.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-extensions-themes-button .toolbarbutton-icon {
+    list-style-image: url("chrome://mozapps/skin/extensions/extension.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+
+  /* Third section */
+  #appMenu-print-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/print.svg");
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-save-file-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/save.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-find-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/search-glass.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-translate-button .toolbarbutton-icon {
+    list-style-image: url("chrome://browser/skin/translations.svg");
+    margin-inline-end: calc(var(--appmenu-icon-inline-end) - 1px) !important;
+  }
+
+  /* Fifth section */
+  #appMenu-settings-button .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/settings.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-more-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/developer.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-report-broken-site-button .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/warning.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+  #appMenu-help-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/help.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+    width: 16px !important;
+  }
+
+  /* Zoom controls */
+  #appMenu-zoom-controls .subviewbutton .toolbarbutton-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  #appMenu-zoomReset-button2 .toolbarbutton-text {
+    border-radius: 1000px !important;
+    border: 1px solid var(--panel-separator-color) !important;
+    padding-inline: 10px !important;
+  }
+  #appMenu-zoomReset-button2:hover .toolbarbutton-text {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+  #appMenu-zoomReset-button2:hover:active .toolbarbutton-text {
+    background-color: var(--arrowpanel-dimmed-even-further) !important;
+  }
+  #appMenu-zoom-controls toolbarbutton:not(:hover, :active) {
+    background-color: transparent !important;
+  }
+  /* This pushes down the find/translate button and aligns the zoom seperator */
+  #appMenu-find-button2 {
+    margin-bottom: 8px !important;
+  }
+  @media (-moz-bool-pref: "browser.translations.enable") {
+    #appMenu-translate-button {
+      margin-bottom: 8px !important;
+    }
+    #appMenu-find-button2 {
+      margin-bottom: unset !important;
+    }
+  }
+  /* Separators */
+  #appMenu-zoom-controls::after {
+    content: "";
+    display: block;
+    translate: 0 -17px;
+    width: 1px;
+    height: 1px;
+    border-bottom: 1px solid var(--panel-separator-color);
+    scale: 1000 1 !important;
+  }
+  #appMenu-zoom-controls::before {
+    content: "";
+    display: block;
+    background-image: url("chrome://browser/skin/zoom.svg");
+    background-repeat: no-repeat;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+    width: 16px;
+    height: 16px;
+  }
+  #appMenu-zoom-controls #appMenu-fullscreen-button2::before {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 24px;
+    border-left: 1px solid var(--panel-separator-color);
+    margin-right: -1px;
+  }
+  /* Padding fixes */
+  #appMenu-zoom-controls toolbarbutton image {
+    padding: 2px !important;
+  }
+  #appMenu-zoom-controls toolbarbutton {
+    padding: 0px 8px 0px 0px !important;
+  }
+  #appMenu-fullscreen-button2 {
+    margin-right: -11px !important;
+  }
+  /* Hover color */
+  #appMenu-zoomReduce-button2:hover image,
+  #appMenu-zoomEnlarge-button2:hover image {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+
+  /* Margin fixes */
+  #appMenu-help-button2 + toolbarseparator {
+    margin-bottom: 4px !important;
+  }
+  #appMenu-fxa-status2 + toolbarseparator {
+    margin-top: 4px !important;
+  }
+
+  /* Exit icon */
+  #appMenu-quit-button2 .toolbarbutton-icon {
+    list-style-image: url("chrome://global/skin/icons/quit.svg") !important;
+    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
 }

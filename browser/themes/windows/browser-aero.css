@@ -286,13 +286,13 @@
   /* Artificially draw window borders that are covered by lwtheme, see bug 591930.
    * We use a different border for win8, and this win10+ only needs this if
    * drawing in the titlebar (-moz-windows-accent-color-in-titlebar). */
-  :root[lwtheme] #main-window[sizemode="normal"] #navigator-toolbox {
+  :root[lwtheme][sizemode="normal"] #navigator-toolbox {
     border-top: 1px solid var(--glass-active-border-color);
     padding-top: 1px;
     box-shadow: 0 1px 0 rgba(255,255,255,.6) inset;
   }
 
-  :root[lwtheme] #main-window[sizemode="normal"] #navigator-toolbox:-moz-window-inactive {
+  :root[lwtheme][sizemode="normal"] #navigator-toolbox:-moz-window-inactive {
     border-top-color: var(--glass-inactive-border-color);
   }
 }
