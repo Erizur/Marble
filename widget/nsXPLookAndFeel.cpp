@@ -518,7 +518,7 @@ static constexpr struct {
     {"widget.windows.uwp-system-colors.highlight-accent"_ns,
      widget::ThemeChangeKind::Style},
     {"widget.windows-style.modern"_ns,
-      widget::ThemeChangeKind::StyleAndLayout},
+      widget::ThemeChangeKind::Style},
     // Affects env().
     {"layout.css.prefers-color-scheme.content-override"_ns,
      widget::ThemeChangeKind::Style},
