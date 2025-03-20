@@ -1153,4 +1153,45 @@ moz-input-box > menupopup .context-menu-add-engine > .menu-iconic-left::after {
     padding-block: calc(2px + (var(--urlbar-toolbar-height) - var(--urlbar-height)) / 2) !important;
     padding-inline: 7px !important;
   }
+
+  /* Adds a separator between the tracking-protection icon and the rest of the urlbar */
+  #tracking-protection-icon-container {
+    margin-right: 1px !important;
+    &:not(:hover, [open])::after {
+      content: "";
+      position: absolute;
+      display: block;
+      height: calc(var(--urlbar-height) - 8px);
+      right: -1px;
+      top: 3px;
+      border-right: 1px solid color-mix(in srgb, var(--toolbar-field-color, currentColor) 20%, transparent);
+    }
+    &:is(:hover, [open]) {
+      padding-inline-end: calc(var(--urlbar-icon-padding) + 1px) !important;
+      margin-right: 0px !important;
+    }
+  }
+  #urlbar[breakout][breakout-extend="true"] #tracking-protection-icon-container:not(:hover, :active, [open])::after {
+    top: 2px;
+  }
+  /* Adds a separator between the Firefox/Nightly label and the urlbar */
+  #identity-box.chromeUI {
+    &[pageproxystate="invalid"] #identity-icon-box {
+      margin-right: 5px !important;
+    }
+    #identity-icon-box:not(:hover, [open]) {
+      background: transparent !important;
+    }
+    #identity-icon-box::after {
+      content: "";
+      display: block;
+      translate: 6px 0px;
+      height: calc(var(--urlbar-height) - 8px);
+      border-left: 1px solid color-mix(in srgb, var(--toolbar-field-color, currentColor) 20%, transparent);
+      opacity: 0
+    }
+    #identity-icon-box:not(:hover, :active, [open])::after {
+      opacity: 1;
+    }
+  }
 }

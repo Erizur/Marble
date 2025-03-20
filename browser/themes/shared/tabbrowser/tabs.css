@@ -1045,6 +1045,19 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
     margin-bottom: var(--tabs-navbar-shadow-size);
     opacity: 1;
   }
+  /* Add dark mode tab background (never existed in Windows 7/8 Photon but its a cool thing */
+  @media not (-moz-proton) {
+    @media (prefers-color-scheme: dark) {
+     /* Show border on tabs with background colors and
+      * show the tabs toolbar background color inside tabs. */
+      :root:not([lwtheme]) .tabbrowser-tab {
+        background-color: var(--lwt-accent-color) !important;
+        color: var(--lwt-text-color) !important;
+        border-top: 1px solid var(--tabs-border-color);
+        background-clip: padding-box;
+      }
+    }
+  }
   
   .tab-background {
     margin: 0 !important;

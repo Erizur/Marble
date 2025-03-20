@@ -364,25 +364,40 @@ body {
     }
 
     :root:not([lwtheme]) {
+      --lwt-accent-color: rgb(12, 12, 13) !important;
+      --lwt-text-color: rgba(249, 249, 250) !important;
+      --arrowpanel-background: rgb(74, 74, 79) !important;
+      --arrowpanel-color: rgb(249, 249, 250) !important;
+      --arrowpanel-border-color: rgb(39, 39, 43) !important;
+      --toolbar-field-background-color: rgb(71, 71, 73) !important;
+      --toolbar-bgcolor: rgb(50, 50, 52) !important;
+      --toolbar-color: rgb(251, 251, 254) !important;
+      --toolbar-field-color: rgb(249, 249, 250) !important;
+      --toolbar-field-border-color: rgba(249, 249, 250, 0.20000000298023224) !important;
+      --toolbar-field-focus-background-color: rgba(66, 65, 77, 1) !important;
+      --toolbar-field-focus-color: rgb(249, 249, 250) !important;
+      --newtab-background-color: rgb(42, 42, 46) !important;
+      --newtab-text-primary-color: rgb(249, 249, 250) !important;
+      --tab-selected-bgcolor: rgb(66, 65, 77) !important;
+      --tab-selected-textcolor: rgb(251, 251, 254) !important;
+      --lwt-tab-line-color: rgb(10, 132, 255) !important;
+      --tabs-navbar-separator-color: rgba(0, 0, 0, 0) !important;
+      --tabs-navbar-separator-style: none !important;
       --chrome-content-separator-color: rgb(12, 12, 13) !important;
       --toolbarbutton-icon-fill: rgba(249, 249, 250, 0.699999988079071) !important;
-      --toolbar-field-background-color: rgb(71, 71, 73) !important;
-      --toolbar-field-border-color: rgba(249, 249, 250, 0.20000000298023224) !important;
-      --panel-separator-color: rgba(249,249,250,.1) !important;
+      --urlbarView-highlight-background: rgb(43, 42, 51) !important;
+      --tabpanel-background-color: rgb(42, 42, 46) !important;
+      --input-bgcolor: rgb(66, 65, 77) !important;
+      --input-color: rgb(251, 251, 254) !important;
+      --urlbarView-separator-color: rgb(82, 82, 94) !important;
+      --tab-icon-overlay-stroke: rgb(66, 65, 77) !important;
+      --tab-icon-overlay-fill: rgb(251, 251, 254) !important;
+      --arrowpanel-dimmed-further: color-mix(in srgb, currentColor 14%, transparent) !important;
+      --urlbar-icon-fill-opacity: 1 !important;
+      --sidebar-background-color: rgb(56, 56, 61) !important;
+      --sidebar-text-color: rgb(249, 249, 250) !important;
+      --sidebar-border-color: rgba(255, 255, 255, 0.10000000149011612) !important;
     }
-
-    /*@media not (-moz-windows-modern) {
-      @media (-moz-windows-default-theme), (-moz-windows-compositor) {
-        :root:not([lwtheme]) #TabsToolbar {
-          color: black;
-          --toolbarbutton-icon-fill: currentColor;
-        }
-        :root:not([lwtheme]) {
-          --lwt-text-color: black !important;
-        }
-      }
-    }*/
-    
   }
 }
 

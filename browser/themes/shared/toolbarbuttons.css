@@ -467,4 +467,20 @@ toolbar:not(#TabsToolbar) > #personal-bookmarks {
   #main-window #back-button > menupopup {
     margin-top: -1px !important;
   }
+
+  /* Adds the Photon separator to the right of the hamburger menu button (the button with the three horizontal lines) */
+  :root:not([uidensity="compact"]) #PanelUI-menu-button::before {
+    content: "";
+    display: block;
+    height: 34px;
+    border-left: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    margin-inline-end: 4px !important;
+    margin-inline-start: -2px !important;
+  }
+  #PanelUI-menu-button {
+    padding-inline-end: 4px !important;
+  }
+  :root:not([uidensity="compact"]) #nav-bar-customization-target {
+    margin-inline-end: 3px !important;
+  }
 }
