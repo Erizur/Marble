@@ -143,3 +143,68 @@
   outline: var(--focus-outline);
   outline-offset: -1px;
 }
+
+@media (-moz-proton) {
+  #editBookmarkPanel > #editBookmarkHeaderSeparator, #editBookmarkPanel > .panel-subview-body > #editBookmarkSeparator {
+    margin-inline: 0 !important;
+  }
+  #editBookmarkPanel .panel-subview-body {
+    padding-bottom: 0 !important;
+  }
+  #editBookmarkPanel .panel-header {
+    padding: 8px !important;
+  }
+  #editBookmarkPanel .expander-up,
+  #editBookmarkPanel .expander-down {
+    appearance: auto !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    padding: 1px !important;
+    margin: -1px !important;
+    margin-inline-start: 4px !important;
+    margin-inline-end: 0 !important;
+    fill: ButtonText !important;
+  }
+  #editBookmarkPanel .expander-up .button-box,
+  #editBookmarkPanel .expander-down .button-box {
+    transform: translateX(-4px);
+  }
+  #editBookmarkPanel .expander-up {
+    transform: scaleY(-1);
+  }
+
+  #editBookmarkPanelImage {
+    border-radius: 0 !important;
+  }
+
+  #editBookmarkPanelContent > html|input, #editBookmarkPanelContent > hbox > html|input {
+    padding: 1px !important;
+    border: revert !important;
+    border-radius: revert !important;
+    background-color: revert !important;
+    outline: revert !important;
+    appearance: auto !important;
+  }
+  #editBookmarkPanelContent > html|input.ac-has-end-icon, #editBookmarkPanelContent > hbox > html|input.ac-has-end-icon {
+    padding-inline-end: 12px !important;
+  }
+  #editBookmarkPanelContent label[control] {
+    margin-inline: 2px !important;
+  }
+
+  #editBookmarkPanel_showForNewBookmarks > .checkbox-label-box > .checkbox-label {
+    opacity: 1 !important;
+  }
+
+  #editBMPanel_folderTree {
+    appearance: auto !important;
+  }
+
+  #editBMPanel_newFolderButton {
+    appearance: auto !important;
+    font: message-box !important;
+    color: ButtonText !important;
+  }
+}

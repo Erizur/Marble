@@ -352,6 +352,12 @@ body {
   :root:not([style*="--toolbarbutton-active-background:"]) toolbar[brighttext] {
     --toolbarbutton-active-background: hsla(0, 0%, 70%, 0.6) !important;
   }
+  :root[lwtheme] #TabsToolbar {
+    border-bottom: 0.01px var(--tabs-navbar-separator-style) var(--tabs-navbar-separator-color) !important;
+  }
+  :root[lwtheme] .toolbar-items {
+    margin-bottom: -1px;
+  }
 
   /* Dark overrides, they made dark a non-lwtheme soon after 115 :C */
   @media (prefers-color-scheme: dark) {
@@ -580,7 +586,6 @@ body {
   /* The toolbar buttons that animate use position:absolute and require a
    * positioned #nav-bar. */
   position: relative;
-  border-top: 0.01px var(--tabs-navbar-separator-style) var(--tabs-navbar-separator-color);
 
   &[tabs-hidden] {
     border-top-style: none;
@@ -588,6 +593,12 @@ body {
 
   :root[sessionrestored][lwtheme] & {
     transition: var(--ext-theme-background-transition);
+  }
+}
+
+@media (-moz-proton) {
+  #nav-bar {
+    border-top: 0.01px var(--tabs-navbar-separator-style) var(--tabs-navbar-separator-color);
   }
 }
 
@@ -709,8 +720,8 @@ toolbarpaletteitem > #personal-bookmarks > #PlacesToolbar,
     /* Make room for the bookmarks toolbar so that it won't visibly overlap the
        new tab page and sidebar contents. We do not put this padding on #browser
        as that would resize the content area for all tabs including background
-       tabs, which is what we explicitly want to avoid doing here. */
-    padding-top: var(--bookmarks-toolbar-overlapping-browser-height);
+       tabs, which is what we explicitly want to avoid doing here. 
+    padding-top: var(--bookmarks-toolbar-overlapping-browser-height);*/
   }
 }
 

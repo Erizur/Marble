@@ -745,3 +745,278 @@
 #protections-popup-cookieBannerView:not([data-state="site-disabled"]) description#cookieBannerView-enable-site-description {
   display: none;
 }
+
+@media not (-moz-proton) {
+  #identity-popup,
+  #permission-popup,
+  #protections-popup {
+    font-size: 1.18em !important;
+  }
+
+  #permission-popup-mainView-panel-header,
+  #identity-popup-mainView-panel-header,
+  #protections-popup-mainView-panel-header {
+    min-height: 40px !important;
+  }
+
+  #protections-popup-mainView-panel-header-section {
+    color: white !important;
+    background: radial-gradient(circle farthest-side at top right, #9059FF, #0250BB) !important;
+    --panel-item-hover-bgcolor: rgba(12, 12, 13, 0.2) !important;
+    --panel-item-active-bgcolor: rgba(12, 12, 13, 0.3) !important;
+  }
+  #protections-popup-mainView-panel-header-section toolbarseparator {
+    display: none !important;
+  }
+
+  #protections-popup-main-body + toolbarseparator {
+    display: flex !important;
+  }
+
+  #protections-popup-main-header-label {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    height: 44.5px;
+  }
+
+  #protections-popup #messaging-system-message-container {
+    border-top: 1px solid var(--panel-separator-color) !important;
+  }
+
+  #protections-popup-info-button {
+    margin-inline-end: 10px !important;
+  }
+
+  #protections-popup-siteNotWorkingView-header,
+  #protections-popup-tp-switch-section,
+  #permission-popup-mainView-panel-header,
+  #identity-popup-mainView-panel-header {
+    padding: 0.9em 1.78em !important;
+  }
+
+  .protections-popup-section-header,
+  .protections-popup-switch-section-header,
+  #protections-popup-siteNotWorkingView-header {
+    padding: 0 !important;
+  }
+
+  .protections-popup-tp-switch {
+    min-width: 26px !important;
+    border-color: hsla(210, 4%, 10%, 0.14) !important;
+  }
+  .protections-popup-tp-switch[enabled] {
+    background-color: #0060df !important;
+    padding-inline-start: 12px !important;
+  }
+  .protections-popup-tp-switch[enabled]:hover {
+    background-color: #003eaa !important;
+  }
+  .protections-popup-tp-switch[enabled]:hover:active {
+    background-color: #002275 !important;
+  }
+
+  #identity-popup-clear-sitedata-footer {
+    margin-bottom: 0 !important;
+  }
+
+  #identity-popup-clear-sitedata-footer .subviewbutton,
+  #identity-popup-more-info-footer .subviewbutton {
+    padding: 0.9em 2px !important;
+  }
+  #identity-popup-clear-sitedata-footer .toolbarbutton-text,
+  #identity-popup-more-info-footer .toolbarbutton-text {
+    text-align: center !important;
+  }
+  #identity-popup-clear-sitedata-footer toolbarseparator,
+  #identity-popup-more-info-footer toolbarseparator {
+    display: none !important;
+  }
+
+  #identity-popup-mainView > toolbarseparator {
+    margin-block-end: 0 !important;
+  }
+
+  .identity-popup-security-content {
+    padding-block: 1em;
+  }
+
+  #identity-popup-security {
+    margin-inline: 0 !important;
+    padding-inline: 0 !important;
+  }
+
+  .identity-popup-expander {
+    margin: 0 !important;
+    padding: 4px 0 !important;
+    min-width: auto !important;
+    width: 38px !important;
+    border-style: none !important;
+    appearance: none !important;
+    background-size: 16px, auto !important;
+    -moz-context-properties: fill, fill-opacity !important;
+    fill: currentColor !important;
+    fill-opacity: 0.6 !important;
+    color: inherit !important;
+  }
+  .identity-popup-expander:-moz-locale-dir(ltr) {
+    transform: scaleX(-1) !important;
+  }
+  .PanelUI-subView .identity-popup-expander.subviewbutton-nav::after {
+    content: unset !important;
+  }
+  .identity-popup-expander > .button-box {
+    border-right: 1px solid var(--panel-separator-color) !important;
+    padding: 0 !important;
+  }
+  .identity-popup-expander:hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+  }
+  .identity-popup-expander:hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+    box-shadow: 0 1px 0 hsla(210, 4%, 10%, 0.05) inset !important;
+  }
+
+  .identity-popup-security-connection {
+    margin: 0 !important;
+    padding-block: 2px 3px !important;
+    padding-inline: calc(2em + 22px) 1em !important;
+    background-repeat: no-repeat !important;
+    background-position: 2em 50% !important;
+    background-size: 16px auto !important;
+    -moz-context-properties: fill !important;
+    background-image: url(chrome://global/skin/icons/security-broken.svg);
+  }
+  
+  #identity-popup[connection=chrome] .identity-popup-security-connection {
+    background-image: url(chrome://branding/content/icon48.png);
+  }
+  
+  #identity-popup[connection=file] .identity-popup-security-connection {
+    background-image: url(chrome://global/skin/icons/page-portrait.svg);
+  }
+  
+  #identity-popup[connection=associated] .identity-popup-security-connection {
+    background-image: url(chrome://global/skin/icons/info.svg);
+  }
+  
+  #identity-popup[connection^=secure] .identity-popup-security-connection {
+    background-image: url(chrome://global/skin/icons/security.svg);
+  }
+  
+  /* Use [isbroken] to make sure we don't show a warning lock on an http page. See Bug 1192162. */
+  #identity-popup[ciphers=weak] .identity-popup-security-connection,
+  #identity-popup[mixedcontent~=passive-loaded][isbroken] .identity-popup-security-connection {
+    background-image: url(chrome://global/skin/icons/security-warning.svg);
+  }
+  
+  #identity-popup[connection=secure-cert-user-overridden] .identity-popup-security-connection,
+  #identity-popup[connection=cert-error-page] .identity-popup-security-connection {
+    background-image: url(chrome://global/skin/icons/security-warning.svg);
+  }
+  
+  #identity-popup[connection=net-error-page] .identity-popup-security-connection {
+    background-image: url(chrome://global/skin/icons/info.svg);
+  }
+  
+  #identity-popup[mixedcontent~=active-loaded][isbroken] .identity-popup-security-connection {
+    background-image: url(chrome://browser/skin/controlcenter/mcb-disabled.svg);
+  }
+  
+  #identity-popup[connection=extension] .identity-popup-security-connection {
+    background-image: url(chrome://mozapps/skin/extensions/extension.svg);
+  }
+
+  /* This is green regardless of if lock icon is grey */
+  .identity-popup-connection-secure {
+    color: #058B00 !important;
+  }
+  :root[lwt-popup-brighttext] .identity-popup-connection-secure {
+    color: #30e60b !important;
+  }
+
+  #identity-popup[mixedcontent~=active-loaded] .identity-popup-connection-not-secure,
+  #identity-popup:not([mixedcontent]) .identity-popup-connection-not-secure {
+    color: #d74345 !important;
+    font-weight: inherit !important;
+  }
+
+  #identity-popup-securityView .identity-popup-security-connection {
+    border-bottom: 1px solid var(--panel-separator-color) !important;
+    padding-block: 1em !important;
+  }
+
+  #identity-popup-securityView-extended-info {
+    margin-inline: calc(2em + 22px) 1em !important;
+    padding-inline-end: 1em !important;
+    padding-top: 0.5em !important;
+  }
+
+  #permission-popup-menulist {
+    padding-inline: 0 !important;
+  }
+
+  .permission-popup-section {
+    padding-block: 1em !important;
+  }
+
+  .permission-popup-permission-icon {
+    fill-opacity: 0.6 !important;
+  }
+
+  .identity-popup-security-connection-icon {
+    display: none !important;
+  }
+
+  #permission-popup-mainView toolbarseparator {
+    margin-bottom: 0 !important;
+  }
+
+  .permission-popup-permission-item,
+  #permission-popup-storage-access-permission-list-header {
+    margin-block-end: 0 !important;
+    padding-inline-end: 8px !important;
+  }
+
+  #permission-popup-permissions-content {
+    padding-inline: 2em 1em !important;
+  }
+
+  #PanelUI-panic-view-button {
+    padding: 10px !important;
+    background-color: #d92316 !important;
+    border-radius: 3px !important;
+    margin: 5px 15px 11px !important;
+    border: 1px solid #c92014 !important;
+  }
+  #PanelUI-panic-view-button:hover {
+    background-color: #bf1f13 !important;
+    border-color: #b81d12 !important;
+  }
+  #PanelUI-panic-view-button:hover:active {
+    background-color: #99180f !important;
+    border-color: #91170f !important;
+  }
+  
+  .subviewradio {
+    padding: 1px !important;
+  }
+  .subviewradio:not([disabled], [selected]):hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+    border-color: var(--panel-separator-color) !important;
+  }
+  .subviewradio[selected], .subviewradio:not([disabled]):hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+    border-color: var(--panel-separator-color) !important;
+    box-shadow: 0 1px 0 hsla(210, 4%, 10%, 0.03) inset !important;
+  }
+  .subviewradio > .radio-check {
+    border-color: #e7e7e7 !important;
+    background-color: #f1f1f1 !important;
+  }
+  .subviewradio > .radio-check[selected] {
+    background-color: #fff !important;
+    border-color: #177ee6 !important;
+  }
+  
+}

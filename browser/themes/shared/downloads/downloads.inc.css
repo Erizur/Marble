@@ -255,3 +255,150 @@
 #downloadsFooterButtons > toolbarseparator {
   margin-inline: 0;
 }
+
+@media not (-moz-proton) {
+  :root {
+    --downloads-item-height: 5.5em !important;
+  }
+  
+  #downloadsPanel-blockedSubview, #downloadsPanel-mainView {
+    min-width: unset !important;
+    padding: 0 !important;
+  }
+  
+  #emptyDownloads {
+    padding: 16px 16px !important;
+  }
+  
+  #downloadsFooterButtons {
+    background-color: var(--arrowpanel-dimmed);
+  }
+  #downloadsFooterButtons > toolbarseparator {
+    display: none !important;
+  }
+  
+  #downloadsHistory {
+    padding-inline: 14px !important;
+  }
+  
+  .downloadsPanelFooterButton {
+    padding: 0.9em 2px !important;
+    border-top: 1px solid var(--panel-separator-color) !important;
+  }
+  .downloadsPanelFooterButton:hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+    outline: 1px solid var(--arrowpanel-dimmed) !important;
+  }
+  .downloadsPanelFooterButton:hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+    box-shadow: 0 1px 0 hsla(210, 4%, 10%, 0.05) inset !important;
+  }
+  .downloadsPanelFooterButton::before {
+    content: unset !important;
+  }
+  
+  #downloadsSummary {
+    height: var(--downloads-item-height) !important;
+  }
+
+  #main-window #downloadsListBox > richlistitem {
+    min-height: 0 !important;
+    height: var(--downloads-item-height) !important;
+    border-bottom: 1px solid var(--panel-separator-color) !important;
+    margin: 0 !important;
+    padding-inline-end: 0 !important;
+    border-radius: 0 !important;
+  }
+  #main-window #downloadsListBox > richlistitem:not([verdict]) {
+    background-color: transparent !important;
+  }
+  #main-window #downloadsListBox > richlistitem:last-child {
+    border-bottom: 0 !important;
+  }
+  #main-window #downloadsListBox > richlistitem[verdict=Malware]:not(:hover) {
+    color: #aa1b08 !important;
+  }
+  #main-window #downloadsListBox > richlistitem[verdict=Malware]:hover {
+    background-color: #aa1b08 !important;
+    color: white !important;
+  }
+  #main-window #downloadsListBox > richlistitem .downloadDetails {
+    color: inherit !important;
+  }
+  #main-window[lwt-popup-brighttext] #downloadsListBox > richlistitem[verdict=Malware]:not(:hover) {
+    color: #ff0039 !important;
+  }
+  #main-window .downloadMainArea {
+    align-self: stretch !important;
+    border-radius: 0 !important;
+  }
+  #downloadsListBox > richlistitem[state="1"][exists] #main-window .downloadMainArea:hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+  }
+  #downloadsListBox > richlistitem[state="1"][exists] #main-window .downloadMainArea:hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+  #main-window .downloadTypeIcon {
+    margin: 8px 13px !important;
+  }
+  #main-window .downloadButton {
+    margin-inline-start: 1px !important;
+    border: 0 !important;
+    min-width: 58px !important;
+    border-radius: 0 !important;
+    align-self: stretch !important;
+    height: unset !important;
+    position: relative !important;
+  }
+  #downloadsListBox > richlistitem:not([verdict]) > #main-window .downloadButton:hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+  }
+  #downloadsListBox > richlistitem:not([verdict]) > #main-window .downloadButton:hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+  #main-window .downloadButton::before {
+    content: "";
+    display: flex;
+    width: 0;
+    height: calc(100% - 20px);
+    position: absolute;
+    top: 0;
+    left: -1px;
+    border-inline-start: 1px solid var(--panel-separator-color);
+    margin: 10px 0;
+  }
+  #main-window .downloadButton:-moz-locale-dir(rtl)::before {
+    left: unset !important;
+    right: -1px !important;
+  }
+  #downloadsListBox > richlistitem:hover > #main-window .downloadButton::before {
+    margin: 0;
+    height: 100%;
+  }
+  
+  .downloadProgress {
+    height: 8px !important;
+    border-radius: 0 !important;
+    background-color: ButtonFace !important;
+    margin: 4px 0 0 !important;
+    margin-inline-end: 12px !important;
+    box-shadow: inset 1px 1px 0 ButtonShadow, inset -1px -1px 0 ButtonShadow !important;
+  }
+  .downloadProgress::-moz-progress-bar {
+    background-color: Highlight !important;
+    border-radius: 0 !important;
+  }
+  .downloadProgress[paused]::-moz-progress-bar {
+    background-color: GrayText !important;
+  }
+  @media (-moz-platform: windows) {
+    @media not (-moz-windows-classic) {
+      .downloadProgress::-moz-progress-bar {
+        background-color: #3c9af8 !important;
+      }
+      .downloadProgress[paused]::-moz-progress-bar {
+        background-color: #a6a6a6 !important;
+      }
+    }
+  }
+}

@@ -228,3 +228,84 @@ unified-extensions-item > .subviewbutton {
     }
   }
 }
+
+@media not (-moz-proton) {
+  /* Unified extensions */
+  #unified-extensions-view .panel-header, #unified-extensions-view > toolbarseparator {
+    display: none !important;
+  }
+  #unified-extensions-view .panel-subview-body {
+    padding-bottom: 0 !important;
+  }
+  #unified-extensions-view .panel-subview-footer-button {
+    padding: 0.9em 2px !important;
+  }
+  #unified-extensions-view .panel-subview-footer-button > .toolbarbutton-text {
+    padding-inline-start: 14px !important;
+  }
+
+  #unified-extensions-panel .unified-extensions-item {
+    margin-block: 0 !important;
+    align-items: stretch !important;
+    height: var(--downloads-item-height) !important;
+  }
+  #unified-extensions-panel .unified-extensions-item .toolbarbutton-badge-stack,
+  #unified-extensions-panel .unified-extensions-item .unified-extensions-item-icon {
+    margin-inline-start: 1px !important;
+    margin-inline-end: 7px !important;
+  }
+
+  #unified-extensions-area :is(toolbarbutton, toolbaritem).unified-extensions-item:not(:last-child) {
+    border-bottom: 1px solid var(--panel-separator-color) !important;
+  }
+
+  unified-extensions-item.unified-extensions-item {
+    border-top: 1px solid var(--panel-separator-color) !important;
+  }
+  #unified-extensions-area:empty + .unified-extensions-list > unified-extensions-item.unified-extensions-item:first-child {
+    border-top: 0 !important;
+  }
+
+  .unified-extensions-item-message {
+    font-size: calc(100% * var(--downloads-item-font-size-factor)) !important;
+    margin-inline-start: 1px !important;
+    margin-block-start: 2px !important;
+  }
+
+  .unified-extensions-item-menu-button.subviewbutton {
+    min-width: 58px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    margin-inline-start: 1px !important;
+    position: relative !important;
+  }
+  .unified-extensions-item-menu-button.subviewbutton > .toolbarbutton-icon {
+    background-color: transparent !important;
+    padding: 24px 20px !important;
+  }
+  .unified-extensions-item-menu-button.subviewbutton:hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+  }
+  .unified-extensions-item-menu-button.subviewbutton:hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+  .unified-extensions-item-menu-button.subviewbutton::before {
+    content: "";
+    display: flex;
+    width: 0;
+    height: calc(100% - 20px);
+    position: absolute;
+    top: 0;
+    left: -1px;
+    border-inline-start: 1px solid var(--panel-separator-color);
+    margin: 10px 0;
+  }
+  .unified-extensions-item-menu-button.subviewbutton:-moz-locale-dir(rtl)::before {
+    left: unset !important;
+    right: -1px !important;
+  }
+  .unified-extensions-item-menu-button.subviewbutton:hover::before, .unified-extensions-item-action-button:not([disabled]):hover + .unified-extensions-item-menu-button.subviewbutton::before {
+    margin: 0;
+    height: 100%;
+  }
+}

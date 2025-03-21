@@ -1096,10 +1096,11 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
   }
   
   .tab-close-button {
+    list-style-image: url(chrome://global/skin/icons/close.svg) !important;
     width: 20px !important;
     height: 20px !important;
     box-sizing: border-box !important;
-    padding: 4px !important;
+    padding: 2px !important;
     margin-inline-end: -2px !important;
     appearance: none;
     color: inherit;

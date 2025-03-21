@@ -140,3 +140,44 @@ popupnotificationcontent {
   text-decoration: underline;
   margin-block: 4px 0;
 }
+
+@media not (-moz-proton) {
+  .popup-notification-body-container {
+    padding: var(--arrowpanel-padding) !important;
+  }
+  
+  .popup-notification-icon {
+    width: 32px !important;
+    height: 32px !important;
+    margin-inline-end: var(--arrowpanel-padding) !important;
+  }
+  
+  .popup-notification-description {
+    font-weight: inherit !important;
+  }
+  .popup-notification-description > b {
+    font-weight: 700 !important;
+  }
+  
+  .popup-notification-icon {
+    fill-opacity: 0.6 !important;
+  }
+  
+  .popup-notification-body input {
+    padding: 1px !important;
+    border: revert !important;
+    border-radius: revert !important;
+    background-color: revert !important;
+    outline: revert !important;
+  }
+  .popup-notification-body input.ac-has-end-icon {
+    padding-inline-end: 12px !important;
+  }
+
+  .popup-notification-dropmarker {
+    padding-inline: 15px !important;
+    max-width: 48px !important;
+    border-inline-start: 1px solid var(--panel-separator-color) !important;
+  }
+
+}

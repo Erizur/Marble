@@ -72,75 +72,74 @@
 
   #appMenu-new-tab-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/new-tab.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   
   #appMenu-new-window-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/new-window.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   
   #appMenu-new-private-window-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/privateBrowsing.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
 
   /* Second section */
   #appMenu-bookmarks-button .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/bookmark-star-on-tray.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-history-button .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/history.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-downloads-button .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/downloads/downloads.svg#arrow-with-bar") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-passwords-button .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/login.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-extensions-themes-button .toolbarbutton-icon {
     list-style-image: url("chrome://mozapps/skin/extensions/extension.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
 
   /* Third section */
   #appMenu-print-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/print.svg");
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-save-file-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/save.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-find-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/search-glass.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-translate-button .toolbarbutton-icon {
     list-style-image: url("chrome://browser/skin/translations.svg");
-    margin-inline-end: calc(var(--appmenu-icon-inline-end) - 1px) !important;
   }
 
   /* Fifth section */
   #appMenu-settings-button .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/settings.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-more-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/developer.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-report-broken-site-button .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/warning.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
   }
   #appMenu-help-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/help.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
     width: 16px !important;
   }
 
@@ -190,7 +189,7 @@
     display: block;
     background-image: url("chrome://browser/skin/zoom.svg");
     background-repeat: no-repeat;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+
     width: 16px;
     height: 16px;
   }
@@ -229,6 +228,19 @@
   /* Exit icon */
   #appMenu-quit-button2 .toolbarbutton-icon {
     list-style-image: url("chrome://global/skin/icons/quit.svg") !important;
-    margin-inline-end: var(--appmenu-icon-inline-end) !important;
+  }
+
+  panelmultiview .toolbaritem-combined-buttons > spacer.before-label {
+    width: 36px;
+  }
+
+  #appMenu-library-bookmarks-button .toolbarbutton-icon {
+    list-style-image: url(chrome://browser/skin/bookmark.svg) !important;
+  }
+  #appMenu-library-history-button .toolbarbutton-icon {
+    list-style-image: url(chrome://browser/skin/history.svg) !important;
+  }
+  #appMenu-library-downloads-button .toolbarbutton-icon {
+    list-style-image: url(chrome://browser/skin/downloads/downloads.svg#arrow-with-bar) !important;
   }
 }

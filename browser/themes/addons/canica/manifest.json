@@ -42,7 +42,7 @@
       "toolbar_field_border": "rgba(99, 145, 185, 0.53)",
       "toolbar_field_border_focus": "rgb(112, 175, 255)",
       "toolbar_field_highlight": "rgba(112, 181, 255, 0.32)",
-      "toolbar_top_separator": "transparent",
+      "toolbar_top_separator": "rgb(108, 108, 108)",
       "toolbar_bottom_separator": "hsla(261, 53%, 15%, .32)",
       "bookmark_text": "hsla(261, 53%, 15%, 1)",
       "tab_text": "hsla(261, 53%, 15%, 1)",
@@ -60,7 +60,7 @@
       "sidebar": "hsla(240, 15%, 95%, 1)",
       "sidebar_text": "hsla(261, 53%, 15%, 1)",
       "sidebar_border": "hsla(261, 53%, 15%, .24)",
-      "sidebar_highlight": "hsla(265, 100%, 72%, 1)",
+      "sidebar_highlight": "rgb(129, 166, 236)",
       "sidebar_highlight_text": "hsla(0, 0%, 100%, 1)",
       "focus_outline": "rgb(43, 98, 202)"
     }
@@ -111,7 +111,7 @@
       "popup_border": "rgba(224, 229, 255, 0.32)",
       "popup_highlight": "hsla(255, 100%, 94%, .12)",
       "popup_highlight_text": "hsla(0, 0%, 100%, 1)",
-      "sidebar": "hsla(250, 43%, 25%, 1)",
+      "sidebar": "rgba(35, 29, 78, 1)",
       "sidebar_text": "hsla(255, 100%, 94%, 1)",
       "sidebar_border": "hsla(255, 100%, 94%, .24)",
       "sidebar_highlight": "hsla(259, 76%, 58%, 1)",

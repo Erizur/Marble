@@ -218,3 +218,154 @@ panel[type="arrow"] {
     pointer-events: none;
   }
 }
+
+@media not (-moz-proton) {
+  panel, menupopup {
+    --arrowpanel-header-back-icon-padding: 8px !important;
+  }
+  
+  menupopup {
+    --nested-margin: -3px !important;
+  }
+  menupopup > menu > menupopup {
+    --nested-margin: -7px !important;
+    margin-inline-start: -4px !important;
+    margin-top: var(--nested-margin) !important;
+  }
+
+  .subviewbutton:not(.menuitem-iconic) .menu-text {
+    margin-inline-start: 14px !important;
+  }
+  .subviewbutton:not(.subviewbutton-iconic) > .toolbarbutton-text {
+    padding-inline-start: 12px !important;
+  }
+  .subview-subheader {
+    font-size: 1em !important;
+  }
+
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup),
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup {
+    --panel-padding: 6px 0 0 !important;
+    --arrowpanel-padding: 6px 0 0 !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menuseparator,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup menuseparator {
+    margin: 0 !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menuseparator.bookmarks-actions-menuseparator,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup menuseparator.bookmarks-actions-menuseparator {
+    display: none !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) > :is(menu, menuitem) + menuseparator[hidden=true]:last-child,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup > :is(menu, menuitem) + menuseparator[hidden=true]:last-child {
+    display: flex !important;
+    padding: 0 !important;
+    height: 6px !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) > :is(menu, menuitem) + menuseparator[hidden=true]:last-child::before,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup > :is(menu, menuitem) + menuseparator[hidden=true]:last-child::before {
+    content: unset !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) > menuitem:last-child,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup > menuitem:last-child {
+    margin-top: 4px !important;
+    background-color: var(--arrowpanel-dimmed) !important;
+    border-top: 1px solid var(--panel-separator-color) !important;
+    min-height: 41px !important;
+    box-sizing: border-box !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) > menuitem:last-child[_moz-menuactive],
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup > menuitem:last-child[_moz-menuactive] {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) > menuitem:last-child[_moz-menuactive]:active,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup > menuitem:last-child[_moz-menuactive]:active {
+    background-color: var(--arrowpanel-dimmed-even-further) !important;
+  }
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) > menuitem:last-child > .menu-text,
+  toolbarbutton menupopup[placespopup][type=arrow]:not(#PlacesChevronPopup, #OtherBookmarksPopup) menupopup > menuitem:last-child > .menu-text {
+    padding-inline-start: 0 !important;
+    padding-inline-end: 6px !important;
+    margin-inline-start: 2px !important;
+  }
+
+  .panel-header {
+    min-height: 0 !important;
+    padding: 4px !important;
+  }
+
+  /* Generic panel footer */
+  .panel-footer {
+    background-color: var(--arrowpanel-dimmed) !important;
+    margin: 0 !important;
+  }
+  .panel-footer > button {
+    margin-inline: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-top: 1px solid var(--panel-separator-color) !important;
+    padding: 0.9em 2px !important;
+    flex: 1 !important;
+    font-weight: inherit !important;
+    /* Normal buttons */
+    background-color: transparent !important;
+  }
+  .panel-footer > button:not([disabled]):hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+  }
+  .panel-footer > button:not([disabled]):hover:active {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+    box-shadow: 0 1px 0 hsla(210, 4%, 10%, 0.05) inset !important;
+  }
+  .panel-footer > button:not([disabled])[default], .panel-footer > button:not([disabled]).popup-notification-primary-button {
+    color: white !important;
+    background-color: #0060df !important;
+  }
+  .panel-footer > button:not([disabled])[default]:hover, .panel-footer > button:not([disabled]).popup-notification-primary-button:hover {
+    background-color: #003eaa !important;
+  }
+  .panel-footer > button:not([disabled])[default]:hover:active, .panel-footer > button:not([disabled]).popup-notification-primary-button:hover:active {
+    background-color: #002275 !important;
+  }
+
+  .panel-subview-body {
+    padding-bottom: var(--panel-subview-body-padding-block) !important;
+  }
+  .panel-subview-body + toolbarseparator {
+    display: none !important;
+  }
+
+  :is(button, toolbarbutton).panel-subview-footer-button,
+  :not(button, toolbarbutton, #protections-popup-footer).panel-subview-footer-button > toolbarbutton {
+    margin-bottom: 0 !important;
+    border-top: 1px solid var(--panel-separator-color) !important;
+    position: relative !important;
+    z-index: 2;
+    padding: var(--arrowpanel-menuitem-padding) !important;
+    min-height: 41px !important;
+  }
+  :is(button, toolbarbutton).panel-subview-footer-button > *,
+  :not(button, toolbarbutton, #protections-popup-footer).panel-subview-footer-button > toolbarbutton > * {
+    z-index: 2;
+  }
+  :is(button, toolbarbutton).panel-subview-footer-button::before,
+  :not(button, toolbarbutton, #protections-popup-footer).panel-subview-footer-button > toolbarbutton::before {
+    content: "";
+    display: flex;
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 100%;
+    height: calc(100% + 1px);
+    background-color: var(--arrowpanel-dimmed);
+    z-index: 1;
+  }
+  .panel-footer > :is(button, toolbarbutton).panel-subview-footer-button::before,
+  .panel-footer > :not(button, toolbarbutton, #protections-popup-footer).panel-subview-footer-button > toolbarbutton::before {
+    content: unset !important;
+  }
+  :is(button, toolbarbutton).panel-subview-footer-button.subviewbutton > .toolbarbutton-text,
+  :not(button, toolbarbutton, #protections-popup-footer).panel-subview-footer-button > toolbarbutton.subviewbutton > .toolbarbutton-text {
+    padding-inline-start: 0 !important;
+  }
+}
