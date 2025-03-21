@@ -510,6 +510,11 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
         break;
       }
 
+      if (StaticPrefs::widget_native_controls_force_dwm_report_off()) {
+        aResult = 0;
+        break;
+      }
+
       if (reportingPref != 0) {
         aResult = (reportingPref == 1) ? 1 : 0;
         break;
