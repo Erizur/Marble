@@ -3,3 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ac_add_options --with-redist
+ac_add_options --disable-tests
+
+set_config("MOZ_DATA_REPORTING", False)
+
+set_define("MOZ_TELEMETRY_REPORTING", False)
+set_define("MOZ_SERVICES_HEALTHREPORT", False)
+set_define("MOZ_DATA_REPORTING", False)
