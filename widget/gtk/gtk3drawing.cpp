@@ -1199,6 +1199,35 @@ static gint moz_gtk_combo_box_entry_button_paint(cairo_t* cr,
   return MOZ_GTK_SUCCESS;
 }
 
+static gint moz_gtk_container_paint(cairo_t* cr, GdkRectangle* rect,
+                                    GtkWidgetState* state,
+                                    WidgetNodeType widget_type,
+                                    GtkTextDirection direction) {
+  GtkStateFlags state_flags = GetStateFlagsFromGtkWidgetState(state);
+  GtkStyleContext* style =
+      GetStyleContext(widget_type, state->image_scale, direction, state_flags);
+  /* this is for drawing a prelight box */
+  if (state_flags & GTK_STATE_FLAG_PRELIGHT) {
+    gtk_render_background(style, cr, rect->x, rect->y, rect->width,
+                          rect->height);
+  }
+
+  return MOZ_GTK_SUCCESS;
+}
+
+static gint moz_gtk_toggle_label_paint(cairo_t* cr, GdkRectangle* rect,
+                                       GtkWidgetState* state, gboolean isradio,
+                                       GtkTextDirection direction) {
+  if (!state->focused) return MOZ_GTK_SUCCESS;
+
+  GtkStyleContext* style = GetStyleContext(
+      isradio ? MOZ_GTK_RADIOBUTTON_CONTAINER : MOZ_GTK_CHECKBUTTON_CONTAINER,
+      state->image_scale, direction, GetStateFlagsFromGtkWidgetState(state));
+  gtk_render_focus(style, cr, rect->x, rect->y, rect->width, rect->height);
+
+  return MOZ_GTK_SUCCESS;
+}
+
 static gint moz_gtk_toolbar_paint(cairo_t* cr, GdkRectangle* rect,
                                   GtkWidgetState* state,
                                   GtkTextDirection direction) {

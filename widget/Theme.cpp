@@ -749,6 +749,12 @@ void Theme::PaintMenulist(PaintBackendData& aDrawTarget,
   }
 }
 
+enum class PhysicalArrowDirection {
+  Right,
+  Left,
+  Bottom,
+};
+
 void Theme::PaintMenulistArrowButton(nsIFrame* aFrame, DrawTarget& aDrawTarget,
                                      const LayoutDeviceRect& aRect,
                                      const ElementState& aState) {
@@ -762,10 +768,6 @@ void Theme::PaintMenulistArrowButton(nsIFrame* aFrame, DrawTarget& aDrawTarget,
 
   const auto direction = [&] {
     const auto wm = aFrame->GetWritingMode();
-    if (!isMenuList) {
-      return wm.IsPhysicalRTL() ? PhysicalArrowDirection::Left
-                                : PhysicalArrowDirection::Right;
-    }
     switch (wm.GetBlockDir()) {
       case WritingMode::BlockDir::LR:
         return PhysicalArrowDirection::Right;
@@ -780,22 +782,22 @@ void Theme::PaintMenulistArrowButton(nsIFrame* aFrame, DrawTarget& aDrawTarget,
 
   auto const [xs, ys] = [&] {
     using Pair = std::pair<const float*, const float*>;
-    switch (aFrame->GetWritingMode().GetBlockDir()) {
-      case WritingMode::BlockDir::eBlockRL:
+    switch (direction) {
+      case PhysicalArrowDirection::Left:
         // rotate 90°: [[0,1],[-1,0]]
         for (float& f : polygonY) {
           f = -f;
         }
         return Pair(polygonY, polygonX);
 
-      case WritingMode::BlockDir::eBlockLR:
+      case PhysicalArrowDirection::Right:
         // rotate 270°: [[0,-1],[1,0]]
         for (float& f : polygonX) {
           f = -f;
         }
         return Pair(polygonY, polygonX);
 
-      case WritingMode::BlockDir::eBlockTB:
+      case PhysicalArrowDirection::Bottom:
         // rotate 0°: [[1,0],[0,1]]
         return Pair(polygonX, polygonY);
     }
