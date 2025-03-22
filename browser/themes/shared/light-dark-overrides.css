@@ -42,7 +42,9 @@
       color: black;
       border-radius: 4px;
     }
+  }
 
+  @media not (-moz-windows-modern) {
     @media not (-moz-proton) {
      /* Show border on tabs with background colors and
       * show the tabs toolbar background color inside tabs. */
