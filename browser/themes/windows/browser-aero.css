@@ -248,7 +248,7 @@
             background-color: -moz-win-accentcolor;
           }
       }
-  
+      
       :root[tabsintitlebar]:not([lwtheme]) {
         .titlebar-button {
           stroke: white;
@@ -297,6 +297,16 @@
 
   :root:not([lwtheme]) #appcontent {
     background-color: -moz-dialog;
+  }
+
+  @media not (-moz-proton) {
+    @media (-moz-windows-default-theme) {
+      @media (prefers-color-scheme: light) {
+        :root[tabsintitlebar]:not([lwtheme]) #TabsToolbar .toolbarbutton-1 {
+          color:white !important;
+        }
+      }
+    }
   }
 }
 

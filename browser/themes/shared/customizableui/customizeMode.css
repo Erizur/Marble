@@ -308,7 +308,6 @@ toolbarpaletteitem > #search-container > #searchbar > .searchbar-textbox {
 
 /* Builtin themes use a round gradient image that look better with a border. */
 .customization-lwtheme-menu-theme[image^="resource:"] > .toolbarbutton-icon {
-  border-radius: 100%;
   outline: 1px solid var(--checkbox-border-color);
   outline-offset: -0.5px;
 }

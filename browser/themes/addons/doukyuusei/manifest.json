@@ -91,7 +91,7 @@
       "toolbar_vertical_separator": "hsla(271, 100%, 77%, .4)",
       "toolbar_field": "rgb(29, 51, 33)",
       "toolbar_field_focus": "rgba(27, 51, 37, 0.98)",
-      "toolbar_field_text": "hsla(255, 100%, 94%, 1)",
+      "toolbar_field_text": "rgb(240, 255, 223)",
       "toolbar_field_text_focus": "rgb(242, 255, 224)",
       "toolbar_field_border": "rgba(105, 119, 81, 0.33)",
       "toolbar_field_border_focus": "rgb(91, 104, 82)",

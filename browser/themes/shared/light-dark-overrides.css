@@ -54,6 +54,16 @@
         border-top: 1px solid var(--tabs-border-color);
         background-clip: padding-box;
       }
+
+      @media (-moz-windows-glass) {
+        @media (-moz-windows-default-theme) {
+          @media (prefers-color-scheme: light) {
+            :root[tabsintitlebar] #TabsToolbar .toolbarbutton-1 {
+              color: white !important;
+            }
+          }
+        }
+      }
     }
   }
 
