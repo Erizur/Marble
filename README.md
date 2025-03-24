@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="browser/branding/official/content/about-logo.png" alt="Nara logo">
+    <img src="browser/branding/official/content/about-logo.png" alt="Marble logo">
 </p>
 
 # Marble
