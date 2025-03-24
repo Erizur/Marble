@@ -345,13 +345,13 @@
     }
 
     /* Render a window top border for lwthemes: */
-    :root[lwtheme][tabsintitlebar][sizemode="normal"] #navigator-toolbox {
+    :root[lwtheme][tabsintitlebar][sizemode="normal"] #TabsToolbar {
       background-image: linear-gradient(to bottom,
             var(--glass-active-border-color) 0, var(--glass-active-border-color) 1px,
             rgba(255,255,255,.6) 1px, rgba(255,255,255,.6) 2px, transparent 2px);
     }
 
-    :root[lwtheme][tabsintitlebar][sizemode="normal"] #navigator-toolbox:-moz-window-inactive {
+    :root[lwtheme][tabsintitlebar][sizemode="normal"] #TabsToolbar:-moz-window-inactive {
       background-image: linear-gradient(to bottom,
             var(--glass-inactive-border-color) 0, var(--glass-inactive-border-color) 1px,
             rgba(255,255,255,.6) 1px, rgba(255,255,255,.6) 2px, transparent 2px);
