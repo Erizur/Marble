@@ -371,8 +371,6 @@
       <menuitem id="context-translate-selection"
                 data-l10n-id="main-context-menu-translate-selection"
                 oncommand="gContextMenu.openSelectTranslationsPanel(event);"/>
-      <menu id="context-ask-chat"
-            oncommand="nsContextMenu.GenAI.handleAskChat(event)"/>
 
       <menuseparator id="frame-sep"/>
       <menu id="frame" data-l10n-id="main-context-menu-frame">

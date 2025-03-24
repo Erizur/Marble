@@ -864,10 +864,6 @@ class nsContextMenu {
 
     this.showAndFormatSearchContextItem();
     this.showTranslateSelectionItem();
-    nsContextMenu.GenAI.buildAskChatMenu(
-      document.getElementById("context-ask-chat"),
-      this
-    );
 
     // srcdoc cannot be opened separately due to concerns about web
     // content with about:srcdoc in location bar masquerading as trusted
