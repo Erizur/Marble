@@ -1693,6 +1693,16 @@ pref("browser.partnerlink.campaign.topsites", "amzn_2020_a1");
 // Activates preloading of the new tab url.
 pref("browser.newtab.preload", true);
 
+// Browser category telemetry
+pref("browser.newtabpage.activity-stream.feeds.telemetry", false);
+pref("browser.newtabpage.activity-stream.telemetry", false);
+pref("browser.ping-centre.telemetry", false);
+
+pref("datareporting.healthreport.service.enabled", false);
+pref("datareporting.healthreport.uploadEnabled", false);
+pref("datareporting.policy.dataSubmissionEnabled", false);
+pref("datareporting.sessions.current.clean", false);
+
 // Weather widget for newtab
 pref("browser.newtabpage.activity-stream.showWeather", true);
 pref("browser.newtabpage.activity-stream.weather.query", "");
@@ -1895,13 +1905,6 @@ pref("pdfjs.handleOctetStream", true);
 pref("sidebar.position_start", true);
 pref("sidebar.revamp", false);
 
-pref("browser.ml.chat.enabled", false);
-pref("browser.ml.chat.prompt.prefix", 'I’m on page "%currentTabTitle%" with "%selection|12000%" selected. ');
-pref("browser.ml.chat.prompts.0", '{"label":"Summarize","value":"Please summarize the selection using precise and concise language. Highlight the main themes and conclusions. Use headers and bulleted lists in the summary, to make it scannable. Maintain the meaning of the selection."}');
-pref("browser.ml.chat.prompts.1", '{"label":"Simplify language","value":"Please rewrite the selection in plain, clear language suitable for a general audience without specialized knowledge. Use all of the following tactics: simple vocabulary; short sentences; active voice; examples where applicable to make explanations clearer; explanations for jargon and technical terms; headers and bulleted lists for scannability. Maintain factual accuracy while simplifying."}');
-pref("browser.ml.chat.prompts.2", '{"label":"Quiz me","value":"Please create questions related to the selection. Ask the questions one by one. Wait for my response before moving on to the next question. Evaluate each response. Ask a variety of types of questions, like multiple choice, true or false and short answer."}');
-pref("browser.ml.chat.provider", "");
-
 pref("security.protectionspopup.recordEventTelemetry", true);
 pref("security.app_menu.recordEventTelemetry", true);
 
@@ -2042,22 +2045,26 @@ pref("browser.translations.newSettingsUI.enable", false);
 pref("browser.translations.select.enable", true);
 
 // Telemetry settings.
+pref("toolkit.telemetry.enabled", false);
+pref("toolkit.telemetry.rejected", true);
+pref("toolkit.telemetry.unified", false);
+pref("toolkit.telemetry.unifiedIsOptIn", false);
 // Determines if Telemetry pings can be archived locally.
-pref("toolkit.telemetry.archive.enabled", true);
+pref("toolkit.telemetry.archive.enabled", false);
 // Enables sending the shutdown ping when Firefox shuts down.
-pref("toolkit.telemetry.shutdownPingSender.enabled", true);
+pref("toolkit.telemetry.shutdownPingSender.enabled", false);
 // Enables using the `pingsender` background task.
 pref("toolkit.telemetry.shutdownPingSender.backgroundtask.enabled", false);
 // Enables sending the shutdown ping using the pingsender from the first session.
 pref("toolkit.telemetry.shutdownPingSender.enabledFirstSession", false);
 // Enables sending a duplicate of the first shutdown ping from the first session.
-pref("toolkit.telemetry.firstShutdownPing.enabled", true);
+pref("toolkit.telemetry.firstShutdownPing.enabled", false);
 // Enables sending the 'new-profile' ping on new profiles.
-pref("toolkit.telemetry.newProfilePing.enabled", true);
+pref("toolkit.telemetry.newProfilePing.enabled", false);
 // Enables sending 'update' pings on Firefox updates.
-pref("toolkit.telemetry.updatePing.enabled", true);
+pref("toolkit.telemetry.updatePing.enabled", false);
 // Enables sending 'bhr' pings when the browser hangs.
-pref("toolkit.telemetry.bhrPing.enabled", true);
+pref("toolkit.telemetry.bhrPing.enabled", false);
 
 // Enable GMP support in the addon manager.
 pref("media.gmp-provider.enabled", true);
@@ -2384,7 +2391,7 @@ pref("browser.migrate.preferences-entrypoint.enabled", true);
 pref("extensions.pocket.api", "api.getpocket.com");
 pref("extensions.pocket.bffApi", "firefox-api-proxy.cdn.mozilla.net");
 pref("extensions.pocket.bffRecentSaves", true);
-pref("extensions.pocket.enabled", true);
+pref("extensions.pocket.enabled", true); 
 pref("extensions.pocket.oAuthConsumerKey", "40249-e88c401e1b1f2242d9e441c4");
 pref("extensions.pocket.oAuthConsumerKeyBff", "94110-6d5ff7a89d72c869766af0e0");
 pref("extensions.pocket.site", "getpocket.com");
@@ -3025,7 +3032,7 @@ pref("cookiebanners.ui.desktop.cfrVariant", 0);
 
 // Trigger FOG's Artifact Build support on artifact builds.
 #ifdef MOZ_ARTIFACT_BUILDS
-  pref("telemetry.fog.artifact_build", true);
+  pref("telemetry.fog.artifact_build", false);
 #endif
 
 #ifdef NIGHTLY_BUILD

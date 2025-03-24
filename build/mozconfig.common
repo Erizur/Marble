@@ -17,6 +17,10 @@ fi
 mk_add_options AUTOCLOBBER=1
 
 ac_add_options --enable-js-shell
+ac_add_options --disable-tests
+
+set_config("MOZ_DATA_REPORTING", False)
+set_define("MOZ_DATA_REPORTING", False)
 
 . "$topsrcdir/build/mozconfig.automation"
 . "$topsrcdir/build/mozconfig.rust"
