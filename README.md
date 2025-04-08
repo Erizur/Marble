@@ -7,9 +7,9 @@ Marble is a browser based on Mozilla Firefox (more specifically, the ESR variant
 
 ## Credits
 
-[Aubymori](https://github.com/aubymori) and [zapSNH](https://github.com/zapSNH/) for the original Photon fixes for modern Firefox.
-[Isabella Lulamoon](https://github.com/kawapure) for the original Native Controls Patch.
-My house for food and electricity.
+- [Aubymori](https://github.com/aubymori) and [zapSNH](https://github.com/zapSNH/) for the original Photon fixes for modern Firefox.
+- [Isabella Lulamoon](https://github.com/kawapure) for the original Native Controls Patch.
+- My house for food and electricity.
 
 ## Contributing
 
@@ -21,7 +21,7 @@ Here are some useful sources for Mozilla documentation (in order):
 
 1. [Mozilla Wiki (Gecko:Overview)](https://wiki.mozilla.org/Gecko:Overview) - by far the most useful source to understanding the Mozilla framework architecture.
 2. [Firefox Source Docs](https://firefox-source-docs.mozilla.org/) - pertains more to modern Firefox specifically.
-4. [Isabella's Documentation](https://kawapure.github.io/mozilla_simple_docs/) - written by researcher and aims to provide a good introduction to the Mozilla framework.
+4. [Isabella's Documentation](https://kawapure.github.io/mozilla_simple_docs/) - written by Isabella and aims to provide a good introduction to the Mozilla framework.
 
 ## Building from source
 
