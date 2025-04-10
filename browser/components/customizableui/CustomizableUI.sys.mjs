@@ -250,7 +250,6 @@ var CustomizableUIInternal = {
       "spring",
       "urlbar-container",
       "spring",
-      "save-to-pocket-button",
       "downloads-button",
       "library-button",
       AppConstants.MOZ_DEV_EDITION ? "developer-button" : null,
@@ -287,7 +286,6 @@ var CustomizableUIInternal = {
       {
         type: CustomizableUI.TYPE_TOOLBAR,
         defaultPlacements: [
-          "firefox-view-button",
           "tabbrowser-tabs",
           "new-tab-button",
           "alltabs-button",
@@ -623,19 +621,7 @@ var CustomizableUIInternal = {
         navbarPlacements.splice(newPosition, 0, "save-to-pocket-button");
       }
     }
-
-    // Add firefox-view if not present
-    if (currentVersion < 18) {
-      let tabstripPlacements =
-        gSavedState.placements[CustomizableUI.AREA_TABSTRIP];
-      if (
-        tabstripPlacements &&
-        !tabstripPlacements.includes("firefox-view-button")
-      ) {
-        tabstripPlacements.unshift("firefox-view-button");
-      }
-    }
-
+    
     // Unified Extensions addon button migration, which puts any browser action
     // buttons in the overflow menu into the addons panel instead.
     if (currentVersion < 19) {
