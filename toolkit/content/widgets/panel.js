@@ -103,7 +103,7 @@
     }
 
     adjustArrowPosition(event) {
-      if (!this.isArrowPanel || !event.isAnchored) {
+      if (!this.isArrowPanel || !this.anchorNode) {
         return;
       }
 
@@ -173,7 +173,7 @@
         }
 
         var arrow = this.shadowRoot.querySelector(".panel-arrow");
-        arrow.hidden = !this.isAnchored;
+        arrow.hidden = !this.anchorNode;
         this.shadowRoot
           .querySelector(".panel-arrowbox")
           .style.removeProperty("transform");
