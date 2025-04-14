@@ -219,6 +219,130 @@ panel[type="arrow"] {
   }
 }
 
+@media (-moz-platform: linux) {
+  :is(panel, menupopup)::part(arrow) {
+    -moz-context-properties: fill, stroke;
+    fill: var(--panel-background);
+    stroke: var(--panel-border-color);
+  }
+  
+  :is(panel, menupopup)[side="top"]::part(arrow),
+  :is(panel, menupopup)[side="bottom"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-vertical.svg");
+    position: relative;
+    margin-inline: 10px;
+  }
+  
+  :is(panel, menupopup)[side="top"]::part(arrow) {
+    margin-bottom: -5px;
+  }
+  
+  :is(panel, menupopup)[side="bottom"]::part(arrow) {
+    transform: scaleY(-1);
+    margin-top: -5px;
+  }
+  
+  :is(panel, menupopup)[side="left"]::part(arrow),
+  :is(panel, menupopup)[side="right"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-horizontal.svg");
+    position: relative;
+    margin-block: 10px;
+  }
+  
+  :is(panel, menupopup)[side="left"]::part(arrow) {
+    margin-right: -5px;
+  }
+  
+  :is(panel, menupopup)[side="right"]::part(arrow) {
+    transform: scaleX(-1);
+    margin-left: -5px;
+  }
+}
+
+@media (-moz-platform: macos) {
+  panel[type="arrow"][side="top"],
+  panel[type="arrow"][side="bottom"] {
+    margin-inline: -25px;
+  }
+  
+  panel[type="arrow"][side="left"],
+  panel[type="arrow"][side="right"] {
+    margin-block: -25px;
+  }
+
+  :is(panel, menupopup)::part(arrow) {
+    -moz-context-properties: fill, stroke;
+    fill: var(--panel-background);
+    stroke: var(--panel-border-color);
+  }
+  
+  :is(panel, menupopup)[side="top"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-vertical.svg");
+    margin-inline: 16px;
+    margin-bottom: -1px;
+  }
+  
+  :is(panel, menupopup)[side="bottom"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-vertical.svg");
+    -moz-transform: scaleY(-1);
+    margin-inline: 16px;
+    margin-top: -1px;
+  }
+  
+  :is(panel, menupopup)[side="left"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-horizontal.svg");
+    margin-block: 16px;
+    margin-right: -1px;
+  }
+  
+  :is(panel, menupopup)[side="right"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-horizontal.svg");
+    transform: scaleX(-1);
+    margin-block: 16px;
+    margin-left: -1px;
+  }
+}
+
+@media (-moz-platform: windows) {
+  :is(panel, menupopup)::part(arrow) {
+    -moz-context-properties: fill, stroke;
+    fill: var(--arrowpanel-background);
+    stroke: var(--arrowpanel-border-color);
+  }
+  
+  :is(panel, menupopup)[side="top"]::part(arrow),
+  :is(panel, menupopup)[side="bottom"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-vertical.svg");
+    position: relative;
+    margin-inline: 10px;
+  }
+  
+  :is(panel, menupopup)[side="top"]::part(arrow) {
+    margin-bottom: -5px;
+  }
+  
+  :is(panel, menupopup)[side="bottom"]::part(arrow) {
+    transform: scaleY(-1);
+    margin-top: -5px;
+  }
+  
+  :is(panel, menupopup)[side="left"]::part(arrow),
+  :is(panel, menupopup)[side="right"]::part(arrow) {
+    list-style-image: url("chrome://global/skin/arrow/panelarrow-horizontal.svg");
+    position: relative;
+    margin-block: 10px;
+  }
+  
+  :is(panel, menupopup)[side="left"]::part(arrow) {
+    margin-right: -5px;
+  }
+  
+  :is(panel, menupopup)[side="right"]::part(arrow) {
+    transform: scaleX(-1);
+    margin-left: -5px;
+  }
+}
+
 @media not (-moz-proton) {
   panel, menupopup {
     --arrowpanel-header-back-icon-padding: 8px !important;

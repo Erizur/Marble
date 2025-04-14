@@ -13,6 +13,7 @@
   skin/classic/global/dialog.css                           (../../windows/global/dialog.css)
   skin/classic/global/wizard.css                           (../../windows/global/wizard.css)
 
+  skin/classic/global/arrow/panelarrow-horizontal.svg      (../../windows/global/arrow/panelarrow-horizontal.svg)
   skin/classic/global/arrow/panelarrow-vertical.svg        (../../windows/global/arrow/panelarrow-vertical.svg)
 
   skin/classic/global/icons/search-textbox.svg             (../../windows/global/icons/search-textbox.svg)

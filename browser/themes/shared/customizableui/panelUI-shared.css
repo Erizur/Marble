@@ -349,6 +349,12 @@ panelview {
     align-items: center;
   }
 
+  &[hidearrow]::part(arrowbox) {
+    /* Don't display the arrow but keep the popup at the same vertical
+       offset as other arrow panels. */
+    visibility: hidden;
+  }
+
   /* Don't show the checkmark if there is a description */
   &.with-description #confirmation-hint-checkmark-animation-container {
     display: none;
@@ -442,7 +448,8 @@ panelview[id^=PanelUI-webext-] {
   overflow: hidden;
 }
 
-.cui-widget-panel {
+.cui-widget-panel,
+.cui-widget-panel::part(arrowcontent) {
   --arrowpanel-padding: var(--panel-subview-body-padding);
 }
 

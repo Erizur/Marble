@@ -48,3 +48,13 @@
 .panel-button:focus-visible {
   outline: var(--focus-outline);
 }
+
+panel[type="arrow"][side="top"],
+panel[type="arrow"][side="bottom"] {
+  margin-inline: -16px;
+}
+
+panel[type="arrow"][side="left"],
+panel[type="arrow"][side="right"] {
+  margin-block: -16px;
+}

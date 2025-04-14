@@ -9,7 +9,14 @@
 {
   class MozPanel extends MozElements.MozElementMixin(XULPopupElement) {
     static get markup() {
-      return `<html:slot part="content" style="display: none !important"/>`;
+      return `
+      <vbox class="panel-arrowcontainer" flex="1">
+        <box class="panel-arrowbox" part="arrowbox">
+          <image class="panel-arrow" part="arrow"/>
+        </box>
+        <html:slot part="content" style="display: none" />
+      </vbox>
+      `;
     }
     constructor() {
       super();
@@ -95,28 +102,55 @@
       return this.hasAttribute("no-open-on-anchor");
     }
 
-    _setSideAttribute(event) {
+    adjustArrowPosition(event) {
       if (!this.isArrowPanel || !event.isAnchored) {
         return;
       }
 
-      let position = event.alignmentPosition;
+      var container = this.shadowRoot.querySelector(".panel-arrowcontainer");
+      var arrowbox = this.shadowRoot.querySelector(".panel-arrowbox");
+
+      var position = event.alignmentPosition;
+      var offset = event.alignmentOffset;
+
       if (position.indexOf("start_") == 0 || position.indexOf("end_") == 0) {
+        container.setAttribute("orient", "horizontal");
+        arrowbox.setAttribute("orient", "vertical");
+        if (position.indexOf("_after") > 0) {
+          arrowbox.setAttribute("pack", "end");
+        } else {
+          arrowbox.setAttribute("pack", "start");
+        }
+        arrowbox.style.transform = "translate(0, " + -offset + "px)";
+
         // The assigned side stays the same regardless of direction.
-        let isRTL = window.getComputedStyle(this).direction == "rtl";
+        var isRTL = window.getComputedStyle(this).direction == "rtl";
 
         if (position.indexOf("start_") == 0) {
+          container.style.MozBoxDirection = "reverse";
           this.setAttribute("side", isRTL ? "left" : "right");
         } else {
+          container.style.removeProperty("-moz-box-direction");
           this.setAttribute("side", isRTL ? "right" : "left");
         }
       } else if (
         position.indexOf("before_") == 0 ||
         position.indexOf("after_") == 0
       ) {
+        container.removeAttribute("orient");
+        arrowbox.removeAttribute("orient");
+        if (position.indexOf("_end") > 0) {
+          arrowbox.setAttribute("pack", "end");
+        } else {
+          arrowbox.setAttribute("pack", "start");
+        }
+        arrowbox.style.transform = "translate(" + -offset + "px, 0)";
+
         if (position.indexOf("before_") == 0) {
+          container.style.MozBoxDirection = "reverse";
           this.setAttribute("side", "bottom");
         } else {
+          container.style.removeProperty("-moz-box-direction");
           this.setAttribute("side", "top");
         }
       }
@@ -137,6 +171,12 @@
             this.anchorNode;
           anchorRoot.setAttribute("open", "true");
         }
+
+        var arrow = this.shadowRoot.querySelector(".panel-arrow");
+        arrow.hidden = !this.isAnchored;
+        this.shadowRoot
+          .querySelector(".panel-arrowbox")
+          .style.removeProperty("transform");
 
         if (this.getAttribute("animate") != "false") {
           this.setAttribute("animate", "open");
@@ -284,7 +324,7 @@
 
     on_popuppositioned(event) {
       if (event.target == this) {
-        this._setSideAttribute(event);
+        this.adjustArrowPosition(event);
       }
     }
   }
