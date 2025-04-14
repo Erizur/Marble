@@ -2095,3 +2095,75 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 #content-analysis-panel-container {
   padding: 8px;
 }
+
+@media not (-moz-proton) {
+  #customization-container .toolbarbutton-1 {
+    fill: currentColor !important;
+  }
+  
+  #customization-panelWrapper > .panel-arrowcontent {
+    padding: var(--arrowpanel-padding);
+  }
+  
+  #customization-uidensity-menu {
+    --arrowpanel-padding: 5px 10px !important;
+  }
+  
+  #customization-lwtheme-menu {
+    --arrowpanel-padding: 10px !important;
+  }
+  
+  .customization-uidensity-menuitem,
+  .customization-lwtheme-menu-theme {
+    border-radius: 0 !important;
+    margin: 0 -5px 5px !important;
+    /* Mozilla try not to be fucking retards challenge: */
+  }
+  .customization-uidensity-menuitem .menu-iconic-left,
+  .customization-lwtheme-menu-theme .menu-iconic-left {
+    min-width: 1.45em !important;
+    width: unset !important;
+  }
+  .customization-uidensity-menuitem:hover, .customization-uidensity-menuitem[active=true],
+  .customization-lwtheme-menu-theme:hover,
+  .customization-lwtheme-menu-theme[active=true] {
+    border-color: var(--panel-separator-color) !important;
+  }
+  .customization-uidensity-menuitem:hover,
+  .customization-lwtheme-menu-theme:hover {
+    background-color: var(--arrowpanel-dimmed) !important;
+  }
+  .customization-uidensity-menuitem:is(:hover:active, [active=true]),
+  .customization-lwtheme-menu-theme:is(:hover:active, [active=true]) {
+    background-color: var(--arrowpanel-dimmed-further) !important;
+  }
+  
+  #customization-uidensity-touch-spacer {
+    color-scheme: light !important;
+    border-top: 1px solid ThreeDLightShadow !important;
+    margin: 0 -10px 10px !important;
+  }
+  
+  #customization-uidensity-autotouchmode-checkbox {
+    margin-bottom: 10px !important;
+  }
+  
+  /* We need to move lwtheme background back to root for customize mode fade */
+  :root[lwtheme-image] {
+    background-color: var(--lwt-accent-color) !important;
+    background-image: var(--lwt-header-image), var(--lwt-additional-images) !important;
+    background-repeat: no-repeat, var(--lwt-background-tiling) !important;
+    background-position: right top, var(--lwt-background-alignment) !important;
+  }
+  :root[lwtheme-image]:-moz-window-inactive {
+    background-color: var(--lwt-accent-color-inactive, var(--lwt-accent-color)) !important;
+  }
+  :root[lwtheme-image] #navigator-toolbox {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+  :root[lwtheme-image] #customization-container {
+    background-color: transparent !important;
+    background-image: linear-gradient(var(--toolbar-bgcolor), var(--toolbar-non-lwt-bgcolor) 45px) !important;
+  }
+}
