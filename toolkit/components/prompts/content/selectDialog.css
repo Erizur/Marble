@@ -10,3 +10,9 @@
   max-width: 45em;
   margin: 5px;
 }
+@media not (-moz-platform: linux) {
+  :host {
+    width: 16px;
+    height: 16px;
+  }
+}
