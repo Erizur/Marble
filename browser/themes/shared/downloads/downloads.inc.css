@@ -301,7 +301,7 @@
     height: var(--downloads-item-height) !important;
   }
 
-  #main-window #downloadsListBox > richlistitem {
+  #downloadsListBox > richlistitem {
     min-height: 0 !important;
     height: var(--downloads-item-height) !important;
     border-bottom: 1px solid var(--panel-separator-color) !important;
@@ -309,39 +309,39 @@
     padding-inline-end: 0 !important;
     border-radius: 0 !important;
   }
-  #main-window #downloadsListBox > richlistitem:not([verdict]) {
+  #downloadsListBox > richlistitem:not([verdict]) {
     background-color: transparent !important;
   }
-  #main-window #downloadsListBox > richlistitem:last-child {
+  #downloadsListBox > richlistitem:last-child {
     border-bottom: 0 !important;
   }
-  #main-window #downloadsListBox > richlistitem[verdict=Malware]:not(:hover) {
+  #downloadsListBox > richlistitem[verdict=Malware]:not(:hover) {
     color: #aa1b08 !important;
   }
-  #main-window #downloadsListBox > richlistitem[verdict=Malware]:hover {
+  #downloadsListBox > richlistitem[verdict=Malware]:hover {
     background-color: #aa1b08 !important;
     color: white !important;
   }
-  #main-window #downloadsListBox > richlistitem .downloadDetails {
+  #downloadsListBox > richlistitem .downloadDetails {
     color: inherit !important;
   }
-  #main-window[lwt-popup-brighttext] #downloadsListBox > richlistitem[verdict=Malware]:not(:hover) {
+  :root[lwt-popup-brighttext] #downloadsListBox > richlistitem[verdict=Malware]:not(:hover) {
     color: #ff0039 !important;
   }
-  #main-window .downloadMainArea {
+  .downloadMainArea {
     align-self: stretch !important;
     border-radius: 0 !important;
   }
-  #downloadsListBox > richlistitem[state="1"][exists] #main-window .downloadMainArea:hover {
+  #downloadsListBox > richlistitem[state="1"][exists] .downloadMainArea:hover {
     background-color: var(--arrowpanel-dimmed) !important;
   }
-  #downloadsListBox > richlistitem[state="1"][exists] #main-window .downloadMainArea:hover:active {
+  #downloadsListBox > richlistitem[state="1"][exists] .downloadMainArea:hover:active {
     background-color: var(--arrowpanel-dimmed-further) !important;
   }
-  #main-window .downloadTypeIcon {
+  .downloadTypeIcon {
     margin: 8px 13px !important;
   }
-  #main-window .downloadButton {
+  .downloadButton {
     margin-inline-start: 1px !important;
     border: 0 !important;
     min-width: 58px !important;
@@ -350,13 +350,13 @@
     height: unset !important;
     position: relative !important;
   }
-  #downloadsListBox > richlistitem:not([verdict]) > #main-window .downloadButton:hover {
+  .downloadButton:hover:not(:active) {
     background-color: var(--arrowpanel-dimmed) !important;
   }
-  #downloadsListBox > richlistitem:not([verdict]) > #main-window .downloadButton:hover:active {
+  .downloadButton:hover:active {
     background-color: var(--arrowpanel-dimmed-further) !important;
   }
-  #main-window .downloadButton::before {
+  .downloadButton::before {
     content: "";
     display: flex;
     width: 0;
@@ -367,11 +367,11 @@
     border-inline-start: 1px solid var(--panel-separator-color);
     margin: 10px 0;
   }
-  #main-window .downloadButton:-moz-locale-dir(rtl)::before {
+  .downloadButton:-moz-locale-dir(rtl)::before {
     left: unset !important;
     right: -1px !important;
   }
-  #downloadsListBox > richlistitem:hover > #main-window .downloadButton::before {
+  #downloadsListBox > richlistitem:hover > .downloadButton::before {
     margin: 0;
     height: 100%;
   }

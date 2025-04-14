@@ -1240,7 +1240,7 @@ popupnotificationcontent {
 }
 
 .popup-notification-checkbox {
-  margin-block: 12px 0;
+  margin-block: 8px;
 }
 
 .popup-notification-body-container {
