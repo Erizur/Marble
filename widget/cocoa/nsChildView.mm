@@ -1764,16 +1764,8 @@ void nsChildView::UpdateThemeGeometries(
 static Maybe<VibrancyType> ThemeGeometryTypeToVibrancyType(
     nsITheme::ThemeGeometryType aThemeGeometryType) {
   switch (aThemeGeometryType) {
-    case eThemeGeometryTypeTooltip:
-      return Some(VibrancyType::TOOLTIP);
-    case eThemeGeometryTypeMenu:
-      return Some(VibrancyType::MENU);
-    case eThemeGeometryTypeSourceList:
-      return Some(VibrancyType::SOURCE_LIST);
-    case eThemeGeometryTypeSourceListSelection:
-      return Some(VibrancyType::SOURCE_LIST_SELECTION);
-    case eThemeGeometryTypeActiveSourceListSelection:
-      return Some(VibrancyType::ACTIVE_SOURCE_LIST_SELECTION);
+    case eThemeGeometryTypeTitlebar:
+      return Some(VibrancyType::TITLEBAR);
     default:
       return Nothing();
   }
@@ -1783,55 +1775,22 @@ static LayoutDeviceIntRegion GatherVibrantRegion(
     const nsTArray<nsIWidget::ThemeGeometry>& aThemeGeometries,
     VibrancyType aVibrancyType) {
   LayoutDeviceIntRegion region;
-  for (auto& geometry : aThemeGeometries) {
+  for (const auto& geometry : aThemeGeometries) {
     if (ThemeGeometryTypeToVibrancyType(geometry.mType) ==
         Some(aVibrancyType)) {
       region.OrWith(geometry.mRect);
     }
-    regions[*vibrancyType].OrWith(geometry.mRect);
   }
-  return regions;
-}
-
-// Subtracts parts from regions in such a way that they don't have any overlap.
-// Each region in the argument list will have the union of all the regions
-// *following* it subtracted from itself. In other words, the arguments are
-// treated as low priority to high priority.
-static void MakeRegionsNonOverlapping(Span<LayoutDeviceIntRegion> aRegions) {
-  LayoutDeviceIntRegion unionOfAll;
-  for (auto& region : aRegions) {
-    region.SubOut(unionOfAll);
-    unionOfAll.OrWith(region);
-  }
+  return region;
 }
 
 void nsChildView::UpdateVibrancy(
     const nsTArray<ThemeGeometry>& aThemeGeometries) {
-  LayoutDeviceIntRegion menuRegion =
-      GatherVibrantRegion(aThemeGeometries, VibrancyType::MENU);
-  LayoutDeviceIntRegion tooltipRegion =
-      GatherVibrantRegion(aThemeGeometries, VibrancyType::TOOLTIP);
-  LayoutDeviceIntRegion sourceListRegion =
-      GatherVibrantRegion(aThemeGeometries, VibrancyType::SOURCE_LIST);
-  LayoutDeviceIntRegion sourceListSelectionRegion = GatherVibrantRegion(
-      aThemeGeometries, VibrancyType::SOURCE_LIST_SELECTION);
-  LayoutDeviceIntRegion activeSourceListSelectionRegion = GatherVibrantRegion(
-      aThemeGeometries, VibrancyType::ACTIVE_SOURCE_LIST_SELECTION);
-
-  MakeRegionsNonOverlapping(menuRegion, tooltipRegion, sourceListRegion,
-                            sourceListSelectionRegion,
-                            activeSourceListSelectionRegion);
+  LayoutDeviceIntRegion titlebarRegion =
+      GatherVibrantRegion(aThemeGeometries, VibrancyType::TITLEBAR);
 
   auto& vm = EnsureVibrancyManager();
-  bool changed = false;
-  changed |= vm.UpdateVibrantRegion(VibrancyType::MENU, menuRegion);
-  changed |= vm.UpdateVibrantRegion(VibrancyType::TOOLTIP, tooltipRegion);
-  changed |=
-      vm.UpdateVibrantRegion(VibrancyType::SOURCE_LIST, sourceListRegion);
-  changed |= vm.UpdateVibrantRegion(VibrancyType::SOURCE_LIST_SELECTION,
-                                    sourceListSelectionRegion);
-  changed |= vm.UpdateVibrantRegion(VibrancyType::ACTIVE_SOURCE_LIST_SELECTION,
-                                    activeSourceListSelectionRegion);
+  bool changed = vm.UpdateVibrantRegion(VibrancyType::TITLEBAR, titlebarRegion);
 
   if (changed) {
     SuspendAsyncCATransactions();

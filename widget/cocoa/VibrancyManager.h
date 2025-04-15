@@ -7,22 +7,24 @@
 #ifndef VibrancyManager_h
 #define VibrancyManager_h
 
-#include "mozilla/EnumeratedArray.h"
-#include "Units.h"
+#include "mozilla/Assertions.h"
+#include "nsClassHashtable.h"
+#include "nsRegion.h"
+#include "nsTArray.h"
+#include "ViewRegion.h"
 
+#import <Foundation/NSGeometry.h>
+
+@class NSColor;
 @class NSView;
 class nsChildView;
 
 namespace mozilla {
 
-class ViewRegion;
-
 enum class VibrancyType {
   TOOLTIP,
   MENU,
-  SOURCE_LIST,
-  SOURCE_LIST_SELECTION,
-  ACTIVE_SOURCE_LIST_SELECTION
+  TITLEBAR,
 };
 
 /**
@@ -48,8 +50,10 @@ class VibrancyManager {
    * @param aContainerView  The view that's going to be the superview of the
    *   NSVisualEffectViews which will be created for vibrant regions.
    */
-  VibrancyManager(const nsChildView& aCoordinateConverter, NSView* aContainerView)
-      : mCoordinateConverter(aCoordinateConverter), mContainerView(aContainerView) {}
+  VibrancyManager(const nsChildView& aCoordinateConverter,
+                  NSView* aContainerView)
+      : mCoordinateConverter(aCoordinateConverter),
+        mContainerView(aContainerView) {}
 
   /**
    * Update the placement of the NSVisualEffectViews inside the container
@@ -81,7 +85,7 @@ class VibrancyManager {
  protected:
   const nsChildView& mCoordinateConverter;
   NSView* mContainerView;
-  EnumeratedArray<VibrancyType, UniquePtr<ViewRegion>> mVibrantRegions;
+  nsClassHashtable<nsUint32HashKey, ViewRegion> mVibrantRegions;
 };
 
 }  // namespace mozilla
