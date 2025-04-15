@@ -275,6 +275,7 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozButtonhovertext:
     case ColorID::Menutext:
     case ColorID::Infotext:
+    case ColorID::MozSidebartext:
     case ColorID::MozCellhighlighttext:
     case ColorID::MozColheadertext:
     case ColorID::MozColheaderhovertext:
