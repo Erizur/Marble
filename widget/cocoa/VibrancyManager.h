@@ -20,6 +20,9 @@ class ViewRegion;
 enum class VibrancyType {
   TOOLTIP,
   MENU,
+  SOURCE_LIST,
+  SOURCE_LIST_SELECTION,
+  ACTIVE_SOURCE_LIST_SELECTION
 };
 
 /**

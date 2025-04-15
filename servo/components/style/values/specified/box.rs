@@ -1710,9 +1710,15 @@ pub enum Appearance {
     MozWindowDecorations,
 
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacActiveSourceListSelection,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozMacDisclosureButtonClosed,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozMacDisclosureButtonOpen,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacSourceList,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacSourceListSelection,
 
     /// A themed focus outline (for outline:auto).
     ///
