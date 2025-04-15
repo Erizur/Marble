@@ -327,6 +327,10 @@ panelview {
   menuseparator {
     padding: var(--panel-separator-margin);
   }
+
+  &::part(arrowbox) {
+    display: none; /* Hide these on toolbar panels, we don't need them, as they were never there */
+  }
 }
 
 #BMB_bookmarksPopup {
