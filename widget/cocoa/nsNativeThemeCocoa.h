@@ -354,6 +354,12 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
   nsIFrame* SeparatorResponsibility(nsIFrame* aBefore, nsIFrame* aAfter);
   ControlParams ComputeControlParams(nsIFrame* aFrame,
                                      mozilla::dom::ElementState aEventState);
+  MenuIconParams ComputeMenuIconParams(nsIFrame* aParams,
+                                       mozilla::dom::ElementState aEventState,
+                                       MenuIcon aIcon);
+  MenuItemParams ComputeMenuItemParams(nsIFrame* aFrame,
+                                       mozilla::dom::ElementState aEventState,
+                                       bool aIsChecked);
   SegmentParams ComputeSegmentParams(nsIFrame* aFrame,
                                      mozilla::dom::ElementState aEventState,
                                      SegmentType aSegmentType);
