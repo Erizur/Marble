@@ -160,12 +160,6 @@ if (AppConstants.ENABLE_WEBDRIVER) {
 
 const PREF_PDFJS_ISDEFAULT_CACHE_STATE = "pdfjs.enabledCache.state";
 
-const PRIVATE_BROWSING_BINARY = "private_browsing.exe";
-// Index of Private Browsing icon in private_browsing.exe
-// Must line up with IDI_PBICON_PB_PB_EXE in nsNativeAppSupportWin.h.
-const PRIVATE_BROWSING_EXE_ICON_INDEX = 1;
-const PREF_PRIVATE_BROWSING_SHORTCUT_CREATED =
-  "browser.privacySegmentation.createdShortcut";
 // Whether this launch was initiated by the OS.  A launch-on-login will contain
 // the "os-autostart" flag in the initial launch command line.
 let gThisInstanceIsLaunchOnLogin = false;
@@ -2764,85 +2758,6 @@ BrowserGlue.prototype = {
               "FirefoxBridgeExtensionUtils failed to register due to non-default current profile."
             );
           }
-        },
-      },
-
-      // Ensure a Private Browsing Shortcut exists. This is needed in case
-      // a user tries to use Windows functionality to pin our Private Browsing
-      // mode icon to the Taskbar (eg: the "Pin to Taskbar" context menu item).
-      // This is also created by the installer, but it's possible that a user
-      // has removed it, or is running out of a zip build. The consequences of not
-      // having a Shortcut for this are that regular Firefox will be pinned instead
-      // of the Private Browsing version -- so it's quite important we do our best
-      // to make sure one is available.
-      // See https://bugzilla.mozilla.org/show_bug.cgi?id=1762994 for additional
-      // background.
-      {
-        name: "ensurePrivateBrowsingShortcutExists",
-        condition:
-          AppConstants.platform == "win" &&
-          Services.prefs.getBoolPref(
-            "browser.privateWindowSeparation.enabled",
-            true
-          ) &&
-          // We don't want a shortcut if it's been disabled, eg: by enterprise policy.
-          lazy.PrivateBrowsingUtils.enabled &&
-          // Private Browsing shortcuts for packaged builds come with the package,
-          // if they exist at all. We shouldn't try to create our own.
-          !Services.sysinfo.getProperty("hasWinPackageId") &&
-          // If we've ever done this successfully before, don't try again. The
-          // user may have deleted the shortcut, and we don't want to force it
-          // on them.
-          !Services.prefs.getBoolPref(
-            PREF_PRIVATE_BROWSING_SHORTCUT_CREATED,
-            false
-          ),
-        task: async () => {
-          let shellService = Cc[
-            "@mozilla.org/browser/shell-service;1"
-          ].getService(Ci.nsIWindowsShellService);
-          let winTaskbar = Cc["@mozilla.org/windows-taskbar;1"].getService(
-            Ci.nsIWinTaskbar
-          );
-
-          if (
-            !(await shellService.hasMatchingShortcut(
-              winTaskbar.defaultPrivateGroupId,
-              true
-            ))
-          ) {
-            let appdir = Services.dirsvc.get("GreD", Ci.nsIFile);
-            let exe = appdir.clone();
-            exe.append(PRIVATE_BROWSING_BINARY);
-            let strings = new Localization(
-              ["branding/brand.ftl", "browser/browser.ftl"],
-              true
-            );
-            let [desc] = await strings.formatValues([
-              "private-browsing-shortcut-text-2",
-            ]);
-            await shellService.createShortcut(
-              exe,
-              [],
-              desc,
-              exe,
-              // The code we're calling indexes from 0 instead of 1
-              PRIVATE_BROWSING_EXE_ICON_INDEX - 1,
-              winTaskbar.defaultPrivateGroupId,
-              "Programs",
-              desc + ".lnk",
-              appdir
-            );
-          }
-          // We always set this as long as no exception has been thrown. This
-          // ensure that it is `true` both if we created one because it didn't
-          // exist, or if it already existed (most likely because it was created
-          // by the installer). This avoids the need to call `hasMatchingShortcut`
-          // again, which necessarily does pointless I/O.
-          Services.prefs.setBoolPref(
-            PREF_PRIVATE_BROWSING_SHORTCUT_CREATED,
-            true
-          );
         },
       },
 

@@ -321,26 +321,6 @@ function openBrowserWindow(
         win.docShell.QueryInterface(
           Ci.nsILoadContext
         ).usePrivateBrowsing = true;
-
-        if (
-          AppConstants.platform == "win" &&
-          Services.prefs.getBoolPref(
-            "browser.privateWindowSeparation.enabled",
-            true
-          )
-        ) {
-          lazy.WinTaskbar.setGroupIdForWindow(
-            win,
-            lazy.WinTaskbar.defaultPrivateGroupId
-          );
-          lazy.WindowsUIUtils.setWindowIconFromExe(
-            win,
-            Services.dirsvc.get("XREExeF", Ci.nsIFile).path,
-            // This corresponds to the definitions in
-            // nsNativeAppSupportWin.h
-            PRIVATE_BROWSING_ICON_INDEX
-          );
-        }
       }
 
       let openTime = win.openTime;

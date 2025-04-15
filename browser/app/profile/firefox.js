@@ -327,7 +327,7 @@ pref("browser.startup.couldRestoreSession.count", 0);
 // Show a skeleton UI window prior to loading libxul. Only visible for windows
 // users as it is not implemented anywhere else.
 #if defined(XP_WIN)
-pref("browser.startup.preXulSkeletonUI", true);
+pref("browser.startup.preXulSkeletonUI", false);
 
 // Whether the checkbox to enable Windows launch on login is shown
 pref("browser.startup.windowsLaunchOnLogin.enabled", true);
