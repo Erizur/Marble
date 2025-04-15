@@ -28,11 +28,9 @@
 #include "nsCOMPtr.h"
 
 #ifdef XP_WIN
-#  ifdef MOZ_LAUNCHER_PROCESS
-#    include "mozilla/PreXULSkeletonUI.h"
-#    include "freestanding/SharedSection.h"
-#    include "LauncherProcessWin.h"
-#  endif
+#  include "mozilla/PreXULSkeletonUI.h"
+#  include "freestanding/SharedSection.h"
+#  include "LauncherProcessWin.h"
 #  include "mozilla/GeckoArgs.h"
 #  include "mozilla/mscom/ProcessRuntime.h"
 #  include "mozilla/WindowsDllBlocklist.h"
@@ -161,7 +159,7 @@ static bool IsArg(const char* arg, const char* s) {
 Bootstrap::UniquePtr gBootstrap;
 
 static int do_main(int argc, char* argv[], char* envp[]) {
-  // Allow marble.exe to launch XULRunner apps via -app <application.ini>
+  // Allow firefox.exe to launch XULRunner apps via -app <application.ini>
   // Note that -app must be the *first* argument.
   const char* appDataFile = getenv("XUL_APP_FILE");
   if ((!appDataFile || !*appDataFile) && (argc > 1 && IsArg(argv[1], "app"))) {
@@ -428,14 +426,12 @@ int main(int argc, char* argv[], char* envp[]) {
     (void)result;  // Ignore errors since some tools block DPI calls
   }
 
-  #if defined(MOZ_LAUNCHER_PROCESS)
-    // Once the browser process hits the main function, we no longer need
-    // a writable section handle because all dependent modules have been
-    // loaded.
-    mozilla::freestanding::gSharedSection.ConvertToReadOnly();
+  // Once the browser process hits the main function, we no longer need
+  // a writable section handle because all dependent modules have been
+  // loaded.
+  mozilla::freestanding::gSharedSection.ConvertToReadOnly();
 
-    mozilla::CreateAndStorePreXULSkeletonUI(GetModuleHandle(nullptr), argc, argv);
-  #endif
+  mozilla::CreateAndStorePreXULSkeletonUI(GetModuleHandle(nullptr), argc, argv);
 #endif
 
   nsresult rv = InitXPCOMGlue(LibLoadingStrategy::ReadAhead);
@@ -451,9 +447,7 @@ int main(int argc, char* argv[], char* envp[]) {
 
   int result = do_main(argc, argv, envp);
 
-#if defined(XP_WIN) && defined(MOZ_LAUNCHER_PROCESS)
-  // This is used by the pre-XUL skeleton, so we only compile it when the
-  // launcher process is enabled.
+#if defined(XP_WIN)
   CleanupProcessRuntime();
 #endif
 

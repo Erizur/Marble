@@ -378,15 +378,15 @@ Result<Ok, mozilla::ipc::LaunchError> SandboxBroker::LaunchApp(
           last_error, last_warning);
   }
 
-#if defined(MOZ_THUNDERBIRD) || !defined(MOZ_LAUNCHER_PROCESS)
-  // Without the launcher process, mInitDllBlocklistOOP is null, so InitDllBlocklistOOP would
+#ifdef MOZ_THUNDERBIRD
+  // In Thunderbird, mInitDllBlocklistOOP is null, so InitDllBlocklistOOP would
   // hit MOZ_RELEASE_ASSERT.
-  constexpr bool disableDllBlocklistOOP = true;
+  constexpr bool isThunderbird = true;
 #else
-  constexpr bool disableDllBlocklistOOP = false;
+  constexpr bool isThunderbird = false;
 #endif
 
-  if (!disableDllBlocklistOOP &&
+  if (!isThunderbird &&
       XRE_GetChildProcBinPathType(aProcessType) == BinPathType::Self) {
     RefPtr<DllServices> dllSvc(DllServices::Get());
     LauncherVoidResultWithLineInfo blocklistInitOk =
