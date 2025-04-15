@@ -156,7 +156,6 @@ static const char sIntPrefs[][45] = {
     "ui.macGraphiteTheme",
     "ui.macBigSurTheme",
     "ui.macRTL",
-    "ui.macTitlebarHeight",
     "ui.alertNotificationOrigin",
     "ui.scrollToClick",
     "ui.IMERawInputUnderlineStyle",

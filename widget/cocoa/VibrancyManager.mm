@@ -38,28 +38,12 @@ static NSVisualEffectState VisualEffectStateForVibrancyType(
 }
 
 static NSVisualEffectMaterial VisualEffectMaterialForVibrancyType(
-    VibrancyType aType) {
-  switch (aType) {
-    case VibrancyType::Titlebar:
-      return NSVisualEffectMaterialTitlebar;
-  }
-}
-
-static NSVisualEffectBlendingMode VisualEffectBlendingModeForVibrancyType(
-    VibrancyType aType) {
+    VibrancyType aType, BOOL* aOutIsEmphasized) {
   switch (aType) {
     case VibrancyType::TOOLTIP:
       return (NSVisualEffectMaterial)NSVisualEffectMaterialToolTip;
     case VibrancyType::MENU:
       return NSVisualEffectMaterialMenu;
-    case VibrancyType::SOURCE_LIST:
-      return NSVisualEffectMaterialSidebar;
-    case VibrancyType::SOURCE_LIST_SELECTION:
-      return NSVisualEffectMaterialSelection;
-    case VibrancyType::HIGHLIGHTED_MENUITEM:
-    case VibrancyType::ACTIVE_SOURCE_LIST_SELECTION:
-      *aOutIsEmphasized = YES;
-      return NSVisualEffectMaterialSelection;
   }
 }
 
@@ -70,9 +54,11 @@ static NSVisualEffectBlendingMode VisualEffectBlendingModeForVibrancyType(
 
   self.appearance = nil;
   self.state = VisualEffectStateForVibrancyType(mType);
-  self.material = VisualEffectMaterialForVibrancyType(mType);
-  self.blendingMode = VisualEffectBlendingModeForVibrancyType(mType);
-  self.emphasized = NO;
+
+  BOOL isEmphasized = NO;
+  self.material = VisualEffectMaterialForVibrancyType(mType, &isEmphasized);
+  self.emphasized = isEmphasized;
+
   return self;
 }
 
@@ -93,12 +79,18 @@ bool VibrancyManager::UpdateVibrantRegion(
     VibrancyType aType, const LayoutDeviceIntRegion& aRegion) {
   auto& slot = mVibrantRegions[aType];
   if (aRegion.IsEmpty()) {
-    bool hadRegion = !!slot;
-    slot = nullptr;
-    return hadRegion;
+    return mVibrantRegions.Remove(uint32_t(aType));
   }
-  if (!slot) {
-    slot = MakeUnique<ViewRegion>();
+  auto& vr = *mVibrantRegions.GetOrInsertNew(uint32_t(aType));
+  return vr.UpdateRegion(aRegion, mCoordinateConverter, mContainerView, ^() {
+    return this->CreateEffectView(aType);
+  });
+}
+
+LayoutDeviceIntRegion VibrancyManager::GetUnionOfVibrantRegions() const {
+  LayoutDeviceIntRegion result;
+  for (const auto& region : mVibrantRegions.Values()) {
+    result.OrWith(region->Region());
   }
   return slot->UpdateRegion(aRegion, mCoordinateConverter, mContainerView, ^() {
     return [[MOZVibrantView alloc] initWithFrame:NSZeroRect vibrancyType:aType];

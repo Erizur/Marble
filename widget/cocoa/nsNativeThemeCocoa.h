@@ -180,6 +180,7 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
     eSpinButtonDown,  // SpinButtonParams
     eSegment,         // SegmentParams
     eSeparator,
+    eToolbar,    // bool
     eStatusBar,  // bool
     eGroupBox,
     eTextField,           // TextFieldParams
@@ -230,10 +231,18 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
     static WidgetInfo Segment(const SegmentParams& aParams) {
       return WidgetInfo(Widget::eSegment, aParams);
     }
-    static WidgetInfo Separator() { return WidgetInfo(Widget::eSeparator, false); }
-    static WidgetInfo Toolbar(bool aParams) { return WidgetInfo(Widget::eToolbar, aParams); }
-    static WidgetInfo StatusBar(bool aParams) { return WidgetInfo(Widget::eStatusBar, aParams); }
-    static WidgetInfo GroupBox() { return WidgetInfo(Widget::eGroupBox, false); }
+    static WidgetInfo Separator() {
+      return WidgetInfo(Widget::eSeparator, false);
+    }
+    static WidgetInfo Toolbar(bool aParams) {
+      return WidgetInfo(Widget::eToolbar, aParams);
+    }
+    static WidgetInfo StatusBar(bool aParams) {
+      return WidgetInfo(Widget::eStatusBar, aParams);
+    }
+    static WidgetInfo GroupBox() {
+      return WidgetInfo(Widget::eGroupBox, false);
+    }
     static WidgetInfo TextField(const TextFieldParams& aParams) {
       return WidgetInfo(Widget::eTextField, aParams);
     }

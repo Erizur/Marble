@@ -473,20 +473,17 @@ void* nsChildView::GetNativeData(uint32_t aDataType) {
 #pragma mark -
 
 void nsChildView::SuppressAnimation(bool aSuppress) {
-  if (nsCocoaWindow* widget = GetAppWindowWidget()) {
-    widget->SuppressAnimation(aSuppress);
-  }
+  GetAppWindowWidget()->SuppressAnimation(aSuppress);
 }
 
 bool nsChildView::IsVisible() const {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
   if (!mVisible) {
-    return false;
+    return mVisible;
   }
 
-  nsCocoaWindow* widget = GetAppWindowWidget();
-  if (NS_WARN_IF(!widget) || !widget->IsVisible()) {
+  if (!GetAppWindowWidget()->IsVisible()) {
     return false;
   }
 
@@ -1073,8 +1070,10 @@ nsresult nsChildView::SynthesizeNativeTouchpadDoubleTap(
 
 bool nsChildView::SendEventToNativeMenuSystem(NSEvent* aEvent) {
   bool handled = false;
-  if (nsCocoaWindow* widget = GetAppWindowWidget()) {
-    if (nsMenuBarX* mb = widget->GetMenuBar()) {
+  nsCocoaWindow* widget = GetAppWindowWidget();
+  if (widget) {
+    nsMenuBarX* mb = widget->GetMenuBar();
+    if (mb) {
       // Check if main menu wants to handle the event.
       handled = mb->PerformKeyEquivalent(aEvent);
     }
@@ -1158,8 +1157,10 @@ nsresult nsChildView::ActivateNativeMenuItemAt(const nsAString& indexString) {
 nsresult nsChildView::ForceUpdateNativeMenuAt(const nsAString& indexString) {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
-  if (nsCocoaWindow* widget = GetAppWindowWidget()) {
-    if (nsMenuBarX* mb = widget->GetMenuBar()) {
+  nsCocoaWindow* widget = GetAppWindowWidget();
+  if (widget) {
+    nsMenuBarX* mb = widget->GetMenuBar();
+    if (mb) {
       if (indexString.IsEmpty())
         mb->ForceNativeMenuReload();
       else
@@ -1688,6 +1689,33 @@ RefPtr<layers::NativeLayerRoot> nsChildView::GetNativeLayerRoot() {
   return mNativeLayerRoot;
 }
 
+static int32_t FindTitlebarBottom(
+    const nsTArray<nsIWidget::ThemeGeometry>& aThemeGeometries,
+    int32_t aWindowWidth) {
+  int32_t titlebarBottom = 0;
+  for (auto& g : aThemeGeometries) {
+    if (g.mType == eThemeGeometryTypeTitlebar && g.mRect.X() <= 0 &&
+        g.mRect.XMost() >= aWindowWidth && g.mRect.Y() <= 0) {
+      titlebarBottom = std::max(titlebarBottom, g.mRect.YMost());
+    }
+  }
+  return titlebarBottom;
+}
+
+static int32_t FindUnifiedToolbarBottom(
+    const nsTArray<nsIWidget::ThemeGeometry>& aThemeGeometries,
+    int32_t aWindowWidth, int32_t aTitlebarBottom) {
+  int32_t unifiedToolbarBottom = aTitlebarBottom;
+  for (uint32_t i = 0; i < aThemeGeometries.Length(); ++i) {
+    const nsIWidget::ThemeGeometry& g = aThemeGeometries[i];
+    if ((g.mType == eThemeGeometryTypeToolbar) && g.mRect.X() <= 0 &&
+        g.mRect.XMost() >= aWindowWidth && g.mRect.Y() <= aTitlebarBottom) {
+      unifiedToolbarBottom = std::max(unifiedToolbarBottom, g.mRect.YMost());
+    }
+  }
+  return unifiedToolbarBottom;
+}
+
 static LayoutDeviceIntRect FindFirstRectOfType(
     const nsTArray<nsIWidget::ThemeGeometry>& aThemeGeometries,
     nsITheme::ThemeGeometryType aThemeGeometryType) {
@@ -1712,7 +1740,18 @@ void nsChildView::UpdateThemeGeometries(
     return;
   }
 
+  // Update unified toolbar height and sheet attachment position.
+  int32_t windowWidth = mBounds.width;
+  int32_t titlebarBottom = FindTitlebarBottom(aThemeGeometries, windowWidth);
+  int32_t unifiedToolbarBottom =
+      FindUnifiedToolbarBottom(aThemeGeometries, windowWidth, titlebarBottom);
+
   ToolbarWindow* win = (ToolbarWindow*)[mView window];
+  int32_t titlebarHeight = [win drawsContentsIntoWindowFrame]
+                               ? 0
+                               : CocoaPointsToDevPixels([win titlebarHeight]);
+  int32_t devUnifiedHeight = titlebarHeight + unifiedToolbarBottom;
+  [win setUnifiedToolbarHeight:DevPixelsToCocoaPoints(devUnifiedHeight)];
 
   // Update titlebar control offsets.
   LayoutDeviceIntRect windowButtonRect =
@@ -1729,26 +1768,19 @@ static Maybe<VibrancyType> ThemeGeometryTypeToVibrancyType(
       return Some(VibrancyType::TOOLTIP);
     case eThemeGeometryTypeMenu:
       return Some(VibrancyType::MENU);
-    case eThemeGeometryTypeHighlightedMenuItem:
-      return Some(VibrancyType::HIGHLIGHTED_MENUITEM);
-    case eThemeGeometryTypeSourceList:
-      return Some(VibrancyType::SOURCE_LIST);
-    case eThemeGeometryTypeSourceListSelection:
-      return Some(VibrancyType::SOURCE_LIST_SELECTION);
-    case eThemeGeometryTypeActiveSourceListSelection:
-      return Some(VibrancyType::ACTIVE_SOURCE_LIST_SELECTION);
     default:
       return Nothing();
   }
 }
 
-static EnumeratedArray<VibrancyType, LayoutDeviceIntRegion>
-GatherVibrantRegions(Span<const nsIWidget::ThemeGeometry> aThemeGeometries) {
-  EnumeratedArray<VibrancyType, LayoutDeviceIntRegion> regions;
-  for (const auto& geometry : aThemeGeometries) {
-    auto vibrancyType = ThemeGeometryTypeToVibrancyType(geometry.mType);
-    if (!vibrancyType) {
-      continue;
+static LayoutDeviceIntRegion GatherVibrantRegion(
+    const nsTArray<nsIWidget::ThemeGeometry>& aThemeGeometries,
+    VibrancyType aVibrancyType) {
+  LayoutDeviceIntRegion region;
+  for (auto& geometry : aThemeGeometries) {
+    if (ThemeGeometryTypeToVibrancyType(geometry.mType) ==
+        Some(aVibrancyType)) {
+      region.OrWith(geometry.mRect);
     }
     regions[*vibrancyType].OrWith(geometry.mRect);
   }
@@ -1773,31 +1805,13 @@ void nsChildView::UpdateVibrancy(
       GatherVibrantRegion(aThemeGeometries, VibrancyType::MENU);
   LayoutDeviceIntRegion tooltipRegion =
       GatherVibrantRegion(aThemeGeometries, VibrancyType::TOOLTIP);
-  LayoutDeviceIntRegion highlightedMenuItemRegion =
-      GatherVibrantRegion(aThemeGeometries, VibrancyType::HIGHLIGHTED_MENUITEM);
-  LayoutDeviceIntRegion sourceListRegion =
-      GatherVibrantRegion(aThemeGeometries, VibrancyType::SOURCE_LIST);
-  LayoutDeviceIntRegion sourceListSelectionRegion = GatherVibrantRegion(
-      aThemeGeometries, VibrancyType::SOURCE_LIST_SELECTION);
-  LayoutDeviceIntRegion activeSourceListSelectionRegion = GatherVibrantRegion(
-      aThemeGeometries, VibrancyType::ACTIVE_SOURCE_LIST_SELECTION);
 
-  MakeRegionsNonOverlapping(
-      menuRegion, tooltipRegion, highlightedMenuItemRegion, sourceListRegion,
-      sourceListSelectionRegion, activeSourceListSelectionRegion);
+  MakeRegionsNonOverlapping(menuRegion, tooltipRegion);
 
   auto& vm = EnsureVibrancyManager();
   bool changed = false;
   changed |= vm.UpdateVibrantRegion(VibrancyType::MENU, menuRegion);
   changed |= vm.UpdateVibrantRegion(VibrancyType::TOOLTIP, tooltipRegion);
-  changed |= vm.UpdateVibrantRegion(VibrancyType::HIGHLIGHTED_MENUITEM,
-                                    highlightedMenuItemRegion);
-  changed |=
-      vm.UpdateVibrantRegion(VibrancyType::SOURCE_LIST, sourceListRegion);
-  changed |= vm.UpdateVibrantRegion(VibrancyType::SOURCE_LIST_SELECTION,
-                                    sourceListSelectionRegion);
-  changed |= vm.UpdateVibrantRegion(VibrancyType::ACTIVE_SOURCE_LIST_SELECTION,
-                                    activeSourceListSelectionRegion);
 
   if (changed) {
     SuspendAsyncCATransactions();
