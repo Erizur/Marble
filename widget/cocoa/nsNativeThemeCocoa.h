@@ -290,62 +290,70 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
 
   // The nsITheme interface.
   NS_IMETHOD DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
-                                  StyleAppearance aAppearance, const nsRect& aRect,
-                                  const nsRect& aDirtyRect, DrawOverflow) override;
-  bool CreateWebRenderCommandsForWidget(mozilla::wr::DisplayListBuilder& aBuilder,
-                                        mozilla::wr::IpcResourceUpdateQueue& aResources,
-                                        const mozilla::layers::StackingContextHelper& aSc,
-                                        mozilla::layers::RenderRootStateManager* aManager,
-                                        nsIFrame* aFrame, StyleAppearance aAppearance,
-                                        const nsRect& aRect) override;
-  [[nodiscard]] LayoutDeviceIntMargin GetWidgetBorder(nsDeviceContext* aContext, nsIFrame* aFrame,
-                                                      StyleAppearance aAppearance) override;
+                                  StyleAppearance aAppearance,
+                                  const nsRect& aRect, const nsRect& aDirtyRect,
+                                  DrawOverflow) override;
+  bool CreateWebRenderCommandsForWidget(
+      mozilla::wr::DisplayListBuilder& aBuilder,
+      mozilla::wr::IpcResourceUpdateQueue& aResources,
+      const mozilla::layers::StackingContextHelper& aSc,
+      mozilla::layers::RenderRootStateManager* aManager, nsIFrame* aFrame,
+      StyleAppearance aAppearance, const nsRect& aRect) override;
+  [[nodiscard]] LayoutDeviceIntMargin GetWidgetBorder(
+      nsDeviceContext* aContext, nsIFrame* aFrame,
+      StyleAppearance aAppearance) override;
 
-  bool GetWidgetPadding(nsDeviceContext* aContext, nsIFrame* aFrame, StyleAppearance aAppearance,
+  bool GetWidgetPadding(nsDeviceContext* aContext, nsIFrame* aFrame,
+                        StyleAppearance aAppearance,
                         LayoutDeviceIntMargin* aResult) override;
 
   virtual bool GetWidgetOverflow(nsDeviceContext* aContext, nsIFrame* aFrame,
-                                 StyleAppearance aAppearance, nsRect* aOverflowRect) override;
+                                 StyleAppearance aAppearance,
+                                 nsRect* aOverflowRect) override;
 
-  LayoutDeviceIntSize GetMinimumWidgetSize(nsPresContext*, nsIFrame*, StyleAppearance) override;
-  NS_IMETHOD WidgetStateChanged(nsIFrame* aFrame, StyleAppearance aAppearance, nsAtom* aAttribute,
-                                bool* aShouldRepaint, const nsAttrValue* aOldValue) override;
+  LayoutDeviceIntSize GetMinimumWidgetSize(nsPresContext*, nsIFrame*,
+                                           StyleAppearance) override;
+  NS_IMETHOD WidgetStateChanged(nsIFrame* aFrame, StyleAppearance aAppearance,
+                                nsAtom* aAttribute, bool* aShouldRepaint,
+                                const nsAttrValue* aOldValue) override;
   NS_IMETHOD ThemeChanged() override;
-  bool ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame*,
-                           StyleAppearance) override;
-  bool WidgetIsContainer(StyleAppearance) override;
+  bool ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* aFrame,
+                           StyleAppearance aAppearance) override;
+  bool WidgetIsContainer(StyleAppearance aAppearance) override;
   bool ThemeDrawsFocusForWidget(nsIFrame*, StyleAppearance) override;
   bool ThemeNeedsComboboxDropmarker() override;
-  virtual bool WidgetAppearanceDependsOnWindowFocus(StyleAppearance aAppearance) override;
-  virtual ThemeGeometryType ThemeGeometryTypeForWidget(nsIFrame* aFrame,
-                                                       StyleAppearance aAppearance) override;
-  virtual Transparency GetWidgetTransparency(nsIFrame* aFrame,
-                                             StyleAppearance aAppearance) override;
-  mozilla::Maybe<WidgetInfo> ComputeWidgetInfo(nsIFrame* aFrame, StyleAppearance aAppearance,
+  virtual bool WidgetAppearanceDependsOnWindowFocus(
+      StyleAppearance aAppearance) override;
+  virtual ThemeGeometryType ThemeGeometryTypeForWidget(
+      nsIFrame* aFrame, StyleAppearance aAppearance) override;
+  virtual Transparency GetWidgetTransparency(
+      nsIFrame* aFrame, StyleAppearance aAppearance) override;
+  mozilla::Maybe<WidgetInfo> ComputeWidgetInfo(nsIFrame* aFrame,
+                                               StyleAppearance aAppearance,
                                                const nsRect& aRect);
   void DrawProgress(CGContextRef context, const HIRect& inBoxRect, const ProgressParams& aParams);
 
  protected:
   virtual ~nsNativeThemeCocoa();
 
-  LayoutDeviceIntMargin DirectionAwareMargin(const LayoutDeviceIntMargin& aMargin,
-                                             nsIFrame* aFrame);
+  LayoutDeviceIntMargin DirectionAwareMargin(
+      const LayoutDeviceIntMargin& aMargin, nsIFrame* aFrame);
   nsIFrame* SeparatorResponsibility(nsIFrame* aBefore, nsIFrame* aAfter);
-  ControlParams ComputeControlParams(nsIFrame* aFrame, mozilla::dom::ElementState aEventState);
-  MenuIconParams ComputeMenuIconParams(nsIFrame* aParams, mozilla::dom::ElementState aEventState,
-                                       MenuIcon aIcon);
-  MenuItemParams ComputeMenuItemParams(nsIFrame* aFrame, mozilla::dom::ElementState aEventState,
-                                       bool aIsChecked);
-  SegmentParams ComputeSegmentParams(nsIFrame* aFrame, mozilla::dom::ElementState aEventState,
+  ControlParams ComputeControlParams(nsIFrame* aFrame,
+                                     mozilla::dom::ElementState aEventState);
+  SegmentParams ComputeSegmentParams(nsIFrame* aFrame,
+                                     mozilla::dom::ElementState aEventState,
                                      SegmentType aSegmentType);
-  TextFieldParams ComputeTextFieldParams(nsIFrame* aFrame, mozilla::dom::ElementState aEventState);
-  ProgressParams ComputeProgressParams(nsIFrame* aFrame, mozilla::dom::ElementState aEventState,
+  TextFieldParams ComputeTextFieldParams(
+      nsIFrame* aFrame, mozilla::dom::ElementState aEventState);
+  ProgressParams ComputeProgressParams(nsIFrame* aFrame,
+                                       mozilla::dom::ElementState aEventState,
                                        bool aIsHorizontal);
   MeterParams ComputeMeterParams(nsIFrame* aFrame);
-  TreeHeaderCellParams ComputeTreeHeaderCellParams(nsIFrame* aFrame,
-                                                   mozilla::dom::ElementState aEventState);
-  mozilla::Maybe<ScaleParams> ComputeHTMLScaleParams(nsIFrame* aFrame,
-                                                     mozilla::dom::ElementState aEventState);
+  TreeHeaderCellParams ComputeTreeHeaderCellParams(
+      nsIFrame* aFrame, mozilla::dom::ElementState aEventState);
+  mozilla::Maybe<ScaleParams> ComputeHTMLScaleParams(
+      nsIFrame* aFrame, mozilla::dom::ElementState aEventState);
 
   // HITheme drawing routines
   void DrawMeter(CGContextRef context, const HIRect& inBoxRect, const MeterParams& aParams);
