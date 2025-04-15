@@ -3386,6 +3386,7 @@ nsNativeThemeCocoa::WidgetStateChanged(nsIFrame* aFrame,
     case StyleAppearance::Tooltip:
     case StyleAppearance::Tabpanels:
     case StyleAppearance::Tabpanel:
+    case StyleAppearance::Dialog:
     case StyleAppearance::Menupopup:
     case StyleAppearance::Groupbox:
     case StyleAppearance::Progresschunk:
@@ -3453,6 +3454,7 @@ bool nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext,
       [[fallthrough]];
 
     case StyleAppearance::Listbox:
+    case StyleAppearance::Dialog:
     case StyleAppearance::MozWindowButtonBox:
     case StyleAppearance::MozWindowTitlebar:
     case StyleAppearance::Checkmenuitem:
@@ -3631,6 +3633,7 @@ nsITheme::Transparency nsNativeThemeCocoa::GetWidgetTransparency(
   switch (aAppearance) {
     case StyleAppearance::Menupopup:
     case StyleAppearance::Tooltip:
+    case StyleAppearance::Dialog:
     case StyleAppearance::Toolbar:
       return eTransparent;
     case StyleAppearance::MozMacWindow:

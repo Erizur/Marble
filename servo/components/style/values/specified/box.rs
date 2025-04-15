@@ -1665,6 +1665,8 @@ pub enum Appearance {
     /// A tree widget.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Treeview,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Dialog,
 
     /// Vista Rebars.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
