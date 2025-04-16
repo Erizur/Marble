@@ -191,6 +191,8 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
     eScale,               // ScaleParams
     eMultilineTextField,  // bool
     eListBox,
+    eActiveSourceListSelection,    // bool
+    eInactiveSourceListSelection,  // bool
     eTabPanel,
   };
 
@@ -271,7 +273,9 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
     static WidgetInfo InactiveSourceListSelection(bool aParams) {
       return WidgetInfo(Widget::eInactiveSourceListSelection, aParams);
     }
-    static WidgetInfo TabPanel(bool aParams) { return WidgetInfo(Widget::eTabPanel, aParams); }
+    static WidgetInfo TabPanel(bool aParams) {
+      return WidgetInfo(Widget::eTabPanel, aParams);
+    }
 
     template <typename T>
     T Params() const {
@@ -407,13 +411,16 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
   HIThemeButtonDrawInfo SpinButtonDrawInfo(ThemeButtonKind aKind, const SpinButtonParams& aParams);
   void DrawSpinButtons(CGContextRef context, const HIRect& inBoxRect,
                        const SpinButtonParams& aParams);
-  void DrawSpinButton(CGContextRef context, const HIRect& inBoxRect, SpinButton aDrawnButton,
-                      const SpinButtonParams& aParams);
-  void DrawToolbar(CGContextRef cgContext, const CGRect& inBoxRect, bool aIsMain);
-  void DrawStatusBar(CGContextRef cgContext, const HIRect& inBoxRect, bool aIsMain);
-  void DrawMultilineTextField(CGContextRef cgContext, const CGRect& inBoxRect, bool aIsFocused);
-  void DrawSourceListSelection(CGContextRef aContext, const CGRect& aRect, bool aWindowIsActive,
-                               bool aSelectionIsActive);
+  void DrawSpinButton(CGContextRef context, const HIRect& inBoxRect,
+                      SpinButton aDrawnButton, const SpinButtonParams& aParams);
+  void DrawToolbar(CGContextRef cgContext, const CGRect& inBoxRect,
+                   bool aIsMain);
+  void DrawStatusBar(CGContextRef cgContext, const HIRect& inBoxRect,
+                     bool aIsMain);
+  void DrawMultilineTextField(CGContextRef cgContext, const CGRect& inBoxRect,
+                              bool aIsFocused);
+  void DrawSourceListSelection(CGContextRef aContext, const CGRect& aRect,
+                               bool aWindowIsActive, bool aSelectionIsActive);
 
   void RenderWidget(const WidgetInfo& aWidgetInfo, mozilla::ColorScheme,
                     mozilla::gfx::DrawTarget& aDrawTarget, const mozilla::gfx::Rect& aWidgetRect,
