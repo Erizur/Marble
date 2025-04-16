@@ -44,21 +44,6 @@ static NSVisualEffectMaterial VisualEffectMaterialForVibrancyType(
       return (NSVisualEffectMaterial)NSVisualEffectMaterialToolTip;
     case VibrancyType::MENU:
       return NSVisualEffectMaterialMenu;
-    case VibrancyType::TITLEBAR:
-      return NSVisualEffectMaterialTitlebar;
-  }
-}
-
-static NSVisualEffectBlendingMode VisualEffectBlendingModeForVibrancyType(
-    VibrancyType aType) {
-  switch (aType) {
-    case VibrancyType::TOOLTIP:
-    case VibrancyType::MENU:
-      return NSVisualEffectBlendingModeBehindWindow;
-    case VibrancyType::TITLEBAR:
-      return StaticPrefs::widget_macos_titlebar_blend_mode_behind_window()
-                 ? NSVisualEffectBlendingModeBehindWindow
-                 : NSVisualEffectBlendingModeWithinWindow;
   }
 }
 
