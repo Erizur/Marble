@@ -354,3 +354,4 @@ media/libvpx/config/**/config.log
 
 # Marble specific stuff, please ignore!
 mozconfigs/
+nixpkgs-mozilla/
