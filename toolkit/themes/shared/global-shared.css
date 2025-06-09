@@ -377,7 +377,7 @@ button.text-link .button-text {
   --autoscroll-background-image: url("chrome://global/skin/icons/autoscroll-horizontal.svg");
 }
 
-.autoscroller > .panel-arrowcontainer {
+.autoscroller::part(content) {
   display: none;
 }
 
