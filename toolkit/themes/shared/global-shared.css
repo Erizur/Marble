@@ -363,8 +363,8 @@ button.text-link .button-text {
   background-image: var(--autoscroll-background-image);
   background-repeat: no-repeat;
   background-position: center;
-  --panel-shadow-margin: 4px;
-  box-shadow: 0 0 var(--panel-shadow-margin) rgba(0,0,0,.2);
+  /*--panel-shadow-margin: 4px;
+  box-shadow: 0 0 var(--panel-shadow-margin) rgba(0,0,0,.2);*/
   /* Set pointer-events: none; so that mousemove events can be handled by AutoScrollChild.sys.mjs. */
   pointer-events: none;
 }
@@ -375,6 +375,10 @@ button.text-link .button-text {
 
 .autoscroller[scrolldir="EW"] {
   --autoscroll-background-image: url("chrome://global/skin/icons/autoscroll-horizontal.svg");
+}
+
+.autoscroller > .panel-arrowcontainer {
+  display: none;
 }
 
 /* Combobox dropdown renderer */
