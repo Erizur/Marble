@@ -287,6 +287,12 @@ panelview {
     }
   }
 
+  /* Temporary hack for bookmarks */
+  /* TODO: find a fix for this hack, seems like it broke when restoring arrow content in panels */
+  &[placespopup="true"]::part(content) {
+    max-height: 90vh !important;
+  }
+
   .menu-text,
   .menu-iconic-text,
   .menu-iconic-icon,
