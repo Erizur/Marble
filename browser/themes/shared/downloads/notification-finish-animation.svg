@@ -1,193 +1,69 @@
-<!-- This Source Code Form is subject to the terms of the Mozilla Public
-   - License, v. 2.0. If a copy of the MPL was not distributed with this
-   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="20">
-  <defs>
-    <path fill="context-stroke" d="M10.109 2.55a.618.618 0 0 0-.207-.39.641.641 0 0 0-.418-.16.636.636 0 0 0-.625.55c0 0 0 8.45 0 8.45 0 0-3.31-3.36-3.31-3.36a.633.633 0 0 0-.88 0 .606.606 0 0 0-.187.44.62.62 0 0 0 .187.44c0 0 4.47 4.48 4.47 4.48 0 0 .72 0 .72 0 0 0 4.47-4.48 4.47-4.48a.604.604 0 0 0 0-.88.633.633 0 0 0-.88 0c0 0-3.34 3.36-3.34 3.36 0 0 0-8.45 0-8.45z" id="ab"/>
-    <path fill="context-stroke" d="M14.125 17a2 2 0 0 0 2-2c0 0 0-1.45 0-1.45a.625.625 0 0 0-.209-.39.632.632 0 0 0-.416-.16.636.636 0 0 0-.625.55c0 0 0 1.6 0 1.6 0 0-.601.6-.601.6 0 0-9.549 0-9.549 0 0 0-.6-.6-.6-.6 0 0 0-1.6 0-1.6A.638.638 0 0 0 3.5 13a.636.636 0 0 0-.625.55c0 0 0 1.45 0 1.45a2 2 0 0 0 2 2c0 0 9.25 0 9.25 0z" id="aa"/>
-    <path stroke="context-fill" stroke-width="1.8" d="M5.838 8.706c0 0 3.487 3.488 3.487 3.488 0 0 4.387-5.175 4.387-5.175" fill="none" id="i"/>
-    <path fill="#15141A" d="M-1.17 3c0 0-2.65-2.64-2.65-2.64a.625.625 0 0 1-.161-.7.638.638 0 0 1 .351-.35.625.625 0 0 1 .496.011.625.625 0 0 1 .204.149c0 0 2.07 2.08 2.07 2.08 0 0 3.79-3.8 3.79-3.8a.63.63 0 0 1 .89.89C3.82-1.36-.55 3-.55 3c0 0-.62 0-.62 0z" id="d"/>
-    <path stroke="context-fill" stroke-linecap="round" d="M9.991 1.6a8.4 8.4 0 1 1 0 16.8 8.4 8.4 0 0 1 0-16.8z" fill="none" stroke-width="1.05" id="c"/>
-    <path fill="context-fill" d="M0-4.752a4.753 4.753 0 1 0 .001 9.505A4.753 4.753 0 0 0 0-4.752z" id="b"/>
-    <path fill="none" stroke="context-fill" stroke-linecap="round" d="M0-8A8 8 0 1 1 0 8 8 8 0 0 1 0-8z" id="a"/>
-  </defs>
-  <svg viewBox="0 0 20 20" width="20" height="20">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="20">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="40">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="60">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="80">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="100">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="120">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="140">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="matrix(1.35 0 0 1.35 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="160">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="translate(10 10) scale(1.20948)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="180">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="translate(10 10) scale(.8747)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="200">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="translate(10 10) scale(.4753)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="220">
-    <use transform="matrix(1.05 0 0 1.05 9.991 10)" href="#a"/>
-    <use transform="translate(10 10) scale(.14052)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="240">
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="260">
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="280">
-    <defs>
-      <mask id="e" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <g style="display:block" mask="url(#e)">
-      <path stroke="context-fill" stroke-width="1.8" d="M5.838 8.706c0 0 1.927 1.928 2.916 2.918" fill="none"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="300">
-    <defs>
-      <mask id="f" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <g style="display:block" mask="url(#f)">
-      <path stroke="context-fill" stroke-width="1.8" d="M5.838 8.706c0 0 3.487 3.488 3.487 3.488 0 0 .802-.945 1.72-2.028" fill="none"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="320">
-    <defs>
-      <mask id="g" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <g style="display:block" mask="url(#g)">
-      <path stroke="context-fill" stroke-width="1.8" d="M5.838 8.706c0 0 3.487 3.488 3.487 3.488 0 0 2.335-2.755 3.6-4.244" fill="none"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="340">
-    <defs>
-      <mask id="h" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <g style="display:block" mask="url(#h)">
-      <use stroke="context-fill" stroke-width="1.8" fill="none" href="#i"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="360">
-    <defs>
-      <mask id="W" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <g style="display:block" mask="url(#W)">
-      <use stroke="context-fill" stroke-width="1.8" fill="none" href="#i"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="380">
-    <defs>
-      <mask id="X" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <g style="display:block" mask="url(#X)">
-      <use stroke="context-fill" stroke-width="1.8" fill="none" href="#i"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="400">
-    <defs>
-      <mask id="Y" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" opacity=".74" stroke-width="1.05" href="#c"/>
-    <path fill="context-fill" d="M9.752 9.485a.046.046 0 0 0-.016-.03.048.048 0 0 0-.03-.011.047.047 0 0 0-.047.04c0 0 0 .627 0 .627 0 0-.245-.249-.245-.249a.047.047 0 0 0-.076.015.046.046 0 0 0 .01.05c0 0 .332.333.332.333 0 0 .053 0 .053 0 0 0 .332-.333.332-.333a.045.045 0 0 0 0-.065.047.047 0 0 0-.066 0c0 0-.247.25-.247.25 0 0 0-.627 0-.627z" opacity=".3"/>
-    <g mask="url(#Y)">
-      <path stroke="context-fill" stroke-width="1.67" d="M6.146 8.802c0 0 3.23 3.23 3.23 3.23 0 0 4.061-4.792 4.061-4.792" fill="none"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="420">
-    <defs>
-      <mask id="Z" mask-type="alpha">
-        <use fill="#15141A" transform="translate(10 10)" href="#d"/>
-      </mask>
-    </defs>
-    <use fill="none" opacity=".26" stroke-width="1.05" href="#c"/>
-    <path fill="context-stroke" d="M10.465 18.111a.519.519 0 0 0 .52-.519c0 0 0-.376 0-.376a.164.164 0 0 0-.162-.143.165.165 0 0 0-.163.143c0 0 0 .415 0 .415 0 0-.156.156-.156.156 0 0-2.476 0-2.476 0 0 0-.156-.156-.156-.156 0 0 0-.415 0-.415a.163.163 0 0 0-.27-.101.16.16 0 0 0-.054.101c0 0 0 .376 0 .376a.519.519 0 0 0 .518.519c0 0 2.4 0 2.4 0z"/>
-    <path fill="context-stroke" d="M9.423 7.697a.16.16 0 0 0-.054-.1.166.166 0 0 0-.108-.042.165.165 0 0 0-.162.142c0 0 0 2.192 0 2.192 0 0-.859-.871-.859-.871a.164.164 0 0 0-.264.052.16.16 0 0 0 .036.176c0 0 1.16 1.162 1.16 1.162 0 0 .186 0 .186 0 0 0 1.16-1.162 1.16-1.162a.157.157 0 0 0 0-.228.164.164 0 0 0-.229 0c0 0-.866.871-.866.871 0 0 0-2.192 0-2.192z" opacity=".7"/>
-    <g style="display:block" mask="url(#Z)">
-      <path stroke="context-fill" stroke-width="1.33" d="M6.917 9.041c0 0 2.583 2.584 2.583 2.584 0 0 3.25-3.833 3.25-3.833" fill="none"/>
-    </g>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="440">
-    <use fill="none" opacity=".26" stroke-width="1.05" href="#c"/>
-    <use transform="matrix(0 0 0 0 10 10)" href="#b"/>
-    <path fill="context-stroke" d="M11.655 17.75a1 1 0 0 0 1-1c0 0 0-.725 0-.725a.316.316 0 0 0-.313-.275.318.318 0 0 0-.312.275c0 0 0 .8 0 .8 0 0-.301.3-.301.3 0 0-4.775 0-4.775 0 0 0-.3-.3-.3-.3 0 0 0-.8 0-.8a.314.314 0 0 0-.52-.195.31.31 0 0 0-.104.195c0 0 0 .725 0 .725a1 1 0 0 0 1 1c0 0 4.625 0 4.625 0z"/>
-    <path fill="context-stroke" d="M9.646 6.025a.31.31 0 0 0-.104-.195.32.32 0 0 0-.209-.08.318.318 0 0 0-.312.275c0 0 0 4.225 0 4.225 0 0-1.655-1.68-1.655-1.68a.317.317 0 0 0-.509.1.308.308 0 0 0 .069.34c0 0 2.235 2.24 2.235 2.24 0 0 .36 0 .36 0 0 0 2.235-2.24 2.235-2.24a.302.302 0 0 0 0-.44.317.317 0 0 0-.44 0c0 0-1.67 1.68-1.67 1.68 0 0 0-4.225 0-4.225z"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="460">
-    <use fill="none" opacity=".26" stroke-width="1.05" href="#c"/>
-    <path fill="context-stroke" d="M12.844 17.389a1.482 1.482 0 0 0 1.48-1.481c0 0 0-1.074 0-1.074a.468.468 0 0 0-.463-.407.471.471 0 0 0-.462.407c0 0 0 1.185 0 1.185 0 0-.445.444-.445.444 0 0-7.073 0-7.073 0 0 0-.444-.444-.444-.444 0 0 0-1.185 0-1.185a.466.466 0 0 0-.772-.289.459.459 0 0 0-.154.289c0 0 0 1.074 0 1.074a1.481 1.481 0 0 0 1.482 1.481c0 0 6.85 0 6.85 0z"/>
-    <path fill="context-stroke" d="M9.869 4.353a.458.458 0 0 0-.153-.29.475.475 0 0 0-.31-.118.47.47 0 0 0-.463.408c0 0 0 6.258 0 6.258 0 0-2.451-2.489-2.451-2.489a.469.469 0 0 0-.754.15.456.456 0 0 0 .102.502c0 0 3.31 3.318 3.31 3.318 0 0 .534 0 .534 0 0 0 3.31-3.318 3.31-3.318a.447.447 0 0 0 0-.652.469.469 0 0 0-.651 0c0 0-2.474 2.489-2.474 2.489 0 0 0-6.258 0-6.258z"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="480">
-    <use fill="none" opacity=".26" stroke-width="1.05" href="#c"/>
-    <path fill="context-stroke" d="M13.759 17.111a1.852 1.852 0 0 0 1.851-1.851c0 0 0-1.343 0-1.343a.585.585 0 0 0-.579-.51.59.59 0 0 0-.578.51c0 0 0 1.481 0 1.481 0 0-.556.556-.556.556 0 0-8.841 0-8.841 0 0 0-.556-.556-.556-.556 0 0 0-1.481 0-1.481a.591.591 0 0 0-.579-.51.59.59 0 0 0-.578.51c0 0 0 1.343 0 1.343a1.851 1.851 0 0 0 1.852 1.851c0 0 8.564 0 8.564 0z"/>
-    <path fill="context-stroke" d="M10.04 3.065a.572.572 0 0 0-.191-.36.593.593 0 0 0-.387-.149.589.589 0 0 0-.579.51c0 0 0 7.823 0 7.823 0 0-3.065-3.111-3.065-3.111a.586.586 0 0 0-.814 0 .561.561 0 0 0-.173.407.574.574 0 0 0 .173.408c0 0 4.138 4.147 4.138 4.147 0 0 .667 0 .667 0 0 0 4.138-4.147 4.138-4.147a.559.559 0 0 0 0-.815.586.586 0 0 0-.814 0c0 0-3.093 3.11-3.093 3.11 0 0 0-7.823 0-7.823z"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="500">
-    <use fill="none" opacity=".26" stroke-width="1.05" href="#c"/>
-    <use fill="context-stroke" href="#aa"/>
-    <use fill="context-stroke" href="#ab"/>
-  </svg>
-  <svg viewBox="0 0 20 20" width="20" height="20" x="520">
-    <use fill="context-fill" opacity=".26" stroke-width="1.05" href="#c"/>
-    <use fill="context-stroke" href="#aa"/>
-    <use fill="context-stroke" href="#ab"/>
-  </svg>
+<svg width="540" height="20" viewBox="0 0 540 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_8_428)">
+<circle cx="10" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="10" cy="10" r="6" fill="context-stroke"/>
+<circle cx="30" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="30" cy="10" r="6" fill="context-stroke"/>
+<circle cx="50" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="50" cy="10" r="6" fill="context-stroke"/>
+<circle cx="70" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="70" cy="10" r="6" fill="context-stroke"/>
+<circle cx="90" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="90" cy="10" r="6" fill="context-stroke"/>
+<circle cx="110" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="110" cy="10" r="6" fill="context-stroke"/>
+<circle cx="130" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="130" cy="10" r="6" fill="context-stroke"/>
+<circle cx="150" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="150" cy="10" r="5.875" fill="context-stroke"/>
+<circle cx="170" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="170" cy="10" r="5.5" fill="context-stroke"/>
+<circle cx="190" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="190" cy="10" r="4" fill="context-stroke"/>
+<circle cx="210" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="210" cy="10" r="2" fill="context-stroke"/>
+<circle cx="230" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="230" cy="10" r="0.5" fill="context-stroke"/>
+<circle cx="250" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="270" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="290" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M286.25 9.5L288.5 11.75" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle cx="310" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M306.25 9.5L309.25 12.5L311 10.75" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle cx="330" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M326.25 9.5L329.25 12.5L333 8.75" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle cx="350" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M346.25 9.5L349.25 12.5L353.75 8" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle cx="370" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M366.25 9.5L369.25 12.5L373.75 8" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle opacity="0.96" cx="390" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M386.25 9.5L389.25 12.5L393.75 8" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle opacity="0.76" cx="410" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M408 11.25L409.25 12.5L413.75 8" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<circle opacity="0.26" cx="430" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M430.75 11L433.75 8" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<path opacity="0.45" d="M429.704 11.3874C429.783 11.4595 429.889 11.5 430 11.5C430.111 11.5 430.217 11.4595 430.296 11.3874L432.387 9.46412C432.461 9.39125 432.502 9.29465 432.5 9.19476C432.498 9.09488 432.454 8.99954 432.377 8.92892C432.301 8.85831 432.197 8.81795 432.088 8.8164C431.98 8.81485 431.875 8.85222 431.795 8.92061L430.418 10.1873V6.88465C430.418 6.78264 430.374 6.6848 430.296 6.61266C430.217 6.54053 430.111 6.5 430 6.5C429.889 6.5 429.783 6.54053 429.704 6.61266C429.626 6.6848 429.582 6.78264 429.582 6.88465V10.1873L428.205 8.92061C428.125 8.85222 428.02 8.81485 427.912 8.8164C427.803 8.81795 427.699 8.85831 427.623 8.92892C427.546 8.99954 427.502 9.09488 427.5 9.19476C427.498 9.29465 427.539 9.39125 427.613 9.46412L429.704 11.3874V11.3874Z" fill="context-stroke"/>
+<path opacity="0.45" d="M432.083 12C432.194 12 432.3 12.0527 432.378 12.1464C432.456 12.2402 432.5 12.3674 432.5 12.5C432.5 12.6326 432.456 12.7598 432.378 12.8536C432.3 12.9473 432.194 13 432.083 13H427.917C427.806 13 427.7 12.9473 427.622 12.8536C427.544 12.7598 427.5 12.6326 427.5 12.5C427.5 12.3674 427.544 12.2402 427.622 12.1464C427.7 12.0527 427.806 12 427.917 12H432.083Z" fill="context-stroke"/>
+<circle opacity="0.05" cx="450" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M453.5 8.25L453.75 8" stroke="context-fill" stroke-width="2" stroke-linecap="round"/>
+<path opacity="0.78" d="M449.586 12.8198C449.696 12.9352 449.845 13 450 13C450.155 13 450.304 12.9352 450.414 12.8198L453.342 9.7426C453.446 9.626 453.502 9.47144 453.5 9.31162C453.497 9.1518 453.436 8.99926 453.328 8.88628C453.221 8.77329 453.076 8.70873 452.924 8.70625C452.772 8.70376 452.625 8.76356 452.514 8.87298L450.586 10.8996V5.61544C450.586 5.45222 450.524 5.29568 450.414 5.18026C450.304 5.06484 450.155 5 450 5C449.845 5 449.696 5.06484 449.586 5.18026C449.476 5.29568 449.414 5.45222 449.414 5.61544V10.8996L447.486 8.87298C447.375 8.76356 447.228 8.70376 447.076 8.70625C446.924 8.70873 446.779 8.77329 446.672 8.88628C446.564 8.99926 446.503 9.1518 446.5 9.31162C446.498 9.47144 446.554 9.626 446.658 9.7426L449.586 12.8198V12.8198Z" fill="context-stroke"/>
+<path opacity="0.78" d="M452.917 14C453.071 14 453.22 14.0527 453.329 14.1464C453.439 14.2402 453.5 14.3674 453.5 14.5C453.5 14.6326 453.439 14.7598 453.329 14.8536C453.22 14.9473 453.071 15 452.917 15H447.083C446.929 15 446.78 14.9473 446.671 14.8536C446.561 14.7598 446.5 14.6326 446.5 14.5C446.5 14.3674 446.561 14.2402 446.671 14.1464C446.78 14.0527 446.929 14 447.083 14H452.917Z" fill="context-stroke"/>
+<circle opacity="0.05" cx="470" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M469.527 12.7973C469.652 12.9271 469.823 13 470 13C470.177 13 470.348 12.9271 470.473 12.7973L473.819 9.33542C473.938 9.20425 474.003 9.03037 474 8.85057C473.997 8.67078 473.927 8.49917 473.804 8.37206C473.681 8.24495 473.515 8.17232 473.341 8.16953C473.167 8.16673 472.999 8.234 472.873 8.3571L470.669 10.6371V4.69237C470.669 4.50874 470.599 4.33264 470.473 4.20279C470.348 4.07295 470.177 4 470 4C469.823 4 469.652 4.07295 469.527 4.20279C469.401 4.33264 469.331 4.50874 469.331 4.69237V10.6371L467.127 8.3571C467.001 8.234 466.833 8.16673 466.659 8.16953C466.485 8.17232 466.319 8.24495 466.196 8.37206C466.073 8.49917 466.003 8.67078 466 8.85057C465.997 9.03037 466.062 9.20425 466.181 9.33542L469.527 12.7973V12.7973Z" fill="context-stroke"/>
+<path d="M473.75 14C473.949 14 474.14 14.079 474.28 14.2197C474.421 14.3603 474.5 14.5511 474.5 14.75C474.5 14.9489 474.421 15.1397 474.28 15.2803C474.14 15.421 473.949 15.5 473.75 15.5H466.25C466.051 15.5 465.86 15.421 465.72 15.2803C465.579 15.1397 465.5 14.9489 465.5 14.75C465.5 14.5511 465.579 14.3603 465.72 14.2197C465.86 14.079 466.051 14 466.25 14H473.75Z" fill="context-stroke"/>
+<circle opacity="0.05" cx="490" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M489.409 13.7522C489.565 13.9109 489.778 14 490 14C490.222 14 490.435 13.9109 490.591 13.7522L494.774 9.52107C494.922 9.36075 495.003 9.14823 495 8.92848C494.996 8.70873 494.908 8.49898 494.755 8.34363C494.601 8.18828 494.394 8.0995 494.177 8.09609C493.959 8.09267 493.749 8.17489 493.591 8.32534L490.836 11.112V3.84623C490.836 3.6218 490.748 3.40656 490.591 3.24786C490.435 3.08916 490.222 3 490 3C489.778 3 489.565 3.08916 489.409 3.24786C489.252 3.40656 489.164 3.6218 489.164 3.84623V11.112L486.409 8.32534C486.251 8.17489 486.041 8.09267 485.823 8.09609C485.606 8.0995 485.399 8.18828 485.245 8.34363C485.092 8.49898 485.004 8.70873 485 8.92848C484.997 9.14823 485.078 9.36075 485.226 9.52107L489.409 13.7522V13.7522Z" fill="context-stroke"/>
+<path d="M494.167 15C494.388 15 494.6 15.0922 494.756 15.2563C494.912 15.4204 495 15.6429 495 15.875C495 16.1071 494.912 16.3296 494.756 16.4937C494.6 16.6578 494.388 16.75 494.167 16.75H485.833C485.612 16.75 485.4 16.6578 485.244 16.4937C485.088 16.3296 485 16.1071 485 15.875C485 15.6429 485.088 15.4204 485.244 15.2563C485.4 15.0922 485.612 15 485.833 15H494.167Z" fill="context-stroke"/>
+<circle opacity="0.05" cx="510" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M509.293 14.706C509.481 14.8935 509.735 14.9988 510 14.9988C510.265 14.9988 510.519 14.8935 510.707 14.706L515.707 9.706C515.885 9.51655 515.982 9.26541 515.977 9.00573C515.973 8.74605 515.868 8.49819 515.684 8.31461C515.501 8.13103 515.253 8.02612 514.993 8.02209C514.733 8.01805 514.482 8.11521 514.293 8.293L511 11.586V3C511 2.73478 510.895 2.48043 510.707 2.29289C510.52 2.10536 510.265 2 510 2C509.735 2 509.48 2.10536 509.293 2.29289C509.105 2.48043 509 2.73478 509 3V11.586L505.707 8.293C505.518 8.11521 505.267 8.01805 505.007 8.02209C504.747 8.02612 504.499 8.13103 504.316 8.31461C504.132 8.49819 504.027 8.74605 504.023 9.00573C504.018 9.26541 504.115 9.51655 504.293 9.706L509.293 14.706V14.706Z" fill="context-stroke"/>
+<path d="M515 15.981C515.265 15.981 515.52 16.0864 515.707 16.2739C515.895 16.4614 516 16.7158 516 16.981C516 17.2462 515.895 17.5006 515.707 17.6881C515.52 17.8757 515.265 17.981 515 17.981H505C504.735 17.981 504.48 17.8757 504.293 17.6881C504.105 17.5006 504 17.2462 504 16.981C504 16.7158 504.105 16.4614 504.293 16.2739C504.48 16.0864 504.735 15.981 505 15.981H515Z" fill="context-stroke"/>
+<circle opacity="0.05" cx="530" cy="10" r="8" stroke="context-fill" stroke-width="2" stroke-linejoin="round"/>
+<path d="M529.293 14.706C529.481 14.8935 529.735 14.9988 530 14.9988C530.265 14.9988 530.519 14.8935 530.707 14.706L535.707 9.706C535.885 9.51655 535.982 9.26541 535.977 9.00573C535.973 8.74605 535.868 8.49819 535.684 8.31461C535.501 8.13103 535.253 8.02612 534.993 8.02209C534.733 8.01805 534.482 8.11521 534.293 8.293L531 11.586V3C531 2.73478 530.895 2.48043 530.707 2.29289C530.52 2.10536 530.265 2 530 2C529.735 2 529.48 2.10536 529.293 2.29289C529.105 2.48043 529 2.73478 529 3V11.586L525.707 8.293C525.518 8.11521 525.267 8.01805 525.007 8.02209C524.747 8.02612 524.499 8.13103 524.316 8.31461C524.132 8.49819 524.027 8.74605 524.023 9.00573C524.018 9.26541 524.115 9.51655 524.293 9.706L529.293 14.706V14.706Z" fill="context-stroke"/>
+<path d="M535 15.981C535.265 15.981 535.52 16.0864 535.707 16.2739C535.895 16.4614 536 16.7158 536 16.981C536 17.2462 535.895 17.5006 535.707 17.6881C535.52 17.8757 535.265 17.981 535 17.981H525C524.735 17.981 524.48 17.8757 524.293 17.6881C524.105 17.5006 524 17.2462 524 16.981C524 16.7158 524.105 16.4614 524.293 16.2739C524.48 16.0864 524.735 15.981 525 15.981H535Z" fill="context-stroke"/>
+</g>
+<defs>
+<clipPath id="clip0_8_428">
+<rect width="540" height="20" fill="white"/>
+</clipPath>
+</defs>
 </svg>

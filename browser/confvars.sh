@@ -9,5 +9,5 @@
 # For mozilla-beta, mozilla-release, or mozilla-central repositories, use
 # "unofficial" branding.
 # For the mozilla-aurora repository, use "aurora".
-MOZ_BRANDING_DIRECTORY=browser/branding/unofficial
+MOZ_BRANDING_DIRECTORY=browser/branding/official
 MOZ_OFFICIAL_BRANDING_DIRECTORY=browser/branding/official
