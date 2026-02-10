@@ -3606,7 +3606,7 @@
 # BrowsingContext. This includes calls to History and Location APIs.
 - name: dom.navigation.navigationRateLimit.count
   type: uint32_t
-  value: 200
+  value: 1000
   mirror: always
 
 # Time span in seconds for location change rate limit.
@@ -4644,7 +4644,7 @@
 
 - name: dom.workers.timeoutmanager
   type: bool
-  value: false
+  value: true
   mirror: once
 
 - name: dom.workers.serialized-sab-access
