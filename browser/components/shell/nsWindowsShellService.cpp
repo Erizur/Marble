@@ -2116,38 +2116,12 @@ static nsresult PinCurrentAppToTaskbarAsyncImpl(bool aCheckOnly,
 
   nsAutoString aumid;
   if (NS_WARN_IF(!mozilla::widget::WinTaskbar::GetAppUserModelID(
-          aumid, aPrivateBrowsing))) {
+          aumid))) {
     return NS_ERROR_FAILURE;
   }
 
-  // NOTE: In the installer, non-private shortcuts are named
-  // "${BrandShortName}.lnk". This is set from MOZ_APP_DISPLAYNAME in
-  // defines.nsi.in. (Except in dev edition where it's explicitly set to
-  // "Firefox Developer Edition" in branding.nsi, which matches
-  // MOZ_APP_DISPLAYNAME in aurora/configure.sh.)
-  //
-  // If this changes, we could expand this to check shortcuts_log.ini,
-  // which records the name of the shortcuts as created by the installer.
-  //
-  // Private shortcuts are not created by the installer (they're created
-  // upon user request, ultimately by CreateShortcutImpl, and recorded in
-  // a separate shortcuts log. As with non-private shortcuts they have a known
-  // name - so there's no need to look through logs to find them.
   nsAutoString shortcutName;
-  if (aPrivateBrowsing) {
-    nsTArray<nsCString> resIds = {
-        "branding/brand.ftl"_ns,
-        "browser/browser.ftl"_ns,
-    };
-    RefPtr<Localization> l10n = Localization::Create(resIds, true);
-    nsAutoCString pbStr;
-    IgnoredErrorResult rv;
-    l10n->FormatValueSync("private-browsing-shortcut-text-2"_ns, {}, pbStr, rv);
-    shortcutName.Append(NS_ConvertUTF8toUTF16(pbStr));
-    shortcutName.AppendLiteral(".lnk");
-  } else {
-    shortcutName.AppendLiteral(MOZ_APP_DISPLAYNAME ".lnk");
-  }
+  shortcutName.AppendLiteral(MOZ_APP_DISPLAYNAME ".lnk");
 
   nsCOMPtr<nsIFile> greDir, updRoot, programsDir, shortcutsLogDir;
   nsresult nsrv = NS_GetSpecialDirectory(NS_GRE_DIR, getter_AddRefs(greDir));

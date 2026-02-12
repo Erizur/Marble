@@ -1010,14 +1010,6 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   }
 
   {
-    // Although permanent Private Browsing mode is indeed Private Browsing,
-    // we choose to make it look like regular Firefox in terms of the icon
-    // it uses (which also means we shouldn't use the Private Browsing
-    // AUMID).
-    bool usePrivateAumid =
-        Preferences::GetBool("browser.privateWindowSeparation.enabled", true) &&
-        (aInitData->mIsPrivate) &&
-        !StaticPrefs::browser_privatebrowsing_autostart();
     RefPtr<IPropertyStore> pPropStore;
     if (!FAILED(SHGetPropertyStoreForWindow(mWnd, IID_IPropertyStore,
                                             getter_AddRefs(pPropStore)))) {
@@ -1025,9 +1017,8 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
       nsAutoString aumid;
       // Make sure we're using the correct AUMID so that taskbar
       // grouping works properly
-      Unused << NS_WARN_IF(!mozilla::widget::WinTaskbar::GenerateAppUserModelID(
-          aumid, usePrivateAumid));
-      if (!usePrivateAumid && widget::WinUtils::HasPackageIdentity()) {
+      Unused << NS_WARN_IF(!mozilla::widget::WinTaskbar::GenerateAppUserModelID(aumid));
+      if (widget::WinUtils::HasPackageIdentity()) {
         // On MSIX we should always have a provided process AUMID
         // that we can explicitly assign to a regular window.
         UINT32 maxLength = MAX_PATH;
@@ -1045,7 +1036,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
     }
     HICON icon = ::LoadIconW(
         ::GetModuleHandleW(nullptr),
-        MAKEINTRESOURCEW(usePrivateAumid ? IDI_PBMODE : IDI_APPICON));
+        MAKEINTRESOURCEW(IDI_APPICON));
     SetBigIcon(icon);
     SetSmallIcon(icon);
   }
