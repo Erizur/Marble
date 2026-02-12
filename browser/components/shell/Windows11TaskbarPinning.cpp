@@ -208,8 +208,7 @@ Win11PinToTaskBarResult PinCurrentAppToTaskbarWin11(
         // GenerateAppUserModelId needs to be called on the main thread as
         // it checks against preferences.
         nsAutoString primaryAumid;
-        mozilla::widget::WinTaskbar::GenerateAppUserModelID(primaryAumid,
-                                                            false);
+        mozilla::widget::WinTaskbar::GenerateAppUserModelID(primaryAumid);
         auto CompletedOperations = [&event, &resultStatus,
                                     primaryAumid = nsString(primaryAumid)](
                                        Win11PinToTaskBarResultStatus status) {

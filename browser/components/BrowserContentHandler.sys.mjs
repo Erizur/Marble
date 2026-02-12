@@ -48,10 +48,6 @@ ChromeUtils.defineLazyGetter(lazy, "gWindowsAlertsService", () => {
 const ONCE_DOMAINS = new Set(["mozilla.org", "firefox.com"]);
 const ONCE_PREF = "browser.startup.homepage_override.once";
 
-// Index of Private Browsing icon in firefox.exe
-// Must line up with the one in nsNativeAppSupportWin.h.
-const PRIVATE_BROWSING_ICON_INDEX = 5;
-
 function shouldLoadURI(aURI) {
   if (aURI && !aURI.schemeIs("chrome")) {
     return true;
@@ -1157,26 +1153,6 @@ nsBrowserContentHandler.prototype = {
       if (forcePrivate) {
         win.docShell.QueryInterface(Ci.nsILoadContext).usePrivateBrowsing =
           true;
-
-        if (
-          AppConstants.platform == "win" &&
-          Services.prefs.getBoolPref(
-            "browser.privateWindowSeparation.enabled",
-            true
-          )
-        ) {
-          lazy.WinTaskbar.setGroupIdForWindow(
-            win,
-            lazy.WinTaskbar.defaultPrivateGroupId
-          );
-          lazy.WindowsUIUtils.setWindowIconFromExe(
-            win,
-            Services.dirsvc.get("XREExeF", Ci.nsIFile).path,
-            // This corresponds to the definitions in
-            // nsNativeAppSupportWin.h
-            PRIVATE_BROWSING_ICON_INDEX
-          );
-        }
       }
 
       let openTime = win.openTime;

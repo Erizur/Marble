@@ -26,13 +26,11 @@ class WinTaskbar final : public nsIWinTaskbar {
   NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIWINTASKBAR
 
-  static bool GenerateAppUserModelID(nsAString& aAppUserModelId,
-                                     bool aPrivateBrowsing = false);
+  static bool GenerateAppUserModelID(nsAString& aAppUserModelId);
   // Registers the global app user model id for the instance.
   // See comments in WinTaskbar.cpp for more information.
   static bool RegisterAppUserModelID();
-  static bool GetAppUserModelID(nsAString& aDefaultGroupId,
-                                bool aPrivateBrowsing = false);
+  static bool GetAppUserModelID(nsAString& aDefaultGroupId);
 
  private:
   bool Initialize();
