@@ -4131,7 +4131,9 @@ bool nsDisplayOutline::CreateWebRenderCommands(
 
 bool nsDisplayOutline::HasRadius() const {
   const auto& radius = mFrame->StyleBorder()->mBorderRadius;
-  return !nsLayoutUtils::HasNonZeroCorner(radius);
+  const auto& outlineRadius = mFrame->StyleOutline()->mOutlineRadius;
+  return !nsLayoutUtils::HasNonZeroCorner(radius) &&
+         !nsLayoutUtils::HasNonZeroCorner(outlineRadius);
 }
 
 bool nsDisplayOutline::IsInvisibleInRect(const nsRect& aRect) const {
