@@ -485,9 +485,13 @@ bool nsNativeThemeGTK::WidgetAttributeChangeRequiresRepaint(
   return Theme::WidgetAttributeChangeRequiresRepaint(aAppearance, aAttribute);
 }
 
-bool nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
-                                           nsIFrame* aFrame,
-                                           StyleAppearance aAppearance) {
+NS_IMETHODIMP
+nsNativeThemeGTK::ThemeChanged() { return NS_OK; }
+
+NS_IMETHODIMP_(bool)
+nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
+                                      nsIFrame* aFrame,
+                                      StyleAppearance aAppearance) {
   if (IsWidgetAlwaysNonNative(aFrame, aAppearance)) {
     return Theme::ThemeSupportsWidget(aPresContext, aFrame, aAppearance);
   }
@@ -502,7 +506,8 @@ bool nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
   return false;
 }
 
-bool nsNativeThemeGTK::WidgetIsContainer(StyleAppearance aAppearance) {
+NS_IMETHODIMP_(bool)
+nsNativeThemeGTK::WidgetIsContainer(StyleAppearance aAppearance) {
   // XXXdwh At some point flesh all of this out.
   return true;
 }
