@@ -28,6 +28,7 @@ enum class CSDStyle {
 };
 
 static bool gHeaderBarShouldDrawContainer = false;
+static bool gMaximizedHeaderBarShouldDrawContainer = false;
 static CSDStyle gCSDStyle = CSDStyle::Unknown;
 static GtkWidget* sWidgetStorage[MOZ_GTK_WIDGET_NODE_COUNT];
 static GtkStyleContext* sStyleStorage[MOZ_GTK_WIDGET_NODE_COUNT];
@@ -189,12 +190,24 @@ static void CreateHeaderBarWidget(WidgetNodeType aAppearance) {
   gtk_style_context_add_class(headerBarStyle, "default-decoration");
 
   sWidgetStorage[aAppearance] = headerBar;
-  MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW],
-             "Window widget is already created!");
-  MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED],
-             "Fixed widget is already created!");
-  sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW] = window;
-  sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED] = fixed;
+  if (aAppearance == MOZ_GTK_HEADER_BAR_MAXIMIZED) {
+    MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW_MAXIMIZED],
+               "Window widget is already created!");
+    MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED_MAXIMIZED],
+               "Fixed widget is already created!");
+
+    gtk_style_context_add_class(windowStyle, "maximized");
+
+    sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW_MAXIMIZED] = window;
+    sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED_MAXIMIZED] = fixed;
+  } else {
+    MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW],
+               "Window widget is already created!");
+    MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED],
+               "Fixed widget is already created!");
+    sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW] = window;
+    sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED] = fixed;
+  }
 
   gtk_container_add(GTK_CONTAINER(window), fixed);
   gtk_container_add(GTK_CONTAINER(fixed), headerBar);
@@ -203,7 +216,10 @@ static void CreateHeaderBarWidget(WidgetNodeType aAppearance) {
 
   // Some themes like Elementary's style the container of the headerbar rather
   // than the header bar itself.
-  gHeaderBarShouldDrawContainer = [&] {
+  bool& shouldDrawContainer = aAppearance == MOZ_GTK_HEADER_BAR
+                                  ? gHeaderBarShouldDrawContainer
+                                  : gMaximizedHeaderBarShouldDrawContainer;
+  shouldDrawContainer = [&] {
     const bool headerBarHasBackground = HasBackground(headerBarStyle);
     if (headerBarHasBackground && GetBorderRadius(headerBarStyle)) {
       return false;
@@ -234,6 +250,7 @@ bool IsSolidCSDStyleUsed() {
 
 static void CreateHeaderBar() {
   CreateHeaderBarWidget(MOZ_GTK_HEADER_BAR);
+  CreateHeaderBarWidget(MOZ_GTK_HEADER_BAR_MAXIMIZED);
 }
 
 static GtkWidget* CreateWidget(WidgetNodeType aAppearance) {
@@ -259,8 +276,11 @@ static GtkWidget* CreateWidget(WidgetNodeType aAppearance) {
     case MOZ_GTK_TREE_HEADER_CELL:
       return CreateTreeHeaderCellWidget();
     case MOZ_GTK_HEADERBAR_WINDOW:
+    case MOZ_GTK_HEADERBAR_WINDOW_MAXIMIZED:
     case MOZ_GTK_HEADERBAR_FIXED:
+    case MOZ_GTK_HEADERBAR_FIXED_MAXIMIZED:
     case MOZ_GTK_HEADER_BAR:
+    case MOZ_GTK_HEADER_BAR_MAXIMIZED:
       /* Create header bar widgets once and fill with child elements as we need
          the header bar fully configured to get a correct style */
       CreateHeaderBar();
@@ -516,14 +536,14 @@ static GtkStyleContext* GetCssNodeStyleInternal(WidgetNodeType aNodeType) {
       break;
     case MOZ_GTK_WINDOW_DECORATION: {
       GtkStyleContext* parentStyle =
-          CreateSubStyleWithClass(MOZ_GTK_HEADERBAR_WINDOW, "csd");
+          CreateSubStyleWithClass(MOZ_GTK_WINDOW, "csd");
       style = CreateCSSNode("decoration", parentStyle);
       g_object_unref(parentStyle);
       break;
     }
     case MOZ_GTK_WINDOW_DECORATION_SOLID: {
       GtkStyleContext* parentStyle =
-          CreateSubStyleWithClass(MOZ_GTK_HEADERBAR_WINDOW, "solid-csd");
+          CreateSubStyleWithClass(MOZ_GTK_WINDOW, "solid-csd");
       style = CreateCSSNode("decoration", parentStyle);
       g_object_unref(parentStyle);
       break;
@@ -585,6 +605,9 @@ void ResetWidgetCache() {
   }
   if (sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW]) {
     gtk_widget_destroy(sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW]);
+  }
+  if (sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW_MAXIMIZED]) {
+    gtk_widget_destroy(sWidgetStorage[MOZ_GTK_HEADERBAR_WINDOW_MAXIMIZED]);
   }
 
   /* Clear already freed arrays */
@@ -665,9 +688,12 @@ void StyleContextSetScale(GtkStyleContext* style, gint aScaleFactor) {
 }
 
 bool HeaderBarShouldDrawContainer(WidgetNodeType aNodeType) {
-  MOZ_ASSERT(aNodeType == MOZ_GTK_HEADER_BAR);
+  MOZ_ASSERT(aNodeType == MOZ_GTK_HEADER_BAR ||
+             aNodeType == MOZ_GTK_HEADER_BAR_MAXIMIZED);
   mozilla::Unused << GetWidget(aNodeType);
-  return gHeaderBarShouldDrawContainer;
+  return aNodeType == MOZ_GTK_HEADER_BAR
+             ? gHeaderBarShouldDrawContainer
+             : gMaximizedHeaderBarShouldDrawContainer;
 }
 
 gint GetBorderRadius(GtkStyleContext* aStyle) {

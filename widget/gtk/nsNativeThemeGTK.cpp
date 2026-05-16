@@ -62,18 +62,8 @@ static int gLastGdkError;
 
 // Return widget scale factor of the monitor where the window is located by the
 // most part. We intentionally honor the text scale factor here in order to
-// have consistent scaling with other UI elements, except for the window
-// decorations, which should use unscaled pixels.
-static inline CSSToLayoutDeviceScale GetWidgetScaleFactor(
-    nsIFrame* aFrame, StyleAppearance aAppearance) {
-  if (aAppearance == StyleAppearance::MozWindowDecorations) {
-    // Window decorations can't honor the text scale.
-    return CSSToLayoutDeviceScale{
-        float(AppUnitsPerCSSPixel()) /
-        float(aFrame->PresContext()
-                  ->DeviceContext()
-                  ->AppUnitsPerDevPixelAtUnitFullZoom())};
-  }
+// have consistent scaling with other UI elements.
+static inline CSSToLayoutDeviceScale GetWidgetScaleFactor(nsIFrame* aFrame) {
   return aFrame->PresContext()->CSSToDevPixelScale();
 }
 
@@ -513,7 +503,7 @@ nsNativeThemeGTK::DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
   Transparency transparency = GetWidgetTransparency(aFrame, aAppearance);
 
   // gdk rectangles are wrt the drawing rect.
-  auto scaleFactor = GetWidgetScaleFactor(aFrame, aAppearance);
+  auto scaleFactor = GetWidgetScaleFactor(aFrame);
   LayoutDeviceIntRect gdkDevRect(-drawingRect.TopLeft(), widgetRect.Size());
 
   auto gdkCssRect = CSSIntRect::RoundIn(gdkDevRect / scaleFactor);
@@ -642,8 +632,7 @@ LayoutDeviceIntMargin nsNativeThemeGTK::GetWidgetBorder(
 
   GtkTextDirection direction = GetTextDirection(aFrame);
   CSSIntMargin result = GetCachedWidgetBorder(aFrame, aAppearance, direction);
-  return (CSSMargin(result) * GetWidgetScaleFactor(aFrame, aAppearance))
-      .Rounded();
+  return (CSSMargin(result) * GetWidgetScaleFactor(aFrame)).Rounded();
 }
 
 bool nsNativeThemeGTK::GetWidgetPadding(nsDeviceContext* aContext,
