@@ -388,27 +388,9 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozColheaderactivetext:
       idx = COLOR_WINDOWTEXT;
       break;
-    case ColorID::Visitedtext: {
-      if (nsUXThemeData::IsHighContrastOn()) {
-        // The fallback visited link color on HCM (given there's no
-        // system-provided one) is produced by preserving the foreground's
-        // green and averaging the foreground and background for the red and
-        // blue.  This is how IE and Edge do it too.
-        auto windowText = GetColorForSysColorIndex(COLOR_WINDOWTEXT);
-        auto window = GetColorForSysColorIndex(COLOR_WINDOW);
-        aColor = NS_RGB(AVG2(NS_GET_R(windowText), NS_GET_R(window)),
-                        NS_GET_G(windowText),
-                        AVG2(NS_GET_B(windowText), NS_GET_B(window)));
-      } else {
-        // Otherwise use the stand-in.
-        aColor = GetStandinForNativeColor(aID, aScheme);
-      }
-      return NS_OK;
-    }
-    case ColorID::Linktext:
+    case ColorID::MozNativehyperlinktext:
       idx = COLOR_HOTLIGHT;
       break;
-    case ColorID::Activetext:
     case ColorID::Marktext:
     case ColorID::Mark:
     case ColorID::SpellCheckerUnderline:

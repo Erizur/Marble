@@ -288,6 +288,8 @@ static const char sColorPrefs[][41] = {
     "ui.accentcolor",
     "ui.accentcolortext",
     "ui.-moz-autofill-background",
+    "ui.-moz-nativehyperlinktext",
+    "ui.-moz-nativevisitedhyperlinktext",
     "ui.-moz-hyperlinktext",
     "ui.-moz-activehyperlinktext",
     "ui.-moz-visitedhyperlinktext",
@@ -699,9 +701,9 @@ nscolor nsXPLookAndFeel::GetStandinForNativeColor(ColorID aID,
       COLOR(MozOddtreerow, 0xFF, 0xFF, 0xFF)
       COLOR(MozMacFocusring, 0x60, 0x9D, 0xD7)
       COLOR(MozMacDisabledtoolbartext, 0x3F, 0x3F, 0x3F)
-      COLOR(Linktext, 0x00, 0x00, 0xee)
-      COLOR(Activetext, 0xee, 0x00, 0x00)
-      COLOR(Visitedtext, 0x55, 0x1A, 0x8B)
+      // Seems to be the default color (hardcoded because of bug 1065998)
+      COLOR(MozNativehyperlinktext, 0x00, 0x66, 0xCC)
+      COLOR(MozNativevisitedhyperlinktext, 0x55, 0x1A, 0x8B)
       COLOR(MozAutofillBackground, 0xff, 0xfc, 0xc8)
       COLOR(TargetTextBackground, 0xff, 0xeb, 0xcd)
       COLOR(TargetTextForeground, 0x00, 0x00, 0x00)
@@ -823,22 +825,21 @@ Maybe<nscolor> nsXPLookAndFeel::GenericDarkColor(ColorID aID) {
     case ColorID::Highlighttext:
       color = NS_SAME_AS_FOREGROUND_COLOR;
       break;
-    case ColorID::Linktext:
+    case ColorID::MozNativehyperlinktext:
       // If you change this color, you probably also want to change the default
       // value of browser.anchor_color.dark.
       color = NS_RGB(0x00, 0xca, 0xdb);
       break;
-    case ColorID::Activetext:
+    case ColorID::MozNativevisitedhyperlinktext:
+      // If you change this color, you probably also want to change the default
+      // value of browser.visited_color.dark.
+      color = NS_RGB(0xff, 0xad, 0xff);
+      break;
     case ColorID::SpellCheckerUnderline:
       // This is the default for active links in dark mode as well
       // (browser.active_color.dark). See bug 1755564 for some analysis and
       // other options too.
       color = NS_RGB(0xff, 0x66, 0x66);
-      break;
-    case ColorID::Visitedtext:
-      // If you change this color, you probably also want to change the default
-      // value of browser.visited_color.dark.
-      color = NS_RGB(0xff, 0xad, 0xff);
       break;
     case ColorID::Activeborder:
     case ColorID::Inactiveborder:

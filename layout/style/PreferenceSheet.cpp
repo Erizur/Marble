@@ -98,8 +98,11 @@ void PreferenceSheet::Prefs::LoadColors(bool aIsLight) {
 
     GetStandinColor(ColorID::Windowtext, colors.mDefault);
     GetStandinColor(ColorID::Window, colors.mDefaultBackground);
-    GetStandinColor(ColorID::Linktext, colors.mLink);
-    GetStandinColor(ColorID::Visitedtext, colors.mVisitedLink);
+    GetStandinColor(ColorID::MozNativehyperlinktext, colors.mLink);
+    GetStandinColor(ColorID::MozNativevisitedhyperlinktext,
+                    colors.mVisitedLink);
+    // XXX: We don't have a standin for Activetext, so we fall back on the
+    // initial value
     GetStandinColor(ColorID::Activetext, colors.mActiveLink);
   } else if (!mIsChrome && mUsePrefColors) {
     // Tab content with explicit browser HCM, use our prefs for colors.
@@ -118,9 +121,18 @@ void PreferenceSheet::Prefs::LoadColors(bool aIsLight) {
 
     GetSystemColor(ColorID::Windowtext, colors.mDefault);
     GetSystemColor(ColorID::Window, colors.mDefaultBackground);
-    GetSystemColor(ColorID::Linktext, colors.mLink);
-    GetSystemColor(ColorID::Visitedtext, colors.mVisitedLink);
-    GetSystemColor(ColorID::Activetext, colors.mActiveLink);
+    GetSystemColor(ColorID::MozNativehyperlinktext, colors.mLink);
+    // The fallback visited link color on HCM (if the system doesn't provide
+    // one) is produced by preserving the foreground's green and averaging
+    // the foreground and background for the red and blue.  This is how IE
+    // and Edge do it too.
+    colors.mVisitedLink = NS_RGB(
+        AVG2(NS_GET_R(colors.mDefault), NS_GET_R(colors.mDefaultBackground)),
+        NS_GET_G(colors.mDefault),
+        AVG2(NS_GET_B(colors.mDefault), NS_GET_B(colors.mDefaultBackground)));
+    GetSystemColor(ColorID::MozNativevisitedhyperlinktext, colors.mVisitedLink);
+
+    colors.mActiveLink = colors.mLink;
   }
 
   // Wherever we got the default background color from, ensure it is opaque.

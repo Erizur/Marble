@@ -1047,7 +1047,7 @@
   mirror: never
 
 # If you change this, you probably also want to change
-# nsXPLookAndFeel::GenericDarkColor for Linktext.
+# nsXPLookAndFeel::GenericDarkColor for MozNativehyperlinktext.
 - name: browser.anchor_color.dark
   type: String
   value: "#00CADB"
@@ -2081,7 +2081,7 @@
   mirror: never
 
 # If you change this, you probably also want to change
-# nsXPLookAndFeel::GenericDarkColor for Visitedtext.
+# nsXPLookAndFeel::GenericDarkColor for MozNativevisitedhyperlinktext.
 - name: browser.visited_color.dark
   type: String
   value: "#FFADFF"
