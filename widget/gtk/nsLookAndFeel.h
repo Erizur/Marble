@@ -133,6 +133,9 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
     ColorPair mButtonHover;
     ColorPair mButtonActive;
     nscolor mButtonBorder = kBlack;
+    nscolor mThreeDHighlight = kBlack;
+    nscolor mThreeDShadow = kBlack;
+    nscolor mOddCellBackground = kWhite;
     nscolor mFrameBorder = kBlack;
     nscolor mNativeHyperLinkText = kBlack;
     nscolor mNativeVisitedHyperLinkText = kBlack;

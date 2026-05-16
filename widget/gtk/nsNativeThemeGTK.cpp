@@ -199,6 +199,9 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
   }
 
   switch (aAppearance) {
+    case StyleAppearance::Listbox:
+      aGtkWidgetType = MOZ_GTK_TREEVIEW;
+      break;
     case StyleAppearance::Tabpanels:
       aGtkWidgetType = MOZ_GTK_TABPANELS;
       break;
@@ -759,7 +762,6 @@ bool nsNativeThemeGTK::IsWidgetAlwaysNonNative(nsIFrame* aFrame,
          aAppearance == StyleAppearance::Radio ||
          aAppearance == StyleAppearance::Button ||
          aAppearance == StyleAppearance::Toolbarbutton ||
-         aAppearance == StyleAppearance::Listbox ||
          aAppearance == StyleAppearance::Menulist ||
          aAppearance == StyleAppearance::ProgressBar ||
          aAppearance == StyleAppearance::Progresschunk ||
@@ -823,6 +825,7 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
   }
 
   switch (aAppearance) {
+    case StyleAppearance::Listbox:
     case StyleAppearance::Tab:
     // case StyleAppearance::Tabpanel:
     case StyleAppearance::Tabpanels:
