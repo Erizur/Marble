@@ -449,11 +449,6 @@
     "dark": "color-mix(in srgb, currentColor 69%, transparent)",
     "forcedColors": "inherit"
   },
-  "text/color/disabled": {
-    "light": "color-mix(in srgb, currentColor 40%, transparent)",
-    "dark": "color-mix(in srgb, currentColor 40%, transparent)",
-    "forcedColors": "{HCM Theme$GrayText}"
-  },
   "text/color/error": {
     "light": "{Colors$color/red/70}",
     "dark": "{Colors$color/red/20}",
