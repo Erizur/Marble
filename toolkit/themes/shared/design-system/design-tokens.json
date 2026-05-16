@@ -441,7 +441,7 @@
               "dark": "{color.gray.05}"
             },
             "platform": {
-              "default": "currentColor"
+              "default": "var(--button-color)"
             }
           }
         },

@@ -497,7 +497,7 @@
   padding: 2px;
   padding-inline-end: 6px;
   background-color: var(--button-background-color);
-  color: var(--button-text-color);
+  color: var(--button-color);
   border-radius: 4px;
 
   > .button-box > .button-icon {
