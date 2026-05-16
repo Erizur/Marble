@@ -150,6 +150,18 @@ static GtkWidget* CreateTreeHeaderCellWidget() {
   return gtk_tree_view_column_get_button(middleTreeViewColumn);
 }
 
+static GtkWidget* CreateHPanedWidget() {
+  GtkWidget* widget = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+  AddToWindowContainer(widget);
+  return widget;
+}
+
+static GtkWidget* CreateVPanedWidget() {
+  GtkWidget* widget = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
+  AddToWindowContainer(widget);
+  return widget;
+}
+
 static GtkWidget* CreateNotebookWidget() {
   GtkWidget* widget = gtk_notebook_new();
   AddToWindowContainer(widget);
@@ -448,6 +460,10 @@ static GtkWidget* CreateWidget(WidgetNodeType aAppearance) {
       return CreateTreeViewWidget();
     case MOZ_GTK_TREE_HEADER_CELL:
       return CreateTreeHeaderCellWidget();
+    case MOZ_GTK_SPLITTER_HORIZONTAL:
+      return CreateHPanedWidget();
+    case MOZ_GTK_SPLITTER_VERTICAL:
+      return CreateVPanedWidget();
     case MOZ_GTK_NOTEBOOK:
       return CreateNotebookWidget();
     case MOZ_GTK_HEADERBAR_WINDOW:
@@ -732,6 +748,12 @@ static GtkStyleContext* GetCssNodeStyleInternal(WidgetNodeType aNodeType) {
     case MOZ_GTK_FRAME_BORDER:
       style = CreateChildCSSNode("border", MOZ_GTK_FRAME);
       break;
+    case MOZ_GTK_SPLITTER_SEPARATOR_HORIZONTAL:
+      style = CreateChildCSSNode("separator", MOZ_GTK_SPLITTER_HORIZONTAL);
+      break;
+    case MOZ_GTK_SPLITTER_SEPARATOR_VERTICAL:
+      style = CreateChildCSSNode("separator", MOZ_GTK_SPLITTER_VERTICAL);
+      break;
     case MOZ_GTK_TAB_TOP: {
       // TODO - create from CSS node
       style = CreateSubStyleWithClass(MOZ_GTK_NOTEBOOK, GTK_STYLE_CLASS_TOP);
@@ -809,6 +831,14 @@ static GtkStyleContext* GetWidgetStyleInternal(WidgetNodeType aNodeType) {
       break;
     case MOZ_GTK_FRAME_BORDER:
       return GetWidgetRootStyle(MOZ_GTK_FRAME);
+    case MOZ_GTK_SPLITTER_SEPARATOR_HORIZONTAL:
+      style = CreateSubStyleWithClass(MOZ_GTK_SPLITTER_HORIZONTAL,
+                                      GTK_STYLE_CLASS_PANE_SEPARATOR);
+      break;
+    case MOZ_GTK_SPLITTER_SEPARATOR_VERTICAL:
+      style = CreateSubStyleWithClass(MOZ_GTK_SPLITTER_VERTICAL,
+                                      GTK_STYLE_CLASS_PANE_SEPARATOR);
+      break;
     case MOZ_GTK_TAB_TOP:
       style = CreateSubStyleWithClass(MOZ_GTK_NOTEBOOK, GTK_STYLE_CLASS_TOP);
       break;
