@@ -3,25 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 :host {
-  --border-color-tokens-table: var(--color-gray-50);
-  --table-border-outer: 2px solid var(--border-color-tokens-table);
-  --table-border-inner: var(--border-width) solid var(--border-color-tokens-table);
+  --table-border: 2px solid var(--color-gray-50);
   --table-background-color: color-mix(in srgb,
       var(--color-gray-50) 20%,
       transparent);
-  --outline-preview: 2px solid var(--color-gray-60);
-  --background-color-icon-demo: var(--color-gray-60);
-  --background-color-padding-demo: var(--color-blue-60);
-  --background-color-space-demo: var(--color-blue-0);
-  --background-image-space-demo: linear-gradient(135deg,
-      var(--color-blue-30) 10%,
-      #0000 0,
-      #0000 50%,
-      var(--color-blue-30) 0,
-      var(--color-blue-30) 60%,
-      #0000 0,
-      #0000);
-  --link-outline-demo: 2px solid var(--color-blue-50);
 }
 
 /* Wrapper and filter styles */
@@ -45,13 +30,14 @@ fieldset {
   flex: 1;
   margin: 0;
   padding-block: var(--space-small);
+  height: var(--input-text-min-height);
   box-sizing: border-box;
   gap: var(--space-medium);
 }
 
 fieldset,
 .search-wrapper {
-  border: var(--table-border-inner);
+  border: 1px solid var(--border-color-interactive);
   border-radius: var(--border-radius-small);
   height: var(--input-text-min-height);
   display: inline-flex;
@@ -99,8 +85,8 @@ input[type="search"] {
 .table-wrapper {
   box-sizing: border-box;
   border-radius: var(--border-radius-small);
-  border: var(--table-border-outer);
-  margin-block: var(--space-large);
+  border: var(--table-border);
+  margin-block: 1em;
   width: 100%;
 
   & > summary {
@@ -114,10 +100,10 @@ input[type="search"] {
       background-image: url("chrome://global/skin/icons/arrow-down.svg");
       background-position: center;
       background-repeat: no-repeat;
-      height: var(--size-item-small);
-      width: var(--size-item-small);
+      height: 16px;
+      width: 16px;
       position: absolute;
-      inset-inline-start: var(--space-small);
+      inset-inline-start: 8px;
     }
   }
 
@@ -128,12 +114,12 @@ input[type="search"] {
 
 .table-heading {
   background-color: var(--table-background-color);
-  border-radius: var(--border-radius-small);
-  padding: 0 var(--space-xlarge);
+  border-radius: var(---border-radius-small);
+  padding: 0 24px;
 
   & h3 {
     margin: 0;
-    padding: var(--space-small);
+    padding: 0.5em;
     font-size: var(--font-size-large);
     font-weight: var(--font-weight-bold);
     text-transform: uppercase;
@@ -152,7 +138,7 @@ table {
 
 thead {
   background-color: var(--table-background-color);
-  border-bottom: var(--table-border-inner);
+  border-bottom: 1px solid var(--color-gray-50);
 
   & tr {
     border-block-end: var(--table-border);
@@ -161,11 +147,11 @@ thead {
 
 tbody td {
   vertical-align: top;
-  color: var(--text-color);
-  border-bottom: var(--table-border-inner);
+  color: var(--color-gray-100);
+  border-bottom: var(--border-width) solid var(--color-gray-50);
 
   &.hcm-theme {
-    border-inline-start: var(--table-border-inner);
+    border-inline-start: var(--border-width) solid var(--color-gray-50);
   }
 }
 
@@ -175,11 +161,10 @@ tr td:last-of-type {
 
 tr td:first-of-type {
   border-inline-start: 0;
-  color-scheme: light;
 }
 
 tbody tr:first-of-type td {
-  border-block-start: var(--table-border);
+  border-block-start: 2px solid var(--color-gray-50);
 }
 
 tbody tr:last-of-type {
@@ -205,11 +190,11 @@ th {
 
 tr td,
 tr th {
-  padding: var(--space-small);
+  padding: 8px;
 }
 
 td {
-  background-color: var(--background-color-box);
+  background: var(--color-white);
   text-align: center;
 }
 
@@ -219,16 +204,18 @@ td:first-of-type {
 }
 
 .light-theme {
-  color-scheme: light;
+  background: var(--color-white);
+  color: var(--color-gray-100);
 }
 
 .dark-theme {
-  color-scheme: dark;
+  background-color: var(--color-gray-90);
+  color: var(--color-gray-05);
 }
 
 .hcm-theme {
   background-color: #000000;
-  color: var(--color-white);
+  color: #ffffff;
 }
 
 .preview-wrapper {
@@ -236,7 +223,7 @@ td:first-of-type {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: var(--space-small);
+  gap: 8px;
   height: 100%;
 }
 
@@ -253,8 +240,8 @@ td:first-of-type {
   height: 50px;
   width: 100px;
   background-color: var(--button-background-color);
-  border: var(--table-border-inner);
-  border-radius: var(--border-radius-small);
+  border: 1px solid var(--color-gray-60);
+  border-radius: 4px;
 }
 
 /** Outline **/
@@ -263,7 +250,7 @@ td:first-of-type {
   height: 50px;
   width: 100px;
   background-color: color-mix(in srgb, currentColor 20%, transparent);
-  outline: var(--outline-preview);
+  outline: 2px solid var(--color-gray-60);
 }
 
 /** Font **/
@@ -277,7 +264,7 @@ td:first-of-type {
 /** Icon **/
 
 .icon-preview {
-  background-color: var(--background-color-icon-demo);
+  background-color: var(--color-gray-60);
   height: var(--size-item-large);
   width: var(--size-item-large);
   /* FIXME: our icons don't seem to work when used as a mask */
@@ -290,7 +277,7 @@ td:first-of-type {
   text-decoration: underline;
 
   &.outline {
-    outline: var(--link-outline-demo);
+    outline: 2px solid var(--color-blue-50);
     outline-offset: var(--link-focus-outline-offset);
   }
 }
@@ -308,17 +295,24 @@ td:first-of-type {
   & .item {
     height: 50%;
     width: 40%;
-    background-color: var(--background-color-padding-demo);
+    background-color: var(--color-blue-60);
     border-radius: var(--border-radius-small);
   }
 }
 
 .space-size-background {
-  background-color: var(--background-color-space-demo);
-  background-image: var(--background-image-space-demo);
+  background-color: var(--color-blue-05);
+  background-image: linear-gradient(135deg,
+      var(--color-blue-30) 10%,
+      #0000 0,
+      #0000 50%,
+      var(--color-blue-30) 0,
+      var(--color-blue-30) 60%,
+      #0000 0,
+      #0000);
   background-size: 8px 8px;
   border-radius: var(--border-radius-small);
-  border: var(--table-border-inner);
+  border: var(--border-width) solid var(--color-gray-50);
 }
 
 /** Padding **/
@@ -332,7 +326,7 @@ td:first-of-type {
   align-items: center;
 
   &.inner {
-    background-color: var(--background-color-padding-demo);
+    background-color: var(--color-blue-60);
     opacity: 0.5;
     border-radius: 3px;
   }

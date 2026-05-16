@@ -98,8 +98,8 @@
 
   .topic-item {
     align-items: center;
-    border-radius: var(--border-radius-circle);
-    border: var(--border-width) solid var(--border-color-interactive);
+    border-radius: 40px;
+    border: 1px solid var(--color-gray-60);
     display: flex;
     justify-self: center;
     max-width: fit-content;

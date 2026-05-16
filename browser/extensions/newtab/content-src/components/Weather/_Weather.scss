@@ -722,7 +722,7 @@
   .search-icon {
     content: url('chrome://global/skin/icons/search-glass.svg');
     -moz-context-properties: fill;
-    fill: var(--icon-color);
+    fill: light-dark(var(--color-gray-70), var(--color-gray-05));
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -730,6 +730,9 @@
   }
 
   .close-icon {
+    background-image: url('chrome://global/skin/icons/close.svg');
+    -moz-context-properties: fill;
+    fill: light-dark(var(--color-gray-70), var(--color-gray-05));
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
