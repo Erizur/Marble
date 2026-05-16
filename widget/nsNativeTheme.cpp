@@ -116,6 +116,7 @@ NS_IMPL_ISUPPORTS(nsNativeTheme, nsITimerCallback, nsINamed)
         flags |= ElementState::HOVER | ElementState::ACTIVE;
       }
       break;
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Menulist:
     case StyleAppearance::NumberInput:
     case StyleAppearance::Textfield:

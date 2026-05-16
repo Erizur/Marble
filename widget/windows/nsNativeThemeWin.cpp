@@ -496,6 +496,7 @@ mozilla::Maybe<nsUXThemeClass> nsNativeThemeWin::GetThemeClass(
     case StyleAppearance::RangeThumb:
       return Some(eUXTrackbar);
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
       return Some(eUXCombobox);
     case StyleAppearance::Listbox:
       return Some(eUXListview);
@@ -740,6 +741,7 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
 
       return NS_OK;
     }
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Menulist: {
       nsIContent* content = aFrame->GetContent();
       bool useDropBorder = content && content->IsHTMLElement();
@@ -1113,7 +1115,8 @@ bool nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
     ScaleForFrameDPI(aResult, aFrame);
     return ok;
   } else if (IsHTMLContent(aFrame) &&
-             aAppearance == StyleAppearance::Menulist) {
+             (aAppearance == StyleAppearance::Menulist ||
+              aAppearance == StyleAppearance::MenulistButton)) {
     /* For content menulist controls, we need an extra pixel so that we have
      * room to draw our focus rectangle stuff. Otherwise, the focus rect might
      * overlap the control's border.
@@ -1160,6 +1163,36 @@ bool nsNativeThemeWin::GetWidgetOverflow(nsDeviceContext* aContext,
     return Theme::GetWidgetOverflow(aContext, aFrame, aAppearance,
                                     aOverflowRect);
   }
+
+  /* This is disabled for now, because it causes invalidation problems --
+   * see bug 420381.  The effect of not updating the overflow area is that
+   * for dropdown buttons in content areas, there is a 1px border on 3 sides
+   * where, if invalidated, the dropdown control probably won't be repainted.
+   * This is fairly minor, as by default there is nothing in that area, and
+   * a border only shows up if the widget is being hovered.
+   *
+   * TODO(jwatt): Figure out what do to about
+   * StyleAppearance::MozMenulistArrowButton too.
+   */
+#if 0
+  /* We explicitly draw dropdown buttons in HTML content 1px bigger up, right,
+   * and bottom so that they overlap the dropdown's border like they're
+   * supposed to.
+   */
+  if (aAppearance == StyleAppearance::MenulistButton &&
+      IsHTMLContent(aFrame) &&
+      !IsWidgetStyled(aFrame->GetParent()->PresContext(),
+                      aFrame->GetParent(),
+                      StyleAppearance::Menulist))
+  {
+    int32_t p2a = aContext->AppUnitsPerDevPixel();
+    /* Note: no overflow on the left */
+    nsMargin m(p2a, p2a, p2a, 0);
+    aOverflowRect->Inflate (m);
+    return true;
+  }
+#endif
+
   return false;
 }
 
@@ -1297,6 +1330,7 @@ bool nsNativeThemeWin::ThemeDrawsFocusForWidget(nsIFrame* aFrame,
   }
   switch (aAppearance) {
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Textarea:
     case StyleAppearance::Textfield:
     case StyleAppearance::NumberInput:
@@ -1359,6 +1393,7 @@ bool nsNativeThemeWin::ClassicThemeSupportsWidget(nsIFrame* aFrame,
     case StyleAppearance::Range:
     case StyleAppearance::RangeThumb:
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Listbox:
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Progresschunk:
@@ -1379,6 +1414,7 @@ LayoutDeviceIntMargin nsNativeThemeWin::ClassicGetWidgetBorder(
       break;
     case StyleAppearance::Listbox:
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Tab:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
@@ -1425,6 +1461,7 @@ LayoutDeviceIntSize nsNativeThemeWin::ClassicGetMinimumWidgetSize(
       break;
     }
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Button:
     case StyleAppearance::Listbox:
     case StyleAppearance::NumberInput:
@@ -1489,6 +1526,7 @@ nsresult nsNativeThemeWin::ClassicGetThemePartAndState(
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Range:
     case StyleAppearance::RangeThumb:
     case StyleAppearance::Progresschunk:
@@ -1679,7 +1717,8 @@ RENDER_AGAIN:
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
     case StyleAppearance::Listbox:
-    case StyleAppearance::Menulist: {
+    case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton: {
       // Draw inset edge
       ::DrawEdge(hdc, &widgetRect, EDGE_SUNKEN, BF_RECT | BF_ADJUST);
 
@@ -1803,6 +1842,7 @@ uint32_t nsNativeThemeWin::GetWidgetNativeDrawingFlags(
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
       return gfxWindowsNativeDrawing::CANNOT_DRAW_TO_COLOR_ALPHA |
              gfxWindowsNativeDrawing::CAN_AXIS_ALIGNED_SCALE |
              gfxWindowsNativeDrawing::CANNOT_COMPLEX_TRANSFORM;
