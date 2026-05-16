@@ -741,7 +741,31 @@ bool nsWindow::WidgetTypeSupportsAcceleration() {
   return true;
 }
 
-static bool IsPenEvent(GdkEvent* aEvent, bool* isEraser) {
+void nsWindow::DidChangeParent(nsIWidget* aOldParent) {
+  LOG("nsWindow::DidChangeParent new parent %p -> %p\n", aOldParent, mParent);
+  if (!mParent) {
+    return;
+  }
+
+  auto* newParent = static_cast<nsWindow*>(mParent);
+  if (mIsDestroyed || newParent->IsDestroyed()) {
+    return;
+  }
+
+  if (!IsTopLevelWindowType()) {
+    GdkWindow* window = GetToplevelGdkWindow();
+    GdkWindow* parentWindow = newParent->GetToplevelGdkWindow();
+    gdk_window_reparent(window, parentWindow, 0, 0);
+    SetHasMappedToplevel(newParent->mHasMappedToplevel);
+    return;
+  }
+
+  GtkWindow* newParentWidget = GTK_WINDOW(newParent->GetGtkWidget());
+  GtkWindowSetTransientFor(GTK_WINDOW(mShell), newParentWidget);
+}
+
+static void InitPenEvent(WidgetMouseEvent& aGeckoEvent, GdkEvent* aEvent) {
+  // Find the source of the event
   GdkDevice* device = gdk_event_get_source_device(aEvent);
   GdkInputSource eSource = gdk_device_get_source(device);
 
@@ -1124,7 +1148,7 @@ void nsWindow::Move(double aX, double aY) {
                                      NSToIntRound(aY * scale));
   LOG("nsWindow::Move to %d x %d\n", request.x.value, request.y.value);
 
-  if (mSizeMode != nsSizeMode_Normal && IsTopLevelWidget()) {
+  if (mSizeMode != nsSizeMode_Normal && IsTopLevelWindowType()) {
     LOG("  size state is not normal, bailing");
     return;
   }
@@ -4134,16 +4158,57 @@ gboolean nsWindow::OnShellConfigureEvent(GdkEventConfigure* aEvent) {
   }
 
   // Don't fire configure event for scale changes, we handle that
-  // OnScaleEvent event. Skip that for toplevel windows only.
-  if (mGdkWindow && IsTopLevelWidget() &&
-      mCeiledScaleFactor != gdk_window_get_scale_factor(mGdkWindow)) {
-    LOG("  scale factor changed to %d,return early",
-        gdk_window_get_scale_factor(mGdkWindow));
+  // OnScaleChanged event. Skip that for toplevel windows only.
+  if (mGdkWindow && IsTopLevelWindowType()) {
+    if (mCeiledScaleFactor != gdk_window_get_scale_factor(mGdkWindow)) {
+      LOG("  scale factor changed to %d,return early",
+          gdk_window_get_scale_factor(mGdkWindow));
+      return FALSE;
+    }
+  }
+
+  LayoutDeviceIntRect screenBounds = GetScreenBounds();
+
+  if (IsTopLevelWindowType()) {
+    // This check avoids unwanted rollup on spurious configure events from
+    // Cygwin/X (bug 672103).
+    if (mBounds.x != screenBounds.x || mBounds.y != screenBounds.y) {
+      RollupAllMenus();
+    }
+  }
+
+  NS_ASSERTION(GTK_IS_WINDOW(aWidget),
+               "Configure event on widget that is not a GtkWindow");
+  if (mGdkWindow &&
+      gtk_window_get_window_type(GTK_WINDOW(aWidget)) == GTK_WINDOW_POPUP) {
+    // Override-redirect window
+    //
+    // These windows should not be moved by the window manager, and so any
+    // change in position is a result of our direction.  mBounds has
+    // already been set in std::move() or Resize(), and that is more
+    // up-to-date than the position in the ConfigureNotify event if the
+    // event is from an earlier window move.
+    //
+    // Skipping the WindowMoved call saves context menus from an infinite
+    // loop when nsXULPopupManager::PopupMoved moves the window to the new
+    // position and nsMenuPopupFrame::SetPopupPosition adds
+    // offsetForContextMenu on each iteration.
+
+    // Our back buffer might have been invalidated while we drew the last
+    // frame, and its contents might be incorrect. See bug 1280653 comment 7
+    // and comment 10. Specifically we must ensure we recomposite the frame
+    // as soon as possible to avoid the corrupted frame being displayed.
+    GetWindowRenderer()->FlushRendering(wr::RenderReasons::WIDGET);
     return FALSE;
   }
 
-  SchedulePendingBounds();
-  RecomputeBounds();
+  mBounds.MoveTo(screenBounds.TopLeft());
+  RecomputeClientOffset(/* aNotify = */ false);
+
+  // XXX mozilla will invalidate the entire window after this move
+  // complete.  wtf?
+  NotifyWindowMoved(mBounds.x, mBounds.y);
+
   return FALSE;
 }
 
@@ -4297,7 +4362,7 @@ void nsWindow::OnLeaveNotifyEvent(GdkEventCrossing* aEvent) {
 
   // The filter out for subwindows should make sure that this is targeted to
   // this nsWindow.
-  const bool leavingTopLevel = IsTopLevelWidget();
+  const bool leavingTopLevel = IsTopLevelWindowType();
   if (leavingTopLevel && IsBogusLeaveNotifyEvent(mGdkWindow, aEvent)) {
     return;
   }
@@ -4948,7 +5013,7 @@ void nsWindow::OnContainerFocusInEvent(GdkEventFocus* aEvent) {
 void nsWindow::OnContainerFocusOutEvent(GdkEventFocus* aEvent) {
   LOG("OnContainerFocusOutEvent");
 
-  if (IsTopLevelWidget()) {
+  if (IsTopLevelWindowType()) {
     // Rollup menus when a window is focused out unless a drag is occurring.
     // This check is because drags grab the keyboard and cause a focus out on
     // versions of GTK before 2.18.
@@ -5481,27 +5546,8 @@ void nsWindow::OnCompositedChanged() {
   mCompositedScreen = gdk_screen_is_composited(gdk_screen_get_default());
 }
 
-// X11(XWayland) and Wayland handles screen scale differently.
-// If there are more monitors with different scale factor (say 2 and 3),
-// XWayland sends scale 3 to all application windows and downscales
-// applications on monitor with scale 2.
-// If scale is changed system wide in settings, OnScaleEvent() is send
-// to all application windows.
-//
-// Wayland sends actual scale to each window according to its position
-// and also sends OnScaleEvent is scale changes for particular window.
-// So we can have toplevel window with scale 3 and its child popup with scale 2
-// (because toplevel it's located on more than one screen).
-//
-// But right now gecko code (or widget/gtk?) expects that toplevel and its
-// popup use the same scale factor (which may be actually different).
-// We see various rendering/sizing/position errors otherwise,
-// maybe we get scale from wrong windows or so.
-//
-// Let's follow the working scenario for now to avoid complexity
-// and maybe fix that later.
-void nsWindow::OnScaleEvent() {
-  if (!mGdkWindow || !IsTopLevelWidget()) {
+void nsWindow::OnScaleChanged(bool aNotify) {
+  if (!IsTopLevelWindowType()) {
     return;
   }
 
@@ -6112,7 +6158,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   // gfxVars, used below.
   Unused << gfxPlatform::GetPlatform();
 
-  if (IsTopLevelWidget()) {
+  if (IsTopLevelWindowType()) {
     mGtkWindowDecoration = GetSystemGtkWindowDecoration();
   }
 
@@ -6446,8 +6492,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   // Only use for toplevel windows for now, see bug 1619246.
   if (GdkIsWaylandDisplay() &&
       StaticPrefs::widget_wayland_vsync_enabled_AtStartup() &&
-      IsTopLevelWidget()) {
-    LOG_VSYNC("  create WaylandVsyncSource");
+      IsTopLevelWindowType()) {
     mWaylandVsyncSource = new WaylandVsyncSource(this);
     mWaylandVsyncSource->Init();
     mWaylandVsyncDispatcher = new VsyncDispatcher(mWaylandVsyncSource);
@@ -7018,7 +7063,7 @@ void nsWindow::UpdateOpaqueRegionInternal() {
     return;
   }
 
-  if (!IsTopLevelWidget()) {
+  if (!IsTopLevelWindowType()) {
     // We need to clear target buffer alpha values of popup windows as
     // SW-WR paints with alpha blending (see Bug 1674473).
     return;
@@ -10021,7 +10066,7 @@ bool nsWindow::ApplyEnterLeaveMutterWorkaround() {
 }
 
 void nsWindow::NotifyOcclusionState(OcclusionState aState) {
-  if (!IsTopLevelWidget()) {
+  if (!IsTopLevelWindowType()) {
     return;
   }
 
