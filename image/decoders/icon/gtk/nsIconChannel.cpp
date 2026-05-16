@@ -163,6 +163,47 @@ static nscolor GetForegroundColor(nsIMozIconURI* aIconURI) {
                                      mozilla::LookAndFeel::UseStandins::No);
 }
 
+static GtkIconSize moz_gtk_icon_size(const char* name) {
+  if (strcmp(name, "button") == 0) {
+    return GTK_ICON_SIZE_BUTTON;
+  }
+
+  if (strcmp(name, "menu") == 0) {
+    return GTK_ICON_SIZE_MENU;
+  }
+
+  if (strcmp(name, "toolbar") == 0) {
+    return GTK_ICON_SIZE_LARGE_TOOLBAR;
+  }
+
+  if (strcmp(name, "toolbarsmall") == 0) {
+    return GTK_ICON_SIZE_SMALL_TOOLBAR;
+  }
+
+  if (strcmp(name, "dnd") == 0) {
+    return GTK_ICON_SIZE_DND;
+  }
+
+  if (strcmp(name, "dialog") == 0) {
+    return GTK_ICON_SIZE_DIALOG;
+  }
+
+  return GTK_ICON_SIZE_MENU;
+}
+
+static int32_t GetIconSize(nsIMozIconURI* aIconURI) {
+  nsAutoCString iconSizeString;
+
+  aIconURI->GetIconSize(iconSizeString);
+  if (iconSizeString.IsEmpty()) {
+    return int32_t(aIconURI->GetImageSize());
+  }
+  int size;
+  GtkIconSize icon_size = moz_gtk_icon_size(iconSizeString.get());
+  gtk_icon_size_lookup(icon_size, &size, nullptr);
+  return size;
+}
+
 static nsresult GetIconWithGIO(nsIMozIconURI* aIconURI, ByteBuf* aDataOut) {
   RefPtr<GIcon> icon;
   nsCOMPtr<nsIURL> fileURI;
@@ -228,7 +269,7 @@ static nsresult GetIconWithGIO(nsIMozIconURI* aIconURI, ByteBuf* aDataOut) {
   // Get default icon theme
   GtkIconTheme* iconTheme = gtk_icon_theme_get_default();
   // Get icon size and scale.
-  int32_t iconSize = aIconURI->GetImageSize();
+  int32_t iconSize = GetIconSize(aIconURI);
   int32_t scale = aIconURI->GetImageScale();
 
   RefPtr<GtkIconInfo> iconInfo;
