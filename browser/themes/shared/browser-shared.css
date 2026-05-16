@@ -288,7 +288,7 @@ body {
     visibility: hidden;
   }
 
-  :root:not([customtitlebar], [inFullscreen]) & {
+  :root:not([chromemargin], [inFullscreen]) & {
     display: none;
   }
 }

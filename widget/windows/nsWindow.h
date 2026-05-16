@@ -295,7 +295,7 @@ class nsWindow final : public nsBaseWidget,
   TextEventDispatcherListener* GetNativeTextEventDispatcherListener() override;
   void SetTransparencyMode(TransparencyMode aMode) override;
   TransparencyMode GetTransparencyMode() override;
-  void SetCustomTitlebar(bool) override;
+  nsresult SetNonClientMargins(const LayoutDeviceIntMargin&) override;
   void SetResizeMargin(mozilla::LayoutDeviceIntCoord aResizeMargin) override;
   void UpdateWindowDraggingRegion(
       const LayoutDeviceIntRegion& aRegion) override;
@@ -802,33 +802,24 @@ class nsWindow final : public nsBaseWidget,
       const LayoutDeviceIntMargin& aNonClientOffset) const;
   LayoutDeviceIntMargin NormalWindowNonClientOffset() const;
 
-  struct CustomNonClientMetrics {
-    // Width of the left and right portions of the resize region
-    mozilla::LayoutDeviceIntCoord mHorResizeMargin;
-    // Height of the top and bottom portions of the resize region
-    mozilla::LayoutDeviceIntCoord mVertResizeMargin;
-    // Height of the caption plus border
-    mozilla::LayoutDeviceIntCoord mCaptionHeight;
-    // Pre-calculated outward offset applied to the default frame
-    LayoutDeviceIntMargin mOffset;
+  // Non-client margin settings
+  // Pre-calculated outward offset applied to default frames
+  LayoutDeviceIntMargin mNonClientOffset;
+  // Margins set by the owner
+  LayoutDeviceIntMargin mNonClientMargins{-1, -1, -1, -1};
+  // Margins we'd like to set once chrome is reshown:
+  LayoutDeviceIntMargin mFutureMarginsOnceChromeShows;
+  // Indicates we need to apply margins once toggling chrome into showing:
+  bool mFutureMarginsToUse = false;
 
-    LayoutDeviceIntMargin ResizeMargins() const {
-      return {mVertResizeMargin, mHorResizeMargin, mVertResizeMargin,
-              mHorResizeMargin};
-    }
-
-    LayoutDeviceIntMargin DefaultMargins() const {
-      auto margins = ResizeMargins();
-      margins.top += mCaptionHeight;
-      return margins;
-    }
-  } mCustomNonClientMetrics;
-
-  // Indicates the custom titlebar is enabled.
+  // Indicates custom frames are enabled
   bool mCustomNonClient = false;
-  // Whether we want to draw to the titlebar once the chrome shows. (Always
-  // Nothing if mHideChrome is false.)
-  mozilla::Maybe<bool> mCustomTitlebarOnceChromeShows;
+  // Width of the left and right portions of the resize region
+  mozilla::LayoutDeviceIntCoord mHorResizeMargin;
+  // Height of the top and bottom portions of the resize region
+  mozilla::LayoutDeviceIntCoord mVertResizeMargin;
+  // Height of the caption plus border
+  mozilla::LayoutDeviceIntCoord mCaptionHeight;
   // Custom extra resize margin width.
   mozilla::LayoutDeviceIntCoord mCustomResizeMargin{0};
 
