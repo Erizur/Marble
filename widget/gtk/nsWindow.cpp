@@ -3256,6 +3256,18 @@ LayoutDeviceIntMargin nsWindow::NormalSizeModeClientToWindowMargin() {
   return {};
 }
 
+#ifdef MOZ_X11
+LayoutDeviceIntCoord GetXWindowBorder(GdkWindow* aWin) {
+  Display* display = GDK_DISPLAY_XDISPLAY(gdk_window_get_display(aWin));
+  auto xid = gdk_x11_window_get_xid(aWin);
+  Window root;
+  int wx, wy;
+  unsigned ww, wh, wb = 0, wd;
+  XGetGeometry(display, xid, &root, &wx, &wy, &ww, &wh, &wb, &wd);
+  return wb;
+}
+#endif
+
 void nsWindow::RecomputeBounds() {
   mPendingBounds = false;
   auto* toplevel = GetToplevelGdkWindow();
@@ -4142,8 +4154,6 @@ void nsWindow::OnSizeAllocate(GtkAllocation* aAllocation) {
   if (!mGdkWindow) {
     return;
   }
-
-  auto oldClientBounds = GetClientBounds();
 
   // Bounds will get updated on the main configure.
   auto oldClientBounds = GetClientBounds();
@@ -5444,7 +5454,7 @@ void nsWindow::OnWindowStateEvent(GtkWidget* aWidget,
     mCsdMargin = kCsdMarginUnknown;
   }
   if (mSizeMode != oldSizeMode || mIsTiled != oldIsTiled) {
-    RecomputeBounds(MayChangeCsdMargin::No);
+    RecomputeBounds(); // MayChangeCSDMargin:No
   }
   if (mSizeMode != oldSizeMode && mWidgetListener) {
     mWidgetListener->SizeModeChanged(mSizeMode);

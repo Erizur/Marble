@@ -216,8 +216,6 @@ class nsWindow final : public nsBaseWidget {
   bool PersistClientBounds() const override { return true; }
   LayoutDeviceIntMargin NormalSizeModeClientToWindowMargin() override;
 
-  void ConstrainSize(int* aWidth, int* aHeight) override;
-
   // Recomputes the bounds according to our current window position. Dispatches
   // move / resizes as needed.
   void RecomputeBounds();
@@ -262,7 +260,7 @@ class nsWindow final : public nsBaseWidget {
 
   // event callbacks
   gboolean OnExposeEvent(cairo_t* cr);
-  gboolean OnConfigureEvent(GtkWidget* aWidget, GdkEventConfigure* aEvent);
+  gboolean OnShellConfigureEvent(GdkEventConfigure* aEvent);
   void OnMap();
   void OnUnmap();
   void OnSizeAllocate(GtkAllocation* aAllocation);
