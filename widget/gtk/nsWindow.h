@@ -614,7 +614,9 @@ class nsWindow final : public nsBaseWidget {
   // Margin from outer bounds to inner bounds _including CSD decorations_.
   LayoutDeviceIntMargin mClientMargin;
   // The part of mClientMargin that comes from our CSD decorations.
-  LayoutDeviceIntMargin mCsdMargin;
+  static constexpr auto kCsdMarginUnknown =
+      LayoutDeviceIntMargin{-1, -1, -1, -1};
+  LayoutDeviceIntMargin mCsdMargin = kCsdMarginUnknown;
 
   // This field omits duplicate scroll events caused by GNOME bug 726878.
   guint32 mLastScrollEventTime = GDK_CURRENT_TIME;
