@@ -4,6 +4,7 @@
 
 @import url("chrome://browser/skin/browser-shared.css");
 @import url("chrome://browser/skin/contextmenu.css");
+@import url("chrome://browser/skin/browser-custom-colors.css");
 
 #menubar-items {
   flex-direction: column; /* for flex hack */
@@ -27,50 +28,37 @@
 
 @media (-moz-windows-accent-color-in-titlebar) or (-moz-windows-mica) {
   :root[tabsintitlebar] {
-    @media (-moz-windows-mica) {
-      &:not([lwtheme]) {
-        background-color: transparent;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media (-moz-bool-pref: "browser.theme.windows.accent-color-in-tabs.enabled") {
+      --toolbox-non-lwt-bgcolor: ActiveCaption;
+      --toolbox-non-lwt-textcolor: CaptionText;
+      --toolbox-non-lwt-bgcolor-inactive: InactiveCaption;
+      --toolbox-non-lwt-textcolor-inactive: InactiveCaptionText;
 
-        /* Accent color in titlebar overrides Mica. */
-        @media not (-moz-windows-accent-color-in-titlebar) {
-          /* Hide the Firefox buttons since Windows draws their own.
-           * FIXME(emilio): Find a way of hiding the native buttons, or make them
-           * taller, this is very hacky. */
-          .titlebar-buttonbox {
-            opacity: 0;
-          }
-        }
+      &:not([lwtheme]) #TabsToolbar {
+        /* These colors match the Linux/HCM default button colors. We need to
+         * override these on the tabs toolbar because the accent color is
+         * arbitrary, so the hardcoded colors from browser-custom-colors might
+         * not provide sufficient contrast. */
+        --toolbarbutton-icon-fill: currentColor;
+        --toolbarbutton-hover-background: color-mix(in srgb, currentColor 17%, transparent);
+        --toolbarbutton-active-background: color-mix(in srgb, currentColor 30%, transparent);
       }
     }
-  }
 
-  /* stylelint-disable-next-line media-query-no-invalid */
-  @media (-moz-windows-accent-color-in-titlebar) and ((-moz-windows-mica) or -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled")) {
-    .browser-toolbox-background {
-      /* These colors match the Linux/HCM default button colors. We need to
-       * override these on the toolbox-like elements because the accent color
-       * is arbitrary, so the hardcoded brand colors from browser-colors.css
-       * might not provide sufficient contrast. */
-      --toolbarbutton-icon-fill: currentColor;
-      --toolbarbutton-hover-background: color-mix(in srgb, currentColor 17%, transparent);
-      --toolbarbutton-active-background: color-mix(in srgb, currentColor 30%, transparent);
-      --toolbar-field-color: currentColor;
-      --urlbar-box-bgcolor: var(--button-background-color-hover);
-      --urlbar-box-focus-bgcolor: var(--button-background-color);
-      --urlbar-box-hover-bgcolor: var(--button-background-color-hover);
-      --urlbar-box-active-bgcolor: var(--button-background-color-active);
+    &[sizemode="normal"] #navigator-toolbox {
+      border-top: .5px solid ActiveBorder;
+      &:-moz-window-inactive {
+        border-top-color: InactiveBorder;
+      }
     }
   }
 }
 
-/* This is needed for Windows 10, see bug 1961257 */
-@media (-moz-windows-accent-color-in-titlebar) {
-  :root[tabsintitlebar][sizemode="normal"] #navigator-toolbox {
-    border-top: .5px solid ActiveBorder;
-    &:-moz-window-inactive {
-      border-top-color: InactiveBorder;
-    }
-  }
+/* When temporarily showing the menu bar, make it at least as tall as the
+ * tab bar such that the window controls don't appear to move up. */
+:root[tabsintitlebar] #toolbar-menubar[autohide="true"] {
+  height: var(--tab-min-height);
 }
 
 /* Titlebar */

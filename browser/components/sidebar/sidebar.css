@@ -3,16 +3,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 @import url("chrome://global/skin/global.css");
-@import url("chrome://browser/skin/browser-colors.css");
 
 :root {
-  --sidebar-box-border-color: light-dark(color-mix(in srgb, currentColor 10%, transparent), var(--border-color-deemphasized));
-  --sidebar-box-border-width: 0.5px;
-  --sidebar-box-border: var(--sidebar-box-border-width) solid var(--sidebar-box-border-color);
-  --sidebar-box-background: light-dark(rgba(0, 0, 0, .03), rgba(255, 255, 255, .05));
-  --sidebar-box-color: currentColor;
+  /* The browser takes care of having the right background color on our
+   * <browser> element, so we can just make sure to set the text color, if it
+   * comes from a theme. We make the assumption here that -moz-sidebartext
+   * works for the system theme since we have an appropriate color-scheme. It
+   * really should be the browser-custom-colors.css sidebar-text-color, when
+   * that applies. */
   background-color: transparent;
-  color: var(--sidebar-text-color);
+  color: var(--sidebar-text-color, -moz-sidebartext);
   height: 100%;
 }
 
