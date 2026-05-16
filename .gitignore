@@ -54,6 +54,7 @@ testing/web-platform/tests/tools/third_party/pywebsocket3/build
 /.clang-tidy
 /.clangd
 /.mozconfig*
+/.gitconfig
 /mozconfig*
 /.moz-fast-forward
 /.moz-vendoring
