@@ -1365,7 +1365,9 @@ ThemeColors GetTheme(ThemeMode themeId) {
       theme.tabColor = 0xf9f9fb;
       theme.toolbarForegroundColor = 0xdddde1;
       theme.tabOutlineColor = 0xdddde1;
-      theme.titlebarColor = 0xeaeaed;
+      // found in browser-aero.css ":root[tabsintitlebar]:not(:-moz-lwtheme)"
+      // (set to "hsl(235,33%,19%)")
+      theme.titlebarColor = 0xf0f0f4;
       // --chrome-content-separator-color in browser.css
       theme.chromeContentDividerColor = 0xe1e1e2;
       // controlled by css variable --toolbar-color
