@@ -36,7 +36,7 @@ namespace wr {
 
 class DCLayerTree;
 
-class RenderCompositorANGLE final : public RenderCompositor {
+class RenderCompositorANGLE : public RenderCompositor {
  public:
   static UniquePtr<RenderCompositor> Create(
       const RefPtr<widget::CompositorWidget>& aWidget, nsACString& aError);
@@ -130,9 +130,7 @@ class RenderCompositorANGLE final : public RenderCompositor {
                      bool* aNeedsYFlip) override;
 
  protected:
-  bool UseCompositor() const;
-  bool UseLayerCompositor() const;
-  bool RecreateNonNativeCompositorSwapChain();
+  bool UseCompositor();
   void InitializeUsePartialPresent();
   void InsertGraphicsCommandsFinishedWaitQuery(
       RenderedFrameId aRenderedFrameId);
@@ -148,10 +146,6 @@ class RenderCompositorANGLE final : public RenderCompositor {
   RefPtr<ID3D11Query> GetD3D11Query();
   void ReleaseNativeCompositorResources();
   HWND GetCompositorHwnd();
-  bool ShouldUseAlpha() const;
-
-  RefPtr<IDXGIDevice> DXGIDevice();
-  RefPtr<IDXGIFactory> DXGIFactory();
 
   RefPtr<gl::GLContext> mGL;
 
@@ -178,9 +172,6 @@ class RenderCompositorANGLE final : public RenderCompositor {
   // Used to know a timing of disabling native compositor.
   bool mDisablingNativeCompositor = false;
   bool mFirstPresent = true;
-  // Wether we're currently using alpha.
-  bool mSwapChainUsingAlpha = false;
-  RefPtr<layers::FenceD3D11> mFence;
 };
 
 }  // namespace wr
