@@ -8761,41 +8761,44 @@ var TabBarVisibility = {
 
   update(force = false) {
     let isPopup = !window.toolbar.visible;
-    let isVerticalTabs = Services.prefs.getBoolPref(
-      "sidebar.verticalTabs",
-      false
-    );
-    let nonPopupWithVerticalTabs = !isPopup && isVerticalTabs;
-    if (
-      !gBrowser /* gBrowser isn't initialized yet */ ||
-      gBrowser.visibleTabs.length == 1
-    ) {
-      hideTabstrip = isPopup;
-    }
+    let isTaskbarTab = document.documentElement.hasAttribute("taskbartab");
+    let isSingleTabWindow = isPopup || isTaskbarTab;
 
-    if (nonPopupWithVerticalTabs) {
-      // TabsInTitlebar decides if we can draw within the titlebar area.
-      // In vertical tabs mode, the toolbar with the horizontal tabstrip gets hidden
-      // and the navbar becomes a titlebar. This makes TabsInTitlebar a bit of a misnomer.
-      // We'll fix this in Bug 1921034.
-      hideTabstrip = true;
-      TabsInTitlebar.allowedBy("tabs-visible", true);
-    } else {
-      TabsInTitlebar.allowedBy("tabs-visible", !hideTabstrip);
-    }
+    let hasVerticalTabs =
+      !isSingleTabWindow &&
+      Services.prefs.getBoolPref("sidebar.verticalTabs", false);
+
+    // When `gBrowser` has not been initialized, we're opening a new window and
+    // assume only a single tab is loading.
+    let hasSingleTab = !gBrowser || gBrowser.visibleTabs.length == 1;
+
+    // To prevent tabs being lost, hiding the tabs toolbar should only work
+    // when only a single tab is visible or tabs are displayed elsewhere.
+    let hideTabsToolbar =
+      (isSingleTabWindow && hasSingleTab) || hasVerticalTabs;
+
+    // We only want a non-customized titlebar for popups. It should not be the
+    // case, but if a popup window contains more than one tab we re-enable
+    // titlebar customization and display tabs.
+    TabsInTitlebar.allowedBy("non-popup", !(isPopup && hasSingleTab));
+
+    // Update the browser chrome.
+
+    let tabsToolbar = document.getElementById("TabsToolbar");
+    let navbar = document.getElementById("nav-bar");
 
     gNavToolbox.toggleAttribute("tabs-hidden", hideTabsToolbar);
     // Should the nav-bar look and function like a titlebar?
     navbar.classList.toggle(
       "browser-titlebar",
-      TabsInTitlebar.enabled && hideTabstrip
+      TabsInTitlebar.enabled && hideTabsToolbar
     );
 
     document
       .getElementById("browser")
       .classList.toggle(
         "browser-toolbox-background",
-        TabsInTitlebar.enabled && nonPopupWithVerticalTabs
+        TabsInTitlebar.enabled && hasVerticalTabs
       );
 
     if (
