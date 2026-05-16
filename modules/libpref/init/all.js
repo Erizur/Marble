@@ -3086,6 +3086,7 @@ pref("network.tcp.keepalive.idle_time", 600); // seconds; 10 mins
 
 #ifdef MOZ_WIDGET_GTK
   pref("widget.disable-workspace-management", false);
+  pref("widget.titlebar-x11-use-shape-mask", false);
 #endif
 
 // All the Geolocation preferences are here.
