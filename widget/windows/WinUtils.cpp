@@ -35,7 +35,6 @@
 #include "nsIContentPolicy.h"
 #include "WindowsUIUtils.h"
 #include "nsContentUtils.h"
-#include "nsLookAndFeel.h"
 
 #include "mozilla/Logging.h"
 
@@ -2018,7 +2017,7 @@ static BOOL CALLBACK UpdateMicaInHwnd(HWND aHwnd, LPARAM aLParam) {
   return TRUE;
 }
 
-void WinUtils::UpdateMicaInAllWindows() {
+static void UpdateMicaInAllWindows(const char*, void*) {
   ::EnumWindows(&UpdateMicaInHwnd, 0);
   LookAndFeel::NotifyChangedAllWindows(
       widget::ThemeChangeKind::MediaQueriesOnly);
@@ -2030,8 +2029,7 @@ bool WinUtils::MicaAvailable() {
       return false;
     }
     for (const auto& pref : kMicaPrefs) {
-      Preferences::RegisterCallback(
-          [](const char*, void*) { WinUtils::UpdateMicaInAllWindows(); }, pref);
+      Preferences::RegisterCallback(UpdateMicaInAllWindows, pref);
     }
     return true;
   }();
@@ -2043,19 +2041,7 @@ bool WinUtils::MicaEnabled() {
 }
 
 bool WinUtils::MicaPopupsEnabled() {
-  if (!MicaAvailable()) {
-    return false;
-  }
-  switch (StaticPrefs::widget_windows_mica_popups()) {
-    case 0:
-      return false;
-    case 1:
-      return true;
-    default:
-      break;
-  }
-  auto* lf = static_cast<nsLookAndFeel*>(nsLookAndFeel::GetInstance());
-  return !lf->NeedsMicaWorkaround();
+  return MicaAvailable() && StaticPrefs::widget_windows_mica_popups();
 }
 
 // There are undocumented APIs to query/change the system DPI settings found by
