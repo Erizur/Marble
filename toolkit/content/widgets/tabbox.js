@@ -955,7 +955,7 @@
       this.insertBefore(start, this.firstChild);
 
       let end = MozXULElement.parseXULToFragment(
-        `<spacer class="tabs-right"/>`
+        `<spacer class="tabs-right" flex="1"/>`
       );
       this.insertBefore(end, null);
 
