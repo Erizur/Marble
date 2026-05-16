@@ -21,10 +21,7 @@ menuitem[appHandlerIcon="save"] > .menu-icon {
     content: url("chrome://browser/skin/preferences/saveFile.png");
   }
   @media (-moz-platform: linux) {
-    content: image-set(
-      "moz-icon://stock/document-save?size=16" 1x,
-      "moz-icon://stock/document-save?size=16&scale=2" 2x
-    );
+    content: url("moz-icon://stock/gtk-save?size=menu");
   }
 }
 
