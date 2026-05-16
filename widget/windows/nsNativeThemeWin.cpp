@@ -1043,9 +1043,9 @@ LayoutDeviceIntMargin nsNativeThemeWin::GetWidgetBorder(
     return result;
   }
 
-  if (!WidgetIsContainer(aAppearance)) {
+  if (!WidgetIsContainer(aAppearance) ||
+      aAppearance == StyleAppearance::Tabpanel)
     return result;  // Don't worry about it.
-  }
 
   int32_t part, state;
   nsresult rv = GetThemePartAndState(aFrame, aAppearance, part, state);
@@ -1256,6 +1256,7 @@ bool nsNativeThemeWin::WidgetAttributeChangeRequiresRepaint(
   if (aAppearance == StyleAppearance::Progresschunk ||
       aAppearance == StyleAppearance::ProgressBar ||
       aAppearance == StyleAppearance::Tabpanels ||
+      aAppearance == StyleAppearance::Tabpanel ||
       aAppearance == StyleAppearance::Separator) {
     return false;
   }
