@@ -81,6 +81,8 @@ class nsNativeThemeWin final : public Theme {
 
   bool ThemeWantsButtonInnerFocusRing() override { return true; }
 
+  bool ThemeNeedsComboboxDropmarker() override;
+
   nsNativeThemeWin();
 
  protected:
