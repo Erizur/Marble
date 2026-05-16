@@ -54,6 +54,8 @@ NS_IMPL_ISUPPORTS(nsNativeTheme, nsITimerCallback, nsINamed)
     if (aAppearance == StyleAppearance::Checkbox ||
         aAppearance == StyleAppearance::Radio ||
         aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
+        aAppearance == StyleAppearance::ButtonArrowPrevious ||
+        aAppearance == StyleAppearance::ButtonArrowNext ||
         aAppearance == StyleAppearance::ButtonArrowUp ||
 #ifdef MOZ_WIDGET_GTK
         aAppearance == StyleAppearance::MozWindowButtonClose ||
