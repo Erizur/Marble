@@ -253,7 +253,7 @@ For example, we re-map the accent color token in `tokens-platform.css` to the
 value we want to use in platform contexts (chrome):
 ```css
 /* tokens-platform.css */
---color-accent-primary: AccentColor;
+--color-accent-primary: var(--button-primary-bgcolor, AccentColor);
 ```
 
 #### `tokens-shared.css`

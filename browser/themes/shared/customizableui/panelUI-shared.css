@@ -2115,13 +2115,13 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 }
 
 .PanelUI-profiler-button-primary {
-  background-color: var(--color-accent-primary);
-  color: var(--button-text-color-primary);
+  background-color: var(--button-primary-bgcolor);
+  color: var(--button-primary-color);
 
   &:hover {
-    background-color: var(--color-accent-primary-hover);
+    background-color: var(--button-primary-hover-bgcolor);
     &:active {
-      background-color: var(--color-accent-primary-active);
+      background-color: var(--button-primary-active-bgcolor);
     }
   }
 }

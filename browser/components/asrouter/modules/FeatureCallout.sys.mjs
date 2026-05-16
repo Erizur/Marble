@@ -2396,39 +2396,19 @@ export class FeatureCallout {
         "button-background": "var(--button-background-color)",
         "button-background-hover": "var(--button-background-color-hover)",
         "button-background-active": "var(--button-background-color-active)",
-        "button-background-disabled": "var(--button-background-color-disabled)",
-        // Button Text
-        "button-color": "var(--button-text-color)",
-        "button-color-hover": "var(--button-text-color-hover)",
-        "button-color-active": "var(--button-text-color-active)",
-        // Button Border
-        "button-border": "var(--button-border-color)",
-        "button-border-color": "var(--button-border-color)",
-        "button-border-hover": "var(--button-border-color-hover)",
-        "button-border-active": "var(--button-border-color-active)",
-        "button-border-disabled": "var(--button-border-color-disabled)",
-        // Primary Button Background
-        "primary-button-background": "var(--button-background-color-primary)",
+        "button-color-active": "var(--button-text-color)",
+        "button-border-active": "transparent",
+        "primary-button-background": "var(--button-primary-bgcolor)",
+        "primary-button-color": "var(--button-primary-color)",
+        "primary-button-border": "transparent",
         "primary-button-background-hover":
-          "var(--button-background-color-primary-hover)",
+          "var(--button-primary-hover-bgcolor)",
+        "primary-button-color-hover": "var(--button-primary-color)",
+        "primary-button-border-hover": "transparent",
         "primary-button-background-active":
-          "var(--button-background-color-primary-active)",
-        "primary-button-background-disabled":
-          "var(--button-background-color-primary-disabled)",
-        // Primary Button Color
-        "primary-button-color": "var(--button-text-color-primary)",
-        "primary-button-color-hover": "var(--button-text-color-primary)",
-        "primary-button-color-active": "var(--button-text-color-primary)",
-        "primary-button-color-disabled": "var(--button-text-color-primary)",
-        // Primary Button Border
-        "primary-button-border": "var(--button-border-color-primary)",
-        "primary-button-border-hover":
-          "var(--button-border-color-primary-hover)",
-        "primary-button-border-active":
-          "var(--button-border-color-primary-active)",
-        "primary-button-border-disabled":
-          "var(--button-border-color-primary-disabled)",
-        // Links
+          "var(--button-primary-active-bgcolor)",
+        "primary-button-color-active": "var(--button-primary-color)",
+        "primary-button-border-active": "transparent",
         "link-color": "LinkText",
         "link-color-hover": "LinkText",
         "link-color-active": "ActiveText",

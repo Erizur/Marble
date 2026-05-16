@@ -437,17 +437,17 @@
   }
 
   &:is([selected], [primary]) {
-    color: var(--button-text-color-primary);
-    background-color: var(--color-accent-primary);
-    outline-color: var(--color-accent-primary);
+    color: var(--button-primary-color);
+    background-color: var(--button-primary-bgcolor);
+    outline-color: var(--button-primary-bgcolor);
     outline-offset: var(--focus-outline-offset);
 
     &:hover {
-      background-color: var(--color-accent-primary-hover);
+      background-color: var(--button-primary-hover-bgcolor);
     }
 
     &:hover:active {
-      background-color: var(--color-accent-primary-active);
+      background-color: var(--button-primary-active-bgcolor);
     }
   }
 }
