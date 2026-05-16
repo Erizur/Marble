@@ -440,4 +440,11 @@ gint moz_gtk_get_titlebar_button_spacing();
 size_t GetGtkHeaderBarButtonLayout(mozilla::Span<ButtonLayout>,
                                    bool* aReversedButtonsPlacement);
 
+/**
+ * Get size of CSD window extents.
+ *
+ * returns: Calculated (or estimated) decoration size of given aGtkWindow.
+ */
+GtkBorder GetTopLevelCSDDecorationSize();
+
 #endif
