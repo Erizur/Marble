@@ -181,13 +181,11 @@ class nsMenuPopupFrame final : public nsBlockFrame {
     Opacity,
     Shadow,
     Transform,
-    MicaBackdrop,
   };
   using WidgetStyleFlags = mozilla::EnumSet<WidgetStyle>;
   static constexpr WidgetStyleFlags AllWidgetStyleFlags() {
     return {WidgetStyle::ColorScheme, WidgetStyle::InputRegion,
-            WidgetStyle::Opacity,     WidgetStyle::Shadow,
-            WidgetStyle::Transform,   WidgetStyle::MicaBackdrop};
+            WidgetStyle::Opacity, WidgetStyle::Shadow, WidgetStyle::Transform};
   }
   void PropagateStyleToWidget(WidgetStyleFlags = AllWidgetStyleFlags()) const;
 
