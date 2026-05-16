@@ -516,9 +516,10 @@ already_AddRefed<nsIWidget> nsBaseWidget::CreateChild(
 
 // Attach a view to our widget which we'll send events to.
 void nsBaseWidget::AttachViewToTopLevel(bool aUseAttachedEvents) {
-  NS_ASSERTION(mWindowType == WindowType::TopLevel ||
-                   mWindowType == WindowType::Dialog ||
-                   mWindowType == WindowType::Invisible,
+  NS_ASSERTION((mWindowType == WindowType::TopLevel ||
+                mWindowType == WindowType::Dialog ||
+                mWindowType == WindowType::Invisible ||
+                mWindowType == WindowType::Child),
                "Can't attach to window of that type");
 
   mUseAttachedEvents = aUseAttachedEvents;
@@ -968,8 +969,8 @@ bool nsBaseWidget::UseAPZ() const {
     return false;
   }
 
-  // Always use APZ for top-level windows. XXX what about Dialog?
-  if (mWindowType == WindowType::TopLevel) {
+  // Always use APZ for top-level windows
+  if (mWindowType == WindowType::TopLevel || mWindowType == WindowType::Child) {
     return true;
   }
 
@@ -985,9 +986,7 @@ bool nsBaseWidget::UseAPZ() const {
   if (HasRemoteContent()) {
     return mWindowType == WindowType::Dialog ||
            mWindowType == WindowType::Popup;
-  }
-
-  if (StaticPrefs::apz_popups_without_remote_enabled()) {
+  } else if (StaticPrefs::apz_popups_without_remote_enabled()) {
     return mWindowType == WindowType::Popup;
   }
 

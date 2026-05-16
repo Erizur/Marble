@@ -673,6 +673,8 @@ nsWindow::nsWindow()
       mCachedHitTestTime(TimeStamp::Now()),
       mSizeConstraintsScale(GetDefaultScale().scale),
       mDesktopId("DesktopIdMutex") {
+  MOZ_ASSERT(mWindowType == WindowType::Child);
+
   if (!gInitializedVirtualDesktopManager) {
     TaskController::Get()->AddTask(
         MakeAndAddRef<InitializeVirtualDesktopManagerTask>());
@@ -873,6 +875,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   if (!aInitData) aInitData = &defaultInitData;
 
   MOZ_DIAGNOSTIC_ASSERT(aInitData->mWindowType != WindowType::Invisible);
+  MOZ_DIAGNOSTIC_ASSERT(aInitData->mWindowType != WindowType::Child);
 
   mBounds = aRect;
 
@@ -1300,6 +1303,10 @@ static DWORD WindowStylesRemovedForBorderStyle(BorderStyle aStyle) {
 DWORD nsWindow::WindowStyle() {
   DWORD style;
   switch (mWindowType) {
+    case WindowType::Child:
+      style = WS_OVERLAPPED;
+      break;
+
     case WindowType::Dialog:
       style = WS_OVERLAPPED | WS_BORDER | WS_DLGFRAME | WS_SYSMENU |
               DS_MODALFRAME | WS_CLIPCHILDREN;
@@ -1331,6 +1338,8 @@ DWORD nsWindow::WindowStyle() {
 // Return nsWindow extended styles
 DWORD nsWindow::WindowExStyle() {
   switch (mWindowType) {
+    case WindowType::Child:
+      return 0;
     case WindowType::Popup: {
       DWORD extendedStyle = WS_EX_TOOLWINDOW;
       if (mPopupLevel == PopupLevel::Top) {
