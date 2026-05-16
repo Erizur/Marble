@@ -273,8 +273,8 @@ sidebar-main,
     &[sidebar-ongoing-animations]:not([sidebar-launcher-expanded]) {
       z-index: var(--browser-area-z-index-sidebar-expand-on-hover);
       position: absolute;
-      color: var(--toolbox-textcolor);
-      background-color: var(--toolbox-bgcolor);
+      color: var(--toolbox-non-lwt-textcolor);
+      background-color: var(--toolbox-non-lwt-bgcolor);
 
       &:not([sidebar-positionend]) {
         border-inline-end: 0.01px solid var(--sidebar-border-color);
@@ -288,12 +288,12 @@ sidebar-main,
     :root[lwtheme] & {
       border-radius: unset;
       border-inline: unset;
-      color: var(--toolbox-textcolor);
-      background-color: var(--toolbox-bgcolor);
+      color: var(--toolbox-non-lwt-textcolor);
+      background-color: var(--toolbox-non-lwt-bgcolor);
 
       &:-moz-window-inactive {
-        color: var(--toolbox-textcolor-inactive);
-        background-color: var(--toolbox-bgcolor-inactive);
+        color: var(--toolbox-non-lwt-textcolor-inactive);
+        background-color: var(--toolbox-non-lwt-bgcolor-inactive);
       }
     }
 

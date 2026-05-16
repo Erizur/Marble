@@ -8783,7 +8783,6 @@ var TabBarVisibility = {
     TabsInTitlebar.allowedBy("non-popup", !(isPopup && hasSingleTab));
 
     // Update the browser chrome.
-
     let tabsToolbar = document.getElementById("TabsToolbar");
     let navbar = document.getElementById("nav-bar");
 
@@ -8793,6 +8792,7 @@ var TabBarVisibility = {
       "browser-titlebar",
       TabsInTitlebar.enabled && hideTabsToolbar
     );
+    navbar.classList.toggle("titlebar-color", hideTabsToolbar);
 
     document
       .getElementById("browser")
@@ -8810,15 +8810,7 @@ var TabBarVisibility = {
     }
     this._initialUpdateDone = true;
 
-    toolbar.collapsed = hideTabstrip;
-    let navbar = document.getElementById("nav-bar");
-    navbar.toggleAttribute("tabs-hidden", hideTabstrip);
-    // Should the nav-bar look and function  like a titlebar?
-    navbar.classList.toggle(
-      "browser-titlebar",
-      TabsInTitlebar.enabled && hideTabstrip
-    );
-    navbar.classList.toggle("titlebar-color", hideTabstrip);
+    tabsToolbar.collapsed = hideTabsToolbar;
 
     // Stylize close menu items based on tab visibility. When a window will only
     // ever have a single tab, only show the option to close the tab, and

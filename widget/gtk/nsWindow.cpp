@@ -741,30 +741,7 @@ bool nsWindow::WidgetTypeSupportsAcceleration() {
   return true;
 }
 
-void nsWindow::DidChangeParent(nsIWidget* aOldParent) {
-  LOG("nsWindow::DidChangeParent new parent %p -> %p\n", aOldParent, mParent);
-  if (!mParent) {
-    return;
-  }
-
-  auto* newParent = static_cast<nsWindow*>(mParent);
-  if (mIsDestroyed || newParent->IsDestroyed()) {
-    return;
-  }
-
-  if (!IsTopLevelWindowType()) {
-    GdkWindow* window = GetToplevelGdkWindow();
-    GdkWindow* parentWindow = newParent->GetToplevelGdkWindow();
-    gdk_window_reparent(window, parentWindow, 0, 0);
-    SetHasMappedToplevel(newParent->mHasMappedToplevel);
-    return;
-  }
-
-  GtkWindow* newParentWidget = GTK_WINDOW(newParent->GetGtkWidget());
-  GtkWindowSetTransientFor(GTK_WINDOW(mShell), newParentWidget);
-}
-
-static void InitPenEvent(WidgetMouseEvent& aGeckoEvent, GdkEvent* aEvent) {
+static bool IsPenEvent(GdkEvent* aEvent, bool* isEraser) {
   // Find the source of the event
   GdkDevice* device = gdk_event_get_source_device(aEvent);
   GdkInputSource eSource = gdk_device_get_source(device);
@@ -922,7 +899,7 @@ void nsWindow::SetSizeConstraints(const SizeConstraints& aConstraints) {
 
 // See gtk_window_should_use_csd.
 bool nsWindow::ToplevelUsesCSD() const {
-  if (!IsTopLevelWidget() || mUndecorated ||
+  if (!IsTopLevelWindowType() || mUndecorated ||
       mSizeMode == nsSizeMode_Fullscreen) {
     return false;
   }
@@ -3331,7 +3308,7 @@ void nsWindow::RecomputeBounds() {
 
   auto GetBounds = [&](GdkWindow* aWin) {
     GdkRectangle b{0};
-    if (IsTopLevelWidget() && GdkIsX11Display() && aWin == toplevel) {
+    if (IsTopLevelWindowType() && GdkIsX11Display() && aWin == toplevel) {
       // We want the up-to-date size from the X server, not the last configure
       // event size, to avoid spurious resizes on e.g. sizemode changes.
       gdk_window_get_geometry(aWin, nullptr, nullptr, &b.width, &b.height);
@@ -3349,7 +3326,7 @@ void nsWindow::RecomputeBounds() {
 
   mBounds = GetFrameBounds(toplevel);
   mClientMargin = [&] {
-    if (!IsTopLevelWidget() || mSizeMode == nsSizeMode_Fullscreen) {
+    if (!IsTopLevelWindowType() || mSizeMode == nsSizeMode_Fullscreen) {
       return LayoutDeviceIntMargin();
     }
     auto systemMargin = mBounds - GetBounds(toplevel);
@@ -3432,7 +3409,7 @@ void nsWindow::RecomputeBounds() {
       clientMarginsChanged || oldBounds.Size() != mBounds.Size();
 
   if (moved) {
-    if (IsTopLevelWidget()) {
+    if (IsTopLevelWindowType()) {
       // The moved check avoids unwanted rollup on spurious configure events
       // from Cygwin/X (bug 672103).
       RollupAllMenus();
@@ -4167,47 +4144,8 @@ gboolean nsWindow::OnShellConfigureEvent(GdkEventConfigure* aEvent) {
     }
   }
 
-  LayoutDeviceIntRect screenBounds = GetScreenBounds();
-
-  if (IsTopLevelWindowType()) {
-    // This check avoids unwanted rollup on spurious configure events from
-    // Cygwin/X (bug 672103).
-    if (mBounds.x != screenBounds.x || mBounds.y != screenBounds.y) {
-      RollupAllMenus();
-    }
-  }
-
-  NS_ASSERTION(GTK_IS_WINDOW(aWidget),
-               "Configure event on widget that is not a GtkWindow");
-  if (mGdkWindow &&
-      gtk_window_get_window_type(GTK_WINDOW(aWidget)) == GTK_WINDOW_POPUP) {
-    // Override-redirect window
-    //
-    // These windows should not be moved by the window manager, and so any
-    // change in position is a result of our direction.  mBounds has
-    // already been set in std::move() or Resize(), and that is more
-    // up-to-date than the position in the ConfigureNotify event if the
-    // event is from an earlier window move.
-    //
-    // Skipping the WindowMoved call saves context menus from an infinite
-    // loop when nsXULPopupManager::PopupMoved moves the window to the new
-    // position and nsMenuPopupFrame::SetPopupPosition adds
-    // offsetForContextMenu on each iteration.
-
-    // Our back buffer might have been invalidated while we drew the last
-    // frame, and its contents might be incorrect. See bug 1280653 comment 7
-    // and comment 10. Specifically we must ensure we recomposite the frame
-    // as soon as possible to avoid the corrupted frame being displayed.
-    GetWindowRenderer()->FlushRendering(wr::RenderReasons::WIDGET);
-    return FALSE;
-  }
-
-  mBounds.MoveTo(screenBounds.TopLeft());
-  RecomputeClientOffset(/* aNotify = */ false);
-
-  // XXX mozilla will invalidate the entire window after this move
-  // complete.  wtf?
-  NotifyWindowMoved(mBounds.x, mBounds.y);
+  SchedulePendingBounds();
+  RecomputeBounds();
 
   return FALSE;
 }
@@ -5546,8 +5484,27 @@ void nsWindow::OnCompositedChanged() {
   mCompositedScreen = gdk_screen_is_composited(gdk_screen_get_default());
 }
 
-void nsWindow::OnScaleChanged(bool aNotify) {
-  if (!IsTopLevelWindowType()) {
+  // X11(XWayland) and Wayland handles screen scale differently.
+  // If there are more monitors with different scale factor (say 2 and 3),
+  // XWayland sends scale 3 to all application windows and downscales
+  // applications on monitor with scale 2.
+  // If scale is changed system wide in settings, OnScaleEvent() is send
+  // to all application windows.
+  //
+  // Wayland sends actual scale to each window according to its position
+  // and also sends OnScaleEvent is scale changes for particular window.
+  // So we can have toplevel window with scale 3 and its child popup with scale 2
+  // (because toplevel it's located on more than one screen).
+  //
+  // But right now gecko code (or widget/gtk?) expects that toplevel and its
+  // popup use the same scale factor (which may be actually different).
+  // We see various rendering/sizing/position errors otherwise,
+  // maybe we get scale from wrong windows or so.
+  //
+  // Let's follow the working scenario for now to avoid complexity
+  // and maybe fix that later.
+  void nsWindow::OnScaleEvent() {
+  if (!mGdkWindow || !IsTopLevelWindowType()) {
     return;
   }
 
@@ -5558,7 +5515,7 @@ void nsWindow::OnScaleChanged(bool aNotify) {
 }
 
 void nsWindow::RefreshScale(bool aRefreshScreen) {
-  if (!IsTopLevelWidget()) {
+  if (!IsTopLevelWindowType()) {
     return;
   }
 
