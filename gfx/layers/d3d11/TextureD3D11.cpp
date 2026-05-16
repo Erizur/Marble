@@ -677,14 +677,8 @@ D3D11TextureData* D3D11TextureData::Create(IntSize aSize, SurfaceFormat aFormat,
   RefPtr<gfx::FileHandleWrapper> handle =
       new gfx::FileHandleWrapper(UniqueFileHandle(sharedHandle));
 
-  if (useFence) {
-    auto* fencesHolderMap = CompositeProcessD3D11FencesHolderMap::Get();
-    fencesHolderMap->Register(fencesHolderId.ref());
-  }
-
-  D3D11TextureData* data =
-      new D3D11TextureData(device, texture11, 0, handle, aSize, aFormat,
-                           fencesHolderId, fence, aFlags);
+  D3D11TextureData* data = new D3D11TextureData(texture11, 0, std::move(handle),
+                                                aSize, aFormat, aFlags);
 
   texture11->GetDevice(getter_AddRefs(device));
   if (XRE_IsGPUProcess() &&
