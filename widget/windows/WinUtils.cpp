@@ -2007,7 +2007,6 @@ bool WinUtils::GetTimezoneName(wchar_t* aBuffer) {
 static constexpr nsLiteralCString kMicaPrefs[] = {
     "widget.windows.mica"_ns,
     "widget.windows.mica.popups"_ns,
-    "widget.windows.mica.toplevel-backdrop"_ns,
 };
 
 static BOOL CALLBACK UpdateMicaInHwnd(HWND aHwnd, LPARAM aLParam) {
