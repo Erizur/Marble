@@ -310,6 +310,14 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
                                  : MOZ_GTK_PROGRESS_CHUNK_INDETERMINATE
                            : MOZ_GTK_PROGRESS_CHUNK;
     } break;
+    case StyleAppearance::TabScrollArrowBack:
+    case StyleAppearance::TabScrollArrowForward:
+      if (aWidgetFlags)
+        *aWidgetFlags = aAppearance == StyleAppearance::TabScrollArrowBack
+                            ? GTK_ARROW_LEFT
+                            : GTK_ARROW_RIGHT;
+      aGtkWidgetType = MOZ_GTK_TAB_SCROLLARROW;
+      break;
     case StyleAppearance::Tabpanels:
       aGtkWidgetType = MOZ_GTK_TABPANELS;
       break;
@@ -882,6 +890,8 @@ bool nsNativeThemeGTK::GetWidgetPadding(nsDeviceContext* aContext,
     case StyleAppearance::MozWindowButtonMaximize:
     case StyleAppearance::MozWindowButtonRestore:
     case StyleAppearance::Dualbutton:
+    case StyleAppearance::TabScrollArrowBack:
+    case StyleAppearance::TabScrollArrowForward:
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
@@ -982,6 +992,10 @@ LayoutDeviceIntSize nsNativeThemeGTK::GetMinimumWidgetSize(
         moz_gtk_get_scalethumb_metrics(GTK_ORIENTATION_VERTICAL, &result.width,
                                        &result.width);
       }
+    } break;
+    case StyleAppearance::TabScrollArrowBack:
+    case StyleAppearance::TabScrollArrowForward: {
+      moz_gtk_get_tab_scroll_arrow_size(&result.width, &result.height);
     } break;
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
@@ -1128,6 +1142,8 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::Tab:
     // case StyleAppearance::Tabpanel:
     case StyleAppearance::Tabpanels:
+    case StyleAppearance::TabScrollArrowBack:
+    case StyleAppearance::TabScrollArrowForward:
     case StyleAppearance::Tooltip:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
@@ -1155,6 +1171,8 @@ NS_IMETHODIMP_(bool)
 nsNativeThemeGTK::WidgetIsContainer(StyleAppearance aAppearance) {
   // XXXdwh At some point flesh all of this out.
   if (aAppearance == StyleAppearance::RangeThumb ||
+      aAppearance == StyleAppearance::TabScrollArrowBack ||
+      aAppearance == StyleAppearance::TabScrollArrowForward ||
       aAppearance == StyleAppearance::ButtonArrowUp ||
       aAppearance == StyleAppearance::ButtonArrowDown ||
       aAppearance == StyleAppearance::ButtonArrowNext ||

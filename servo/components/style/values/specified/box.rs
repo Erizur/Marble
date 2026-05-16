@@ -1571,6 +1571,11 @@ pub enum Appearance {
     /// The tab panels container.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Tabpanels,
+    /// The tabs scroll arrows (left/right).
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    TabScrollArrowBack,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    TabScrollArrowForward,
     /// A single toolbar button (with no associated dropdown).
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Toolbarbutton,
