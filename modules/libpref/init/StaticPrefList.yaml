@@ -18989,13 +18989,14 @@
 - name: widget.windows.mica
   type: bool
   value: false
-  mirror: always
+  mirror: once
 
-# Whether we use the mica backdrop for popups when available.
+# Whether we use the mica backdrop for popups. Off by default for now.
+# TODO(emilio): Make these toggleable at runtime?
 - name: widget.windows.mica.popups
   type: RelaxedAtomicBool
   value: true
-  mirror: always
+  mirror: once
 
 # Whether we expand the client area into the taskbar hidden edge on maximized
 # windows.
