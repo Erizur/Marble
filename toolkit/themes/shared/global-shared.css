@@ -31,6 +31,7 @@
   --arrowpanel-dimmed-further: color-mix(in srgb, currentColor 30%, transparent);
 
   --panel-separator-color: color-mix(in srgb, currentColor 25%, transparent);
+  --panel-disabled-color: color-mix(in srgb, currentColor 40%, transparent);
 
   --popup-notification-body-width: calc(31em - calc(2 * var(--arrowpanel-padding)));
 
@@ -108,6 +109,10 @@
     --toolbar-field-focus-border-color: var(--focus-outline-color);
 
     --input-border-color: currentColor;
+
+    &:not([lwtheme]) {
+      --panel-disabled-color: GrayText;
+    }
   }
 
   @media (forced-colors) {

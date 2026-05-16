@@ -40,7 +40,7 @@
 
   &[disabled="true"] {
     pointer-events: none;
-    color: var(--text-color-disabled);
+    color: var(--panel-disabled-color);
   }
 }
 

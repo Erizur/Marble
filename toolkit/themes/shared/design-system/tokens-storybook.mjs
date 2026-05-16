@@ -601,14 +601,7 @@ export const storybookTables = {
     },
     {
       value: {
-        default: "color-mix(in srgb, currentColor 40%, transparent)",
-        forcedColors: "GrayText",
-      },
-      name: "--text-color-disabled",
-    },
-    {
-      value: {
-        light: "var(--color-red-70)",
+        light: "var(--color-red-50)",
         dark: "var(--color-red-20)",
         prefersContrast: "inherit",
         default: "light-dark(var(--color-red-70), var(--color-red-20))",
@@ -1592,10 +1585,6 @@ export const variableLookupTable = {
   "text-color-deemphasized": {
     default: "color-mix(in srgb, currentColor 69%, transparent)",
     prefersContrast: "inherit",
-  },
-  "text-color-disabled": {
-    default: "color-mix(in srgb, currentColor 40%, transparent)",
-    forcedColors: "GrayText",
   },
   "text-color-error": {
     light: "var(--color-red-70)",

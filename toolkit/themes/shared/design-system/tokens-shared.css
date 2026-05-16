@@ -283,7 +283,6 @@
     --table-row-background-color: var(--background-color-canvas);
 
     /** Text **/
-    --text-color-disabled: color-mix(in srgb, currentColor 40%, transparent);
     --text-color-deemphasized: color-mix(in srgb, currentColor 69%, transparent);
     --text-color-error: light-dark(var(--color-red-70), var(--color-red-20));
   }
@@ -401,9 +400,6 @@
 
       /** Table Row **/
       --table-row-background-color-alternate: var(--background-color-canvas); /* TODO Bug 1821203 - Gray use needs to be consolidated */
-
-      /** Text **/
-      --text-color-disabled: GrayText;
     }
   }
 }

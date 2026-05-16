@@ -315,9 +315,7 @@ panelview {
 
   :is(menu, menuitem) {
     &[disabled] {
-      color: var(--button-text-color-ghost-disabled);
-      background-color: var(--button-background-color-ghost-disabled);
-      opacity: var(--button-opacity-disabled);
+      color: var(--panel-disabled-color);
     }
 
     &:not([disabled])[_moz-menuactive] {
@@ -930,7 +928,7 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
   }
 
   &:not([fxastatus="signedin"]) #PanelUI-fxa-menu-connect-device-button {
-    color: var(--text-color-disabled);
+    color: var(--panel-disabled-color);
   }
 }
 
@@ -1002,7 +1000,7 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
 }
 
 :root:not([fxastatus="signedin"]) #PanelUI-fxa-menu-connect-device-button {
-  color: var(--text-color-disabled);
+  color: var(--panel-disabled-color);
 }
 
 /* From the FxA menu -> synced tabs, we don't need to clutter the view with
@@ -1215,6 +1213,10 @@ panelview .toolbarbutton-1,
   /* toolbarbuttons default to centered, but we don't want that for subviews. */
   justify-content: flex-start;
 
+  &[disabled="true"] {
+    color: var(--panel-disabled-color);
+  }
+
   /* We don't always display: none this item, and if it has forced width (like above)
   * or margin, that impacts the position of the label. Fix:
   */
@@ -1232,8 +1234,10 @@ panelview .toolbarbutton-1,
     display: flex;
   }
 
-  &[shortcut]:not([disabled])::after {
-    color: var(--text-color-deemphasized);
+  @media not (prefers-contrast) {
+    &[shortcut]:not([disabled])::after {
+      color: var(--panel-disabled-color);
+    }
   }
 
   &[shortcut]::after,
