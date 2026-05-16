@@ -52,7 +52,14 @@ NS_IMPL_ISUPPORTS(nsNativeTheme, nsITimerCallback, nsINamed)
   const bool isXULElement = frameContent->IsXULElement();
   if (isXULElement) {
     if (aAppearance == StyleAppearance::Checkbox ||
-        aAppearance == StyleAppearance::Radio) {
+        aAppearance == StyleAppearance::Radio ||
+#ifdef MOZ_WIDGET_GTK
+        aAppearance == StyleAppearance::MozWindowButtonClose ||
+        aAppearance == StyleAppearance::MozWindowButtonMinimize ||
+        aAppearance == StyleAppearance::MozWindowButtonRestore ||
+        aAppearance == StyleAppearance::MozWindowButtonMaximize ||
+#endif
+        false) {
       aFrame = aFrame->GetParent();
       frameContent = aFrame->GetContent();
     }
