@@ -450,31 +450,6 @@ bool gfxPlatformGtk::CreatePlatformFontList() {
   return gfxPlatformFontList::Initialize(new gfxFcPlatformFontList);
 }
 
-int32_t gfxPlatformGtk::GetFontScaleDPI() {
-  MOZ_ASSERT(XRE_IsParentProcess(),
-             "You can access this via LookAndFeel if you need it in child "
-             "processes");
-  if (MOZ_LIKELY(sDPI != 0)) {
-    return sDPI;
-  }
-  GdkScreen* screen = gdk_screen_get_default();
-  // Ensure settings in config files are processed.
-  gtk_settings_get_for_screen(screen);
-  int32_t dpi = int32_t(round(gdk_screen_get_resolution(screen)));
-  if (dpi <= 0) {
-    // Fall back to something reasonable
-    dpi = 96;
-  }
-  sDPI = dpi;
-  return dpi;
-}
-
-double gfxPlatformGtk::GetFontScaleFactor() {
-  // Modern GTK works fine with non-integer scaling, and scaling factors like
-  // 1.25 are common as "Large text" in gnome as well, so no need to round.
-  return GetFontScaleDPI() / 96.0;
-}
-
 gfxImageFormat gfxPlatformGtk::GetOffscreenFormat() {
   // Make sure there is a screen
   GdkScreen* screen = gdk_screen_get_default();

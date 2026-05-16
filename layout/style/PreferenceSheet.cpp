@@ -20,6 +20,8 @@
 #include "mozilla/dom/Document.h"
 #include "nsContentUtils.h"
 
+#define AVG2(a, b) (((a) + (b) + 1) >> 1)
+
 namespace mozilla {
 
 using dom::Document;
@@ -309,3 +311,5 @@ void PreferenceSheet::Initialize() {
 }
 
 }  // namespace mozilla
+
+#undef AVG2
