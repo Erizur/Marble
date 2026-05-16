@@ -4,7 +4,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsNativeThemeGTK.h"
-#include "gtk/gtk.h"
 #include "nsPresContext.h"
 #include "nsStyleConsts.h"
 #include "gtkdrawing.h"
@@ -59,6 +58,8 @@ using namespace mozilla;
 using namespace mozilla::gfx;
 using namespace mozilla::widget;
 
+static int gLastGdkError;
+
 // Return widget scale factor of the monitor where the window is located by the
 // most part. We intentionally honor the text scale factor here in order to
 // have consistent scaling with other UI elements, except for the window
@@ -77,21 +78,129 @@ static inline CSSToLayoutDeviceScale GetWidgetScaleFactor(
 }
 
 nsNativeThemeGTK::nsNativeThemeGTK() : Theme(ScrollbarStyle()) {
-  moz_gtk_init();
+  if (moz_gtk_init() != MOZ_GTK_SUCCESS) {
+    memset(mDisabledWidgetTypes, 0xff, sizeof(mDisabledWidgetTypes));
+    return;
+  }
+
   ThemeChanged();
 }
 
 nsNativeThemeGTK::~nsNativeThemeGTK() { moz_gtk_shutdown(); }
 
-static Maybe<WidgetNodeType> GeckoToGtkWidgetType(StyleAppearance aAppearance) {
+void nsNativeThemeGTK::RefreshWidgetWindow(nsIFrame* aFrame) {
+  MOZ_ASSERT(aFrame);
+  MOZ_ASSERT(aFrame->PresShell());
+
+  nsViewManager* vm = aFrame->PresShell()->GetViewManager();
+  if (!vm) {
+    return;
+  }
+  vm->InvalidateAllViews();
+}
+
+static bool IsFrameContentNodeInNamespace(nsIFrame* aFrame,
+                                          uint32_t aNamespace) {
+  nsIContent* content = aFrame ? aFrame->GetContent() : nullptr;
+  if (!content) return false;
+  return content->IsInNamespace(aNamespace);
+}
+
+static bool IsWidgetTypeDisabled(const uint8_t* aDisabledVector,
+                                 StyleAppearance aAppearance) {
+  auto type = static_cast<size_t>(aAppearance);
+  MOZ_ASSERT(type < static_cast<size_t>(StyleAppearance::Count));
+  return (aDisabledVector[type >> 3] & (1 << (type & 7))) != 0;
+}
+
+static void SetWidgetTypeDisabled(uint8_t* aDisabledVector,
+                                  StyleAppearance aAppearance) {
+  auto type = static_cast<size_t>(aAppearance);
+  MOZ_ASSERT(type < static_cast<size_t>(mozilla::StyleAppearance::Count));
+  aDisabledVector[type >> 3] |= (1 << (type & 7));
+}
+
+static inline uint16_t GetWidgetStateKey(StyleAppearance aAppearance,
+                                         GtkWidgetState* aWidgetState) {
+  return (aWidgetState->active | aWidgetState->focused << 1 |
+          aWidgetState->inHover << 2 | aWidgetState->disabled << 3 |
+          aWidgetState->isDefault << 4 |
+          static_cast<uint16_t>(aAppearance) << 5);
+}
+
+static bool IsWidgetStateSafe(uint8_t* aSafeVector, StyleAppearance aAppearance,
+                              GtkWidgetState* aWidgetState) {
+  MOZ_ASSERT(static_cast<size_t>(aAppearance) <
+             static_cast<size_t>(mozilla::StyleAppearance::Count));
+  uint16_t key = GetWidgetStateKey(aAppearance, aWidgetState);
+  return (aSafeVector[key >> 3] & (1 << (key & 7))) != 0;
+}
+
+static void SetWidgetStateSafe(uint8_t* aSafeVector,
+                               StyleAppearance aAppearance,
+                               GtkWidgetState* aWidgetState) {
+  MOZ_ASSERT(static_cast<size_t>(aAppearance) <
+             static_cast<size_t>(mozilla::StyleAppearance::Count));
+  uint16_t key = GetWidgetStateKey(aAppearance, aWidgetState);
+  aSafeVector[key >> 3] |= (1 << (key & 7));
+}
+
+/* static */
+GtkTextDirection nsNativeThemeGTK::GetTextDirection(nsIFrame* aFrame) {
+  // IsFrameRTL() treats vertical-rl modes as right-to-left (in addition to
+  // horizontal text with direction=RTL), rather than just considering the
+  // text direction.  GtkTextDirection does not have distinct values for
+  // vertical writing modes, but considering the block flow direction is
+  // important for resizers and scrollbar elements, at least.
+  return IsFrameRTL(aFrame) ? GTK_TEXT_DIR_RTL : GTK_TEXT_DIR_LTR;
+}
+
+bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
+                                            nsIFrame* aFrame,
+                                            WidgetNodeType& aGtkWidgetType,
+                                            GtkWidgetState* aState,
+                                            gint* aWidgetFlags) {
+  if (aWidgetFlags) {
+    *aWidgetFlags = 0;
+  }
+
+  ElementState elementState = GetContentState(aFrame, aAppearance);
+  if (aState) {
+    memset(aState, 0, sizeof(GtkWidgetState));
+    if (aWidgetFlags) {
+      if (elementState.HasState(ElementState::CHECKED)) {
+        *aWidgetFlags |= MOZ_GTK_WIDGET_CHECKED;
+      }
+      if (elementState.HasState(ElementState::INDETERMINATE)) {
+        *aWidgetFlags |= MOZ_GTK_WIDGET_INCONSISTENT;
+      }
+    }
+
+    aState->disabled =
+        elementState.HasState(ElementState::DISABLED) || IsReadOnly(aFrame);
+    aState->active = elementState.HasState(ElementState::ACTIVE);
+    aState->focused = elementState.HasState(ElementState::FOCUS);
+    aState->inHover = elementState.HasState(ElementState::HOVER);
+    aState->isDefault = IsDefaultButton(aFrame);
+    aState->canDefault = FALSE;  // XXX fix me
+
+    if (IsFrameContentNodeInNamespace(aFrame, kNameSpaceID_XUL)) {
+      // For these widget types, some element (either a child or parent)
+      // actually has element focus, so we check the focused attribute
+      // to see whether to draw in the focused state.
+      aState->focused = elementState.HasState(ElementState::FOCUSRING);
+    }
+  }
+
   switch (aAppearance) {
     case StyleAppearance::MozWindowDecorations:
-      return Some(MOZ_GTK_WINDOW_DECORATION);
-    default:
-      MOZ_ASSERT_UNREACHABLE("Unknown widget");
+      aGtkWidgetType = MOZ_GTK_WINDOW_DECORATION;
       break;
+    default:
+      return false;
   }
-  return {};
+
+  return true;
 }
 
 class SystemCairoClipper : public ClipExporter {
@@ -159,10 +268,12 @@ class SystemCairoClipper : public ClipExporter {
 };
 
 static void DrawThemeWithCairo(gfxContext* aContext, DrawTarget* aDrawTarget,
-                               const GtkDrawingParams& aParams,
-                               double aScaleFactor, bool aSnapped,
-                               const Point& aDrawOrigin,
+                               GtkWidgetState aState,
+                               WidgetNodeType aGTKWidgetType, gint aFlags,
+                               GtkTextDirection aDirection, double aScaleFactor,
+                               bool aSnapped, const Point& aDrawOrigin,
                                const nsIntSize& aDrawSize,
+                               GdkRectangle& aGDKRect,
                                nsITheme::Transparency aTransparency) {
   static auto sCairoSurfaceSetDeviceScalePtr =
       (void (*)(cairo_surface_t*, double, double))dlsym(
@@ -224,7 +335,8 @@ static void DrawThemeWithCairo(gfxContext* aContext, DrawTarget* aDrawTarget,
           cairo_rectangle(cr, 0, 0, clipSize.width, clipSize.height);
           cairo_clip(cr);
 
-          moz_gtk_widget_paint(cr, &aParams);
+          moz_gtk_widget_paint(aGTKWidgetType, cr, &aGDKRect, &aState, aFlags,
+                               aDirection);
 
           cairo_destroy(cr);
         }
@@ -266,7 +378,8 @@ static void DrawThemeWithCairo(gfxContext* aContext, DrawTarget* aDrawTarget,
         cairo_rectangle(cr, 0, 0, clipSize.width, clipSize.height);
         cairo_clip(cr);
 
-        moz_gtk_widget_paint(cr, &aParams);
+        moz_gtk_widget_paint(aGTKWidgetType, cr, &aGDKRect, &aState, aFlags,
+                             aDirection);
 
         cairo_destroy(cr);
       }
@@ -300,7 +413,8 @@ static void DrawThemeWithCairo(gfxContext* aContext, DrawTarget* aDrawTarget,
             }
           }
 
-          moz_gtk_widget_paint(cr, &aParams);
+          moz_gtk_widget_paint(aGTKWidgetType, cr, &aGDKRect, &aState, aFlags,
+                               aDirection);
         }
       }
 
@@ -338,8 +452,13 @@ nsNativeThemeGTK::DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
                                        aDirtyRect, aDrawOverflow);
   }
 
-  auto gtkType = GeckoToGtkWidgetType(aAppearance);
-  if (!gtkType) {
+  GtkWidgetState state;
+  WidgetNodeType gtkWidgetType;
+  GtkTextDirection direction = GetTextDirection(aFrame);
+  gint flags;
+
+  if (!GetGtkWidgetAndState(aAppearance, aFrame, gtkWidgetType, &state,
+                            &flags)) {
     return NS_OK;
   }
 
@@ -382,6 +501,15 @@ nsNativeThemeGTK::DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
     return NS_OK;
   }
 
+  NS_ASSERTION(!IsWidgetTypeDisabled(mDisabledWidgetTypes, aAppearance),
+               "Trying to render an unsafe widget!");
+
+  bool safeState = IsWidgetStateSafe(mSafeWidgetStates, aAppearance, &state);
+  if (!safeState) {
+    gLastGdkError = 0;
+    gdk_error_trap_push();
+  }
+
   Transparency transparency = GetWidgetTransparency(aFrame, aAppearance);
 
   // gdk rectangles are wrt the drawing rect.
@@ -394,22 +522,41 @@ nsNativeThemeGTK::DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
 
   // Save actual widget scale to GtkWidgetState as we don't provide
   // the frame to gtk3drawing routines.
-  GtkDrawingParams params{
-      .widget = *gtkType,
-      .rect = gdk_rect,
-      .state = GTK_STATE_FLAG_NORMAL,
-      .image_scale = gint(std::ceil(scaleFactor.scale)),
-  };
-  if (aFrame->PresContext()->Document()->State().HasState(
-          dom::DocumentState::WINDOW_INACTIVE)) {
-    params.state = GtkStateFlags(gint(params.state) | GTK_STATE_FLAG_BACKDROP);
-  }
+  state.image_scale = std::ceil(scaleFactor.scale);
+
   // translate everything so (0,0) is the top left of the drawingRect
   gfxPoint origin = rect.TopLeft() + drawingRect.TopLeft().ToUnknownPoint();
 
-  DrawThemeWithCairo(ctx, aContext->GetDrawTarget(), params, scaleFactor.scale,
-                     snapped, ToPoint(origin),
-                     drawingRect.Size().ToUnknownSize(), transparency);
+  DrawThemeWithCairo(ctx, aContext->GetDrawTarget(), state, gtkWidgetType,
+                     flags, direction, scaleFactor.scale, snapped,
+                     ToPoint(origin), drawingRect.Size().ToUnknownSize(),
+                     gdk_rect, transparency);
+
+  if (!safeState) {
+    // gdk_flush() call from expose event crashes Gtk+ on Wayland
+    // (Gnome BZ #773307)
+    if (GdkIsX11Display()) {
+      gdk_flush();
+    }
+    gLastGdkError = gdk_error_trap_pop();
+
+    if (gLastGdkError) {
+#ifdef DEBUG
+      printf(
+          "GTK theme failed for widget type %d, error was %d, state was "
+          "[active=%d,focused=%d,inHover=%d,disabled=%d]\n",
+          static_cast<int>(aAppearance), gLastGdkError, state.active,
+          state.focused, state.inHover, state.disabled);
+#endif
+      NS_WARNING("GTK theme failed; disabling unsafe widget");
+      SetWidgetTypeDisabled(mDisabledWidgetTypes, aAppearance);
+      // force refresh of the window, because the widget was not
+      // successfully drawn it must be redrawn using the default look
+      RefreshWidgetWindow(aFrame);
+    } else {
+      SetWidgetStateSafe(mSafeWidgetStates, aAppearance, &state);
+    }
+  }
 
   return NS_OK;
 }
@@ -432,12 +579,71 @@ bool nsNativeThemeGTK::CreateWebRenderCommandsForWidget(
   return false;
 }
 
+WidgetNodeType nsNativeThemeGTK::NativeThemeToGtkTheme(
+    StyleAppearance aAppearance, nsIFrame* aFrame) {
+  WidgetNodeType gtkWidgetType;
+  gint unusedFlags;
+
+  if (!GetGtkWidgetAndState(aAppearance, aFrame, gtkWidgetType, nullptr,
+                            &unusedFlags)) {
+    MOZ_ASSERT_UNREACHABLE("Unknown native widget to gtk widget mapping");
+    return MOZ_GTK_WINDOW;
+  }
+  return gtkWidgetType;
+}
+
+static void FixupForVerticalWritingMode(WritingMode aWritingMode,
+                                        CSSIntMargin* aResult) {
+  if (aWritingMode.IsVertical()) {
+    bool rtl = aWritingMode.IsBidiRTL();
+    LogicalMargin logical(aWritingMode, aResult->top,
+                          rtl ? aResult->left : aResult->right, aResult->bottom,
+                          rtl ? aResult->right : aResult->left);
+    nsMargin physical = logical.GetPhysicalMargin(aWritingMode);
+    aResult->top = physical.top;
+    aResult->right = physical.right;
+    aResult->bottom = physical.bottom;
+    aResult->left = physical.left;
+  }
+}
+
+CSSIntMargin nsNativeThemeGTK::GetCachedWidgetBorder(
+    nsIFrame* aFrame, StyleAppearance aAppearance,
+    GtkTextDirection aDirection) {
+  CSSIntMargin result;
+
+  WidgetNodeType gtkWidgetType;
+  gint unusedFlags;
+  if (GetGtkWidgetAndState(aAppearance, aFrame, gtkWidgetType, nullptr,
+                           &unusedFlags)) {
+    MOZ_ASSERT(0 <= gtkWidgetType && gtkWidgetType < MOZ_GTK_WIDGET_NODE_COUNT);
+    uint8_t cacheIndex = gtkWidgetType / 8;
+    uint8_t cacheBit = 1u << (gtkWidgetType % 8);
+
+    if (mBorderCacheValid[cacheIndex] & cacheBit) {
+      result = mBorderCache[gtkWidgetType];
+    } else {
+      moz_gtk_get_widget_border(gtkWidgetType, &result.left.value,
+                                &result.top.value, &result.right.value,
+                                &result.bottom.value, aDirection);
+      mBorderCacheValid[cacheIndex] |= cacheBit;
+      mBorderCache[gtkWidgetType] = result;
+    }
+  }
+  FixupForVerticalWritingMode(aFrame->GetWritingMode(), &result);
+  return result;
+}
+
 LayoutDeviceIntMargin nsNativeThemeGTK::GetWidgetBorder(
     nsDeviceContext* aContext, nsIFrame* aFrame, StyleAppearance aAppearance) {
   if (IsWidgetAlwaysNonNative(aFrame, aAppearance)) {
     return Theme::GetWidgetBorder(aContext, aFrame, aAppearance);
   }
-  return {};
+
+  GtkTextDirection direction = GetTextDirection(aFrame);
+  CSSIntMargin result = GetCachedWidgetBorder(aFrame, aAppearance, direction);
+  return (CSSMargin(result) * GetWidgetScaleFactor(aFrame, aAppearance))
+      .Rounded();
 }
 
 bool nsNativeThemeGTK::GetWidgetPadding(nsDeviceContext* aContext,
@@ -447,6 +653,14 @@ bool nsNativeThemeGTK::GetWidgetPadding(nsDeviceContext* aContext,
   if (IsWidgetAlwaysNonNative(aFrame, aAppearance)) {
     return Theme::GetWidgetPadding(aContext, aFrame, aAppearance, aResult);
   }
+  switch (aAppearance) {
+    case StyleAppearance::Toolbarbutton:
+      aResult->SizeTo(0, 0, 0, 0);
+      return true;
+    default:
+      break;
+  }
+
   return false;
 }
 
@@ -522,12 +736,21 @@ bool nsNativeThemeGTK::WidgetAttributeChangeRequiresRepaint(
 }
 
 NS_IMETHODIMP
-nsNativeThemeGTK::ThemeChanged() { return NS_OK; }
+nsNativeThemeGTK::ThemeChanged() {
+  memset(mDisabledWidgetTypes, 0, sizeof(mDisabledWidgetTypes));
+  memset(mSafeWidgetStates, 0, sizeof(mSafeWidgetStates));
+  memset(mBorderCacheValid, 0, sizeof(mBorderCacheValid));
+  return NS_OK;
+}
 
 NS_IMETHODIMP_(bool)
 nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
                                       nsIFrame* aFrame,
                                       StyleAppearance aAppearance) {
+  if (IsWidgetTypeDisabled(mDisabledWidgetTypes, aAppearance)) {
+    return false;
+  }
+
   if (IsWidgetAlwaysNonNative(aFrame, aAppearance)) {
     return Theme::ThemeSupportsWidget(aPresContext, aFrame, aAppearance);
   }
