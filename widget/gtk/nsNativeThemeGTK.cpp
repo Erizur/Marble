@@ -186,6 +186,7 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
 
     if (aAppearance == StyleAppearance::Button ||
         aAppearance == StyleAppearance::Toolbarbutton ||
+        aAppearance == StyleAppearance::Dualbutton ||
         aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
         aAppearance == StyleAppearance::MozWindowButtonMinimize ||
         aAppearance == StyleAppearance::MozWindowButtonRestore ||
@@ -205,6 +206,7 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
       // should always appear depressed.
       if (aAppearance == StyleAppearance::Button ||
           aAppearance == StyleAppearance::Toolbarbutton ||
+          aAppearance == StyleAppearance::Dualbutton ||
           aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
           aAppearance == StyleAppearance::Menulist) {
         bool menuOpen = IsOpenButton(aFrame);
@@ -231,6 +233,7 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
       aGtkWidgetType = MOZ_GTK_BUTTON;
       break;
     case StyleAppearance::Toolbarbutton:
+    case StyleAppearance::Dualbutton:
       if (aWidgetFlags) *aWidgetFlags = GTK_RELIEF_NONE;
       aGtkWidgetType = MOZ_GTK_TOOLBAR_BUTTON;
       break;
@@ -822,6 +825,14 @@ LayoutDeviceIntMargin nsNativeThemeGTK::GetWidgetBorder(
   CSSIntMargin result;
   GtkTextDirection direction = GetTextDirection(aFrame);
   switch (aAppearance) {
+    case StyleAppearance::Dualbutton:
+      // TOOLBAR_DUAL_BUTTON is an interesting case.  We want a border to draw
+      // around the entire button + dropdown, and also an inner border if you're
+      // over the button part.  But, we want the inner button to be right up
+      // against the edge of the outer button so that the borders overlap.
+      // To make this happen, we draw a button border for the outer button,
+      // but don't reserve any space for it.
+      break;
     case StyleAppearance::Tab: {
       WidgetNodeType gtkWidgetType;
       gint flags;
@@ -855,6 +866,7 @@ bool nsNativeThemeGTK::GetWidgetPadding(nsDeviceContext* aContext,
     case StyleAppearance::MozWindowButtonMinimize:
     case StyleAppearance::MozWindowButtonMaximize:
     case StyleAppearance::MozWindowButtonRestore:
+    case StyleAppearance::Dualbutton:
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
@@ -1039,6 +1051,7 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
 
     case StyleAppearance::Button:
     case StyleAppearance::Toolbarbutton:
+    case StyleAppearance::Dualbutton:  // so we can override the border with 0
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
