@@ -8806,13 +8806,19 @@ var TabBarVisibility = {
       !force &&
       this._initialUpdateDone
     ) {
-      // No further updates needed, `TabsToolbar` already matches the expected
-      // visibilty.
       return;
     }
     this._initialUpdateDone = true;
 
-    tabsToolbar.collapsed = hideTabsToolbar;
+    toolbar.collapsed = hideTabstrip;
+    let navbar = document.getElementById("nav-bar");
+    navbar.toggleAttribute("tabs-hidden", hideTabstrip);
+    // Should the nav-bar look and function  like a titlebar?
+    navbar.classList.toggle(
+      "browser-titlebar",
+      TabsInTitlebar.enabled && hideTabstrip
+    );
+    navbar.classList.toggle("titlebar-color", hideTabstrip);
 
     // Stylize close menu items based on tab visibility. When a window will only
     // ever have a single tab, only show the option to close the tab, and

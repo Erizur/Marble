@@ -15,7 +15,7 @@ toolbar {
   min-height: 20px;
   padding: 2px 0;
 
-  &:where(:-moz-window-inactive) {
+  &:-moz-window-inactive {
     background-color: -moz-headerbarinactive;
     color: -moz-headerbarinactivetext;
   }

@@ -246,7 +246,7 @@ body {
 
   /* stylelint-disable-next-line media-query-no-invalid */
   @media not -moz-pref("sidebar.verticalTabs") {
-    &:not(.browser-titlebar) {
+    &:not(.titlebar-color) {
       background-color: var(--toolbar-bgcolor);
       color: var(--toolbar-color);
     }
