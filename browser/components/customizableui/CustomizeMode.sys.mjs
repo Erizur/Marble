@@ -2281,28 +2281,25 @@ export class CustomizeMode {
         }
         break;
     }
-  },
+  }
 
-  async onInstalled(addon) {
-    await this.onEnabled(addon);
-  },
+  /**
+   * Returns true if the current platform and configuration allows us to draw in
+   * the window titlebar.
+   *
+   * @returns {boolean}
+   */
+  #canDrawInTitlebar() {
+    return this.#window.TabsInTitlebar.systemSupported;
+  }
 
-  async onEnabled(addon) {
-    if (addon.type != "theme") {
-      return;
-    }
-
-    if (this._nextThemeChangeUserTriggered) {
-      this._onUIChange();
-    }
-    this._nextThemeChangeUserTriggered = false;
-  },
-
-  _canDrawInTitlebar() {
-    return this.window.TabsInTitlebar.systemSupported;
-  },
-
-  _ensureCustomizationPanels() {
+  /**
+   * De-lazifies the customization panel and the menupopup / panel template
+   * holding various DOM nodes for customize mode. These things are lazily
+   * added to the DOM to avoid polluting the browser window DOM with things
+   * that only Customize Mode cares about.
+   */
+  #ensureCustomizationPanels() {
     let template = this.$("customizationPanel");
     template.replaceWith(template.content);
 
