@@ -4,20 +4,6 @@
 
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
-menupopup,
-panel {
-  --menu-icon-opacity: 1;
-  --menu-arrow-width: 1em;
-
-  @media (-moz-platform: windows) {
-    --menu-arrow-width: max(1em, 16px);
-
-    @media (prefers-color-scheme: light) {
-      --menu-icon-opacity: 0.7;
-    }
-  }
-}
-
 /* Menu separator */
 
 menuseparator {
@@ -129,52 +115,4 @@ menuitem {
 menuitem:is([default="true"], .spell-suggestion),
 menucaption {
   font-weight: bold;
-}
-
-/* ..... menu arrow box ..... */
-
-.menu-right {
-  list-style-image: url("chrome://global/skin/icons/arrow-right.svg");
-  -moz-context-properties: fill, fill-opacity;
-  fill: currentColor;
-  fill-opacity: var(--menu-icon-opacity);
-
-  &:-moz-locale-dir(rtl) {
-    list-style-image: url("chrome://global/skin/icons/arrow-left.svg");
-  }
-
-  > image {
-    width: var(--menu-arrow-width);
-  }
-
-  @media (-moz-platform: linux) {
-    margin-block: 0;
-    margin-inline: 6px 0;
-  }
-
-  @media (-moz-platform: macos) {
-    margin-inline: 22px -3px;
-  }
-
-  @media (-moz-platform: windows) {
-    margin-inline-end: 1em;
-  }
-}
-
-@media (-moz-platform: macos) {
-  :is(.menu-accel, .menu-iconic-accel)[value] {
-    margin-inline-start: 25px;
-  }
-}
-
-@media (-moz-platform: macos) {
-  /* On macOS, empty acceltext shouldn't take up any space */
-  :is(menu, menuitem):not([acceltext]) > .menu-accel-container {
-    display: none;
-  }
-}
-
-.menu-iconic-icon {
-  width: 16px;
-  height: 16px;
 }
