@@ -1864,12 +1864,10 @@ bool useTheme = false;
   return useTheme ? theme : nullptr;
 }
 
-nsresult nsTreeBodyFrame::GetImage(int32_t aRowIndex, nsTreeColumn* aCol,
-                                   bool aUseContext,
-                                   ComputedStyle* aComputedStyle,
-                                   imgIContainer** aResult) {
-  *aResult = nullptr;
-
+already_AddRefed<imgIContainer> nsTreeBodyFrame::GetImage(
+    int32_t aRowIndex, nsTreeColumn* aCol, bool aUseContext,
+    ComputedStyle* aComputedStyle) {
+  Document* doc = PresContext()->Document();
   nsAutoString imageSrc;
   mView->GetImageSrc(aRowIndex, aCol, imageSrc);
   RefPtr<imgRequestProxy> styleRequest;
@@ -1898,10 +1896,12 @@ nsresult nsTreeBodyFrame::GetImage(int32_t aRowIndex, nsTreeColumn* aCol,
     return result.forget();
   }
 
+
   // Create a new nsTreeImageListener object and pass it our row and column
   // information.
   auto listener = MakeRefPtr<nsTreeImageListener>(this);
   listener->AddCell(aRowIndex, aCol);
+
 
   RefPtr<imgRequestProxy> imageRequest;
   if (styleRequest) {
@@ -1919,12 +1919,14 @@ nsresult nsTreeBodyFrame::GetImage(int32_t aRowIndex, nsTreeColumn* aCol,
     return nullptr;
   }
 
+
   // NOTE(heycam): If it's an SVG image, and we need to want the image to
   // able to respond to media query changes, it needs to be added to the
   // document's ImageTracker.  For now, assume we don't need this.
   // We don't want discarding/decode-on-draw for xul images
   imageRequest->StartDecoding(imgIContainer::FLAG_ASYNC_NOTIFY);
   imageRequest->LockImage();
+
 
   // In a case it was already cached.
   mImageCache.InsertOrUpdate(uri,
@@ -2804,6 +2806,7 @@ ImgDrawResult nsTreeBodyFrame::PaintSeparator(int32_t aRowIndex,
       useTheme = true;
   }
 
+  const auto positionProperty = separatorContext->StyleDisplay()->mPosition;
   ImgDrawResult result = ImgDrawResult::SUCCESS;
 
   // use -moz-appearance if provided.
@@ -2817,8 +2820,9 @@ ImgDrawResult nsTreeBodyFrame::PaintSeparator(int32_t aRowIndex,
 
     // Obtain the height for the separator or use the default value.
     nscoord height;
-    if (stylePosition->mHeight.ConvertsToLength()) {
-      height = stylePosition->mHeight.ToLength();
+    const auto styleHeight = stylePosition->GetHeight(positionProperty);
+    if (styleHeight->ConvertsToLength()) {
+      height = styleHeight->ToLength();
     } else {
       // Use default height 2px.
       height = nsPresContext::CSSPixelsToAppUnits(2);
@@ -3103,8 +3107,7 @@ ImgDrawResult nsTreeBodyFrame::PaintTwisty(
       imageSize.Deflate(bp);
 
       // Get the image for drawing.
-      nsCOMPtr<imgIContainer> image;
-      GetImage(aRowIndex, aColumn, true, twistyContext, getter_AddRefs(image));
+      nsCOMPtr<imgIContainer> image = GetImage(aRowIndex, aColumn, true, twistyContext);
       if (image) {
         nsPoint anchorPoint = twistyRect.TopLeft();
 

@@ -368,7 +368,6 @@ class nsWindow final : public nsBaseWidget {
   nsresult UpdateTranslucentWindowAlphaInternal(const nsIntRect& aRect,
                                                 uint8_t* aAlphas,
                                                 int32_t aStride);
-  void ReparentNativeWidget(nsIWidget* aNewParent) override;
 
   void UpdateTitlebarTransparencyBitmap();
 

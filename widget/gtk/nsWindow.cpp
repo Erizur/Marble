@@ -4086,7 +4086,6 @@ gboolean nsWindow::OnExposeEvent(cairo_t* cr) {
     // The double buffering is done here to extract the shape mask.
     // (The shape mask won't be necessary when a visual with an alpha
     // channel is used on compositing window managers.)
-    layerBuffering = BufferMode::BUFFER_NONE;
     RefPtr<DrawTarget> destDT =
         dt->CreateSimilarDrawTarget(boundsRect.Size(), SurfaceFormat::B8G8R8A8);
     if (!destDT || !destDT->IsValid()) {
@@ -4122,9 +4121,8 @@ gboolean nsWindow::OnExposeEvent(cairo_t* cr) {
         // reused SHM image. See bug 1258086.
         dt->ClearRect(Rect(boundsRect));
       }
-      AutoLayerManagerSetup setupLayerManager(
-          this, ctx.isNothing() ? nullptr : &ctx.ref(), layerBuffering);
-      painted = listener->PaintWindow(this, region);
+      AutoLayerManagerSetup setupLayerManager(this, ctx.ptrOr(nullptr));
+      listener->PaintWindow(this, region);
 
       // Re-get the listener since the will paint notification might have
       // killed it.
@@ -7122,21 +7120,50 @@ void nsWindow::SetDBusMenuBar(
 }
 #endif
 
+LayoutDeviceIntCoord nsWindow::GetTitlebarRadius() {
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
+  int32_t cssCoord = LookAndFeel::GetInt(LookAndFeel::IntID::TitlebarRadius);
+  return GdkCoordToDevicePixels(cssCoord);
+}
+
 LayoutDeviceIntRegion nsWindow::GetOpaqueRegion() const {
   AutoReadLock r(mOpaqueRegionLock);
   return mOpaqueRegion;
 }
 
+// See subtract_corners_from_region() at gtk/gtkwindow.c
+// We need to subtract corners from toplevel window opaque region
+// to draw transparent corners of default Gtk titlebar.
+// Both implementations (cairo_region_t and wl_region) needs to be synced.
+static void SubtractTitlebarCorners(LayoutDeviceIntRegion& aRegion,
+                                    const LayoutDeviceIntRect& aRect,
+                                    LayoutDeviceIntCoord aRadius) {
+  if (!aRadius) {
+    return;
+  }
+  const LayoutDeviceIntSize size(aRadius, aRadius);
+  aRegion.SubOut(LayoutDeviceIntRect(aRect.TopLeft(), size));
+  aRegion.SubOut(LayoutDeviceIntRect(
+      aRect.TopRight() - LayoutDeviceIntPoint(aRadius, 0), size));
+  aRegion.SubOut(LayoutDeviceIntRect(
+      aRect.BottomLeft() - LayoutDeviceIntPoint(0, aRadius), size));
+  aRegion.SubOut(LayoutDeviceIntRect(
+      aRect.BottomRight() - LayoutDeviceIntPoint(aRadius, aRadius), size));
+}
+
 void nsWindow::UpdateOpaqueRegion(const LayoutDeviceIntRegion& aRegion) {
+  LayoutDeviceIntRegion region = aRegion;
+  SubtractTitlebarCorners(region, LayoutDeviceIntRect({}, mBounds.Size()),
+                          GetTitlebarRadius());
   {
     AutoReadLock r(mOpaqueRegionLock);
-    if (mOpaqueRegion == aRegion) {
+    if (mOpaqueRegion == region) {
       return;
     }
   }
   {
     AutoWriteLock w(mOpaqueRegionLock);
-    mOpaqueRegion = aRegion;
+    mOpaqueRegion = region;
   }
   UpdateOpaqueRegionInternal();
 }

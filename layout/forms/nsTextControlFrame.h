@@ -127,7 +127,7 @@ class nsTextControlFrame : public nsContainerFrame,
   NS_IMETHOD GetOwnedSelectionController(
       nsISelectionController** aSelCon) override;
   nsFrameSelection* GetOwnedFrameSelection() override {
-    return ControlElement()->GetConstFrameSelection();
+    return ControlElement()->GetIndependentFrameSelection();
   }
   nsISelectionController* GetSelectionController() {
     return ControlElement()->GetSelectionController();

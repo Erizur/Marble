@@ -369,8 +369,6 @@ class nsBaseWidget : public nsIWidget, public nsSupportsWeakReference {
             mBorderStyle & BorderStyle::Title);
   }
 
-  void ReparentNativeWidget(nsIWidget* aNewParent) override {}
-
   const SizeConstraints GetSizeConstraints() override;
   void SetSizeConstraints(const SizeConstraints& aConstraints) override;
 
