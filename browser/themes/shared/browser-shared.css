@@ -37,6 +37,16 @@ body {
 }
 
 :root {
+  --toolbar-bgcolor: var(--toolbar-non-lwt-bgcolor);
+  --toolbar-color: var(--toolbar-non-lwt-textcolor);
+  --toolbarbutton-border-radius: 4px;
+
+  --tabs-navbar-shadow-size: 1px;
+
+  --panel-separator-color: color-mix(in srgb, currentColor 25%, transparent);
+  --panel-shortcut-color: inherit;
+  --panelui-subview-transition-duration: 150ms;
+  
   user-select: none;
   color-scheme: light dark;
   accent-color: var(--button-primary-bgcolor);
@@ -176,8 +186,12 @@ body {
       --focus-outline-color: light-dark(#0061E0, #00DDFF);
     }
   }
+}
 
-  @media (prefers-contrast) {
+@media (prefers-contrast) {
+  :root {
+    --autocomplete-popup-separator-color: color-mix(in srgb, currentColor 86%, transparent);
+    --panel-separator-color: currentColor;
     --urlbar-icon-fill-opacity: 1;
   }
 
