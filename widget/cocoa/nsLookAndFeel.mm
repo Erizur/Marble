@@ -315,6 +315,9 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::Graytext:
       aColor = GetColorFromNSColor(NSColor.disabledControlTextColor);
       break;
+    case ColorID::MozButtondefault:
+      color = NS_RGB(0xDC, 0xDC, 0xDC);
+      break;
     case ColorID::MozCellhighlight:
       // For inactive list selection
       aColor = GetColorFromNSColor(NSColor.secondarySelectedControlColor);
