@@ -137,8 +137,8 @@ void nsWindow::ForcePresent() {
   }
 }
 
-bool nsWindow::OnPaint(uint32_t aNestingLevel) {
-  gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
+bool nsWindow::OnPaint(HDC aDC, uint32_t aNestingLevel) {
+  DeviceResetReason resetReason = DeviceResetReason::OK;
   if (gfxWindowsPlatform::GetPlatform()->DidRenderingDeviceReset(
           &resetReason)) {
     gfxCriticalNote << "(nsWindow) Detected device reset: " << (int)resetReason;
@@ -205,23 +205,12 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   }
   mLastPaintBounds = mBounds;
 
-  // For layered translucent windows all drawing should go to memory DC and no
-  // WM_PAINT messages are normally generated. To support asynchronous painting
-  // we force generation of WM_PAINT messages by invalidating window areas with
-  // RedrawWindow, InvalidateRect or InvalidateRgn function calls.
-  const bool usingMemoryDC =
-      IsPopup() && renderer->GetBackendType() == LayersBackend::LAYERS_NONE &&
-      mTransparencyMode == TransparencyMode::Transparent;
-  HDC hDC = nullptr;
-  const LayoutDeviceIntRect winRect = [&] {
-    RECT r;
-    ::GetWindowRect(mWnd, &r);
-    ::MapWindowPoints(nullptr, mWnd, (LPPOINT)&r, 2);
-    return WinUtils::ToIntRect(r);
-  }();
-  LayoutDeviceIntRegion region;
-  LayoutDeviceIntRegion translucentRegion;
-  if (usingMemoryDC) {
+  if (!aDC && renderer->GetBackendType() == LayersBackend::LAYERS_NONE &&
+      TransparencyMode::Transparent == mTransparencyMode) {
+    // For layered translucent windows all drawing should go to memory DC and no
+    // WM_PAINT messages are normally generated. To support asynchronous
+    // painting we force generation of WM_PAINT messages by invalidating window
+    // areas with RedrawWindow, InvalidateRect or InvalidateRgn function calls.
     // BeginPaint/EndPaint must be called to make Windows think that invalid
     // area is painted. Otherwise it will continue sending the same message
     // endlessly.
@@ -230,47 +219,30 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
 
     // We're guaranteed to have a widget proxy since we called
     // GetLayerManager().
-    hDC = mBasicLayersSurface->GetTransparentDC();
-  } else {
-    hDC = ::BeginPaint(mWnd, &ps);
-    region = GetRegionToPaint(ps, hDC);
-    if (mTransparencyMode == TransparencyMode::Transparent) {
-      translucentRegion = LayoutDeviceIntRegion{winRect};
-      translucentRegion.SubOut(mOpaqueRegion);
-      region.OrWith(translucentRegion);
-    }
+    aDC = mBasicLayersSurface->GetTransparentDC();
   }
 
-  if (!usingMemoryDC && (mNeedsNCAreaClear || didResize)) {
-    // We need to clear the non-client-area region, and the transparent parts
-    // of the window to black (once).
-    auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
-    nsAutoRegion regionToClear(ComputeNonClientHRGN());
-    if (mTransparencyMode == TransparencyMode::Transparent &&
-        !translucentRegion.IsEmpty()) {
-      nsAutoRegion translucent(WinUtils::RegionToHRGN(translucentRegion));
-      ::CombineRgn(regionToClear, regionToClear, translucent, RGN_OR);
-    }
-    ::FillRgn(hDC, regionToClear, black);
+  HDC hDC = aDC ? aDC : ::BeginPaint(mWnd, &ps);
+
+  bool forceRepaint = aDC || TransparencyMode::Transparent == mTransparencyMode;
+  LayoutDeviceIntRegion region = GetRegionToPaint(forceRepaint, ps, hDC);
+
+  if (knowsCompositor && layerManager) {
+    // We need to paint to the screen even if nothing changed, since if we
+    // don't have a compositing window manager, our pixels could be stale.
+    layerManager->SetNeedsComposite(true);
+    layerManager->SendInvalidRegion(region.ToUnknownRegion());
   }
 
-  bool didPaint = false;
-  auto endPaint = MakeScopeExit([&] {
-    if (!usingMemoryDC) {
-      ::EndPaint(mWnd, &ps);
-    }
-    if (didPaint) {
-      mLastPaintEndTime = TimeStamp::Now();
-      if (nsIWidgetListener* listener = GetPaintListener()) {
-        listener->DidPaintWindow();
-      }
-      if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
-        OnPaint(1);
-      }
-    }
-  });
+  RefPtr<nsWindow> strongThis(this);
 
-  if (region.IsEmpty() || !GetPaintListener()) {
+  nsIWidgetListener* listener = GetPaintListener();
+  if (listener) {
+    listener->WillPaintWindow(this);
+  }
+  // Re-get the listener since the will paint notification may have killed it.
+  listener = GetPaintListener();
+  if (!listener) {
     return false;
   }
 
@@ -345,19 +317,32 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     case LayersBackend::LAYERS_WR: {
       if (nsIWidgetListener* listener = GetPaintListener()) {
         result = listener->PaintWindow(this, region);
-      }
-      if (!gfxEnv::MOZ_DISABLE_FORCE_PRESENT()) {
-        nsCOMPtr<nsIRunnable> event = NewRunnableMethod(
-            "nsWindow::ForcePresent", this, &nsWindow::ForcePresent);
-        NS_DispatchToMainThread(event);
-      }
-    } break;
-    default:
-      NS_ERROR("Unknown layers backend used!");
-      break;
+        if (!gfxEnv::MOZ_DISABLE_FORCE_PRESENT()) {
+          nsCOMPtr<nsIRunnable> event = NewRunnableMethod(
+              "nsWindow::ForcePresent", this, &nsWindow::ForcePresent);
+          NS_DispatchToMainThread(event);
+        }
+      } break;
+      default:
+        NS_ERROR("Unknown layers backend used!");
+        break;
+    }
   }
 
-  didPaint = true;
+  if (!aDC) {
+    ::EndPaint(mWnd, &ps);
+  }
+
+  mLastPaintEndTime = TimeStamp::Now();
+
+  // Re-get the listener since painting may have killed it.
+  listener = GetPaintListener();
+  if (listener) listener->DidPaintWindow();
+
+  if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
+    OnPaint(aDC, 1);
+  }
+
   return result;
 }
 
