@@ -97,8 +97,8 @@ bool Gecko_MediaFeatures_IsResourceDocument(const Document* aDocument) {
   return aDocument->IsResourceDoc();
 }
 
-bool Gecko_MediaFeatures_InAndroidPipMode(const Document* aDocument) {
-  return aDocument->InAndroidPipMode();
+bool Gecko_MediaFeatures_ShouldAvoidNativeTheme(const Document* aDocument) {
+  return aDocument->ShouldAvoidNativeTheme();
 }
 
 bool Gecko_MediaFeatures_UseOverlayScrollbars(const Document* aDocument) {
