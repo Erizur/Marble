@@ -1229,11 +1229,44 @@ bool nsNativeThemeGTK::WidgetAttributeChangeRequiresRepaint(
       aAppearance == StyleAppearance::Toolbar ||
       aAppearance == StyleAppearance::Progresschunk ||
       aAppearance == StyleAppearance::ProgressBar ||
-      aAppearance == StyleAppearance::Tooltip ||
-      aAppearance == StyleAppearance::MozWindowDecorations) {
-    return false;
+      aAppearance == StyleAppearance::Menubar ||
+      aAppearance == StyleAppearance::Tooltip) {
+    return NS_OK;
   }
-  return Theme::WidgetAttributeChangeRequiresRepaint(aAppearance, aAttribute);
+
+  if (aAppearance == StyleAppearance::MozWindowTitlebar ||
+      aAppearance == StyleAppearance::MozWindowTitlebarMaximized ||
+      aAppearance == StyleAppearance::MozWindowButtonClose ||
+      aAppearance == StyleAppearance::MozWindowButtonMinimize ||
+      aAppearance == StyleAppearance::MozWindowButtonMaximize ||
+      aAppearance == StyleAppearance::MozWindowButtonRestore) {
+    *aShouldRepaint = true;
+    return NS_OK;
+  }
+
+  // XXXdwh Not sure what can really be done here.  Can at least guess for
+  // specific widgets that they're highly unlikely to have certain states.
+  // For example, a toolbar doesn't care about any states.
+  if (!aAttribute) {
+    // Hover/focus/active changed.  Always repaint.
+    *aShouldRepaint = true;
+    return NS_OK;
+  }
+
+  // Check the attribute to see if it's relevant.
+  // disabled, checked, dlgtype, default, etc.
+  *aShouldRepaint = false;
+  if (aAttribute == nsGkAtoms::disabled || aAttribute == nsGkAtoms::checked ||
+      aAttribute == nsGkAtoms::selected ||
+      aAttribute == nsGkAtoms::visuallyselected ||
+      aAttribute == nsGkAtoms::focused || aAttribute == nsGkAtoms::readonly ||
+      aAttribute == nsGkAtoms::_default ||
+      aAttribute == nsGkAtoms::menuactive || aAttribute == nsGkAtoms::open ||
+      aAttribute == nsGkAtoms::parentfocused) {
+    *aShouldRepaint = true;
+    return NS_OK;
+  }
+  return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -1312,6 +1345,7 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::CheckboxLabel:
     case StyleAppearance::RadioLabel:
     case StyleAppearance::Menuarrow:
+    case StyleAppearance::Radiomenuitem:
     case StyleAppearance::Splitter:
     case StyleAppearance::MozWindowButtonClose:
     case StyleAppearance::MozWindowButtonMinimize:
