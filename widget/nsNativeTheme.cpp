@@ -576,3 +576,11 @@ bool nsNativeTheme::IsWidgetScrollbarPart(StyleAppearance aAppearance) {
       return false;
   }
 }
+
+/*static*/
+bool nsNativeTheme::IsWidgetAlwaysNonNative(nsIFrame* aFrame,
+                                            StyleAppearance aAppearance) {
+  return IsWidgetScrollbarPart(aAppearance) ||
+         aAppearance == StyleAppearance::FocusOutline ||
+         (aFrame && aFrame->StyleUI()->mMozTheme == StyleMozTheme::NonNative);
+}

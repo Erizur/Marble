@@ -217,6 +217,16 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
         aState->focused = FALSE;
       }
 
+      // menu item state is determined by the attribute "_moz-menuactive",
+      // and not by the mouse hovering (accessibility).  as a special case,
+      // menus which are children of a menu bar are only marked as prelight
+      // if they are open, not on normal hover.
+
+      if (aAppearance == StyleAppearance::Menuarrow) {
+        aState->inHover = CheckBooleanAttr(aFrame, nsGkAtoms::menuactive);
+        aState->active = FALSE;
+      }
+
       // A button with drop down menu open or an activated toggle button
       // should always appear depressed.
       if (aAppearance == StyleAppearance::Button ||
@@ -442,6 +452,9 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
         aGtkWidgetType = MOZ_GTK_SPLITTER_VERTICAL;
       else
         aGtkWidgetType = MOZ_GTK_SPLITTER_HORIZONTAL;
+      break;
+    case StyleAppearance::Menuarrow:
+      aGtkWidgetType = MOZ_GTK_MENUARROW;
       break;
     case StyleAppearance::MozWindowTitlebar:
       aGtkWidgetType = MOZ_GTK_HEADER_BAR;
@@ -1340,6 +1353,7 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::Textarea:
     case StyleAppearance::Range:
     case StyleAppearance::RangeThumb:
+    case StyleAppearance::Menuarrow:
     case StyleAppearance::CheckboxContainer:
     case StyleAppearance::RadioContainer:
     case StyleAppearance::CheckboxLabel:

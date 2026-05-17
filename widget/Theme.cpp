@@ -725,50 +725,30 @@ void Theme::PaintMenuArrow(StyleAppearance aAppearance, nsIFrame* aFrame,
   float polygonY[] = {-1,    3.0f, 3.0f, -1.0f, -2.0f,
                       -2.0f, 1.5f, 1.5f, -2.0f, -2.0f};
 
-  const bool isMenuList =
-      aAppearance == StyleAppearance::MozMenulistArrowButton;
   const float kPolygonSize = kMinimumDropdownArrowButtonWidth;
-
-  const auto direction = [&] {
-    const auto wm = aFrame->GetWritingMode();
-    if (!isMenuList) {
-      return wm.IsPhysicalRTL() ? PhysicalArrowDirection::Left
-                                : PhysicalArrowDirection::Right;
-    }
-    switch (wm.GetBlockDir()) {
-      case WritingMode::BlockDir::LR:
-        return PhysicalArrowDirection::Right;
-      case WritingMode::BlockDir::RL:
-        return PhysicalArrowDirection::Left;
-      case WritingMode::BlockDir::TB:
-        return PhysicalArrowDirection::Bottom;
-    }
-    MOZ_ASSERT_UNREACHABLE("Unknown direction?");
-    return PhysicalArrowDirection::Bottom;
-  }();
 
   auto const [xs, ys] = [&] {
     using Pair = std::pair<const float*, const float*>;
-    switch (direction) {
-      case PhysicalArrowDirection::Left:
+    switch (aFrame->GetWritingMode().GetBlockDir()) {
+      case WritingMode::BlockDir::eBlockRL:
         // rotate 90°: [[0,1],[-1,0]]
         for (float& f : polygonY) {
           f = -f;
         }
         return Pair(polygonY, polygonX);
 
-      case PhysicalArrowDirection::Right:
+      case WritingMode::BlockDir::eBlockLR:
         // rotate 270°: [[0,-1],[1,0]]
         for (float& f : polygonX) {
           f = -f;
         }
         return Pair(polygonY, polygonX);
 
-      case PhysicalArrowDirection::Bottom:
+      case WritingMode::BlockDir::eBlockTB:
         // rotate 0°: [[1,0],[0,1]]
         return Pair(polygonX, polygonY);
     }
-    MOZ_ASSERT_UNREACHABLE("Unknown direction?");
+    MOZ_ASSERT_UNREACHABLE("unhandled BlockDir");
     return Pair(polygonX, polygonY);
   }();
 
@@ -1131,6 +1111,14 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
 
   const DocumentState docState = pc->Document()->State();
   ElementState elementState = GetContentState(aFrame, aAppearance);
+  if (aAppearance == StyleAppearance::MozMenulistArrowButton) {
+    // HTML select and XUL menulist dropdown buttons get state from the
+    // parent.
+    nsIFrame* parentFrame = aFrame->GetParent();
+    aFrame = parentFrame;
+    elementState = GetContentState(parentFrame, aAppearance);
+  }
+
   // Paint the outline iff we're asked to draw overflow and we have
   // outline-style: auto.
   if (aDrawOverflow == DrawOverflow::Yes &&
@@ -1183,13 +1171,12 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
     case StyleAppearance::Menulist:
       PaintMenulist(aPaintData, devPxRect, elementState, colors, dpiRatio);
       break;
-    case StyleAppearance::Menuarrow:
     case StyleAppearance::MozMenulistArrowButton:
       if constexpr (std::is_same_v<PaintBackendData, WebRenderBackendData>) {
         // TODO: Need to figure out how to best draw this using WR.
         return false;
       } else {
-        PaintMenuArrow(aAppearance, aFrame, aPaintData, devPxRect);
+        PaintMenulistArrowButton(aFrame, aPaintData, devPxRect, elementState);
       }
       break;
     case StyleAppearance::Tooltip: {
@@ -1651,7 +1638,6 @@ bool Theme::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* aFrame,
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
     case StyleAppearance::MozMenulistArrowButton:
-    case StyleAppearance::Menuarrow:
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton:
     case StyleAppearance::Menuitem:
