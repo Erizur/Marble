@@ -54,6 +54,48 @@ button {
   text-align: center;
 }
 
+/* .......... focused state .......... */
+
+button:focus-visible {
+  outline: var(--default-focusring);
+  outline-offset: calc(-1 * var(--default-focusring-width) - 2px);
+}
+
+@media (prefers-color-scheme: dark) {
+  button:focus-visible {
+    outline: 1px auto;
+    outline-offset: initial;
+  }
+}
+
+/* .......... default/hover/focused state .......... */
+
+@media (prefers-contrast) and (-moz-windows-compositor) {
+  /* This is for high-contrast black and white themes on Windows 8 and later,
+     where the native appearance renders a different background (which
+     appears to be equivalent to the Highlight color) if the button is in the
+     default, hovered or focused state. However, if these states overlap with
+     the active, disabled, open or checked state, the appearance reverts back
+     to the default background. */
+  button:where([default="true"],:hover,:focus):where(:not(:active,[disabled="true"],[open="true"],[checked="true"])) {
+    color: HighlightText;
+  }
+}
+
+/* .......... disabled state .......... */
+
+button:where([disabled="true"]) {
+  color: GrayText;
+  background-color: ButtonFace;
+}
+
+@media (-moz-windows-classic) {
+  button:where([disabled="true"]) {
+    color: ThreeDShadow;
+    text-shadow: 1px 1px ThreeDHighlight;
+  }
+}
+
 /* ::::: menu buttons ::::: */
 
 .button-menu-dropmarker {
