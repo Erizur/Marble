@@ -18,14 +18,12 @@ namespace mozilla {
 class ViewRegion;
 
 enum class VibrancyType {
-  Sidebar,
-  // Add new values here, or update MaxEnumValue below if you add them after.
-  Titlebar,
-};
-
-template <>
-struct MaxContiguousEnumValue<VibrancyType> {
-  static constexpr auto value = VibrancyType::Titlebar;
+  TOOLTIP,
+  MENU,
+  HIGHLIGHTED_MENUITEM,
+  SOURCE_LIST,
+  SOURCE_LIST_SELECTION,
+  ACTIVE_SOURCE_LIST_SELECTION
 };
 
 /**
@@ -64,8 +62,7 @@ class VibrancyManager {
    * @param aRegion The vibrant area, in device pixels.
    * @return Whether the region changed.
    */
-  bool UpdateVibrantRegion(VibrancyType aType,
-                           const LayoutDeviceIntRegion& aRegion);
+  bool UpdateVibrantRegion(VibrancyType aType, const LayoutDeviceIntRegion& aRegion);
 
   void PrefChanged();
 
