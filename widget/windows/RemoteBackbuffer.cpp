@@ -255,7 +255,13 @@ class PresentableSharedImage {
 
   bool PresentToWindow(HWND aWindowHandle,
                        Span<const IpcSafeRect> aDirtyRects) {
-    if (::GetWindowLongPtrW(aWindowHandle, GWL_EXSTYLE) & WS_EX_LAYERED) {
+    if (aTransparencyMode == TransparencyMode::Transparent) {
+      // If our window is a child window or a child-of-a-child, the window
+      // that needs to be updated is the top level ancestor of the tree
+      HWND topLevelWindow = WinUtils::GetTopLevelHWND(aWindowHandle, true);
+      MOZ_ASSERT(::GetWindowLongPtr(topLevelWindow, GWL_EXSTYLE) &
+                 WS_EX_LAYERED);
+
       BLENDFUNCTION bf = {AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
       POINT srcPos = {0, 0};
       RECT clientRect = {};
@@ -281,7 +287,7 @@ class PresentableSharedImage {
       }
 
       return !!::UpdateLayeredWindow(
-          aWindowHandle, nullptr /*paletteDC*/, nullptr /*newPos*/, &winSize,
+          topLevelWindow, nullptr /*paletteDC*/, nullptr /*newPos*/, &winSize,
           mDeviceContext, &srcPos, 0 /*colorKey*/, &bf, ULW_ALPHA);
     }
 

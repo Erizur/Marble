@@ -7170,51 +7170,14 @@ void nsWindow::SetWindowTranslucencyInner(TransparencyMode aMode) {
     return;
   }
 
-  // stop on dialogs and popups!
-  HWND hWnd = WinUtils::GetTopLevelHWND(mWnd, true);
-  nsWindow* parent = WinUtils::GetNSWindowPtr(hWnd);
-
-  if (!parent) {
-    NS_WARNING("Trying to use transparent chrome in an embedded context");
-    return;
-  }
-
-  if (parent != this) {
-    NS_WARNING(
-        "Setting SetWindowTranslucencyInner on a parent this is not us!");
-  }
-
-  if (aMode == TransparencyMode::Transparent) {
-    // If we're switching to the use of a transparent window, hide the chrome
-    // on our parent.
-    HideWindowChrome(true);
-  } else if (mHideChrome &&
-             mTransparencyMode == TransparencyMode::Transparent) {
-    // if we're switching out of transparent, re-enable our parent's chrome.
-    HideWindowChrome(false);
-  }
-
-  LONG_PTR style = ::GetWindowLongPtrW(hWnd, GWL_STYLE),
-           exStyle = ::GetWindowLongPtr(hWnd, GWL_EXSTYLE);
-
-  if (parent->mIsVisible) {
-    style |= WS_VISIBLE;
-    if (parent->mFrameState->GetSizeMode() == nsSizeMode_Maximized) {
-      style |= WS_MAXIMIZE;
-    } else if (parent->mFrameState->GetSizeMode() == nsSizeMode_Minimized) {
-      style |= WS_MINIMIZE;
-    }
-  }
-
+  MOZ_ASSERT(WinUtils::GetTopLevelHWND(mWnd, true) == mWnd);
+  LONG_PTR exStyle = ::GetWindowLongPtr(mWnd, GWL_EXSTYLE);
   if (aMode == TransparencyMode::Transparent) {
     exStyle |= WS_EX_LAYERED;
   } else {
     exStyle &= ~WS_EX_LAYERED;
   }
-
-  VERIFY_WINDOW_STYLE(style);
-  ::SetWindowLongPtrW(hWnd, GWL_STYLE, style);
-  ::SetWindowLongPtrW(hWnd, GWL_EXSTYLE, exStyle);
+  ::SetWindowLongPtrW(mWnd, GWL_EXSTYLE, exStyle);
 
   mTransparencyMode = aMode;
 
@@ -8092,14 +8055,35 @@ void nsWindow::PickerClosed() {
 }
 
 bool nsWindow::WidgetTypeSupportsAcceleration() {
-  if (IsPopup()) {
-    // This transparency+popup checks go back to bug 1150376 and bug 943204,
-    // but removing it causes reproducible timeouts on automation, see bug
-    // 1891063 comment 11.
-    return mTransparencyMode != TransparencyMode::Transparent &&
-           !DeviceManagerDx::Get()->IsWARP();
-  }
-  return true;
+  // We don't currently support using an accelerated layer manager with
+  // transparent windows so don't even try. I'm also not sure if we even
+  // want to support this case. See bug 593471.
+  //
+  // Windows' support for transparent accelerated surfaces isn't great.
+  // Some possible approaches:
+  //  - Readback the data and update it using
+  //  UpdateLayeredWindow/UpdateLayeredWindowIndirect
+  //    This is what WPF does. See
+  //    CD3DDeviceLevel1::PresentWithGDI/CD3DSwapChainWithSwDC in WpfGfx. The
+  //    rationale for not using IDirect3DSurface9::GetDC is explained here:
+  //    https://web.archive.org/web/20160521191104/https://blogs.msdn.microsoft.com/dwayneneed/2008/09/08/transparent-windows-in-wpf/
+  //  - Use D3D11_RESOURCE_MISC_GDI_COMPATIBLE, IDXGISurface1::GetDC(),
+  //    and UpdateLayeredWindowIndirect.
+  //    This is suggested here:
+  //    https://docs.microsoft.com/en-us/archive/msdn-magazine/2009/december/windows-with-c-layered-windows-with-direct2d
+  //    but might have the same problem that IDirect3DSurface9::GetDC has.
+  //  - Creating the window with the WS_EX_NOREDIRECTIONBITMAP flag and use
+  //  DirectComposition.
+  //    Not supported on Win7.
+  //  - Using DwmExtendFrameIntoClientArea with negative margins and something
+  //  to turn off the glass effect.
+  //    This doesn't work when the DWM is not running (Win7)
+  //
+  // Also see bug 1150376, D3D11 composition can cause issues on some devices
+  // on Windows 7 where presentation fails randomly for windows with drop
+  // shadows.
+  return mTransparencyMode != TransparencyMode::Transparent &&
+         !(IsPopup() && DeviceManagerDx::Get()->IsWARP());
 }
 
 bool nsWindow::DispatchTouchEventFromWMPointer(
