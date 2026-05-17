@@ -62,6 +62,12 @@ NS_IMPL_ISUPPORTS(nsNativeTheme, nsITimerCallback, nsINamed)
                aAppearance == StyleAppearance::ButtonArrowPrevious ||
                aAppearance == StyleAppearance::ButtonArrowNext ||
                aAppearance == StyleAppearance::ButtonArrowUp ||
+              #ifdef MOZ_WIDGET_GTK
+               aAppearance == StyleAppearance::MozWindowButtonClose ||
+               aAppearance == StyleAppearance::MozWindowButtonMinimize ||
+               aAppearance == StyleAppearance::MozWindowButtonRestore ||
+               aAppearance == StyleAppearance::MozWindowButtonMaximize ||
+              #endif
                aAppearance == StyleAppearance::ButtonArrowDown) {
       aFrame = aFrame->GetParent();
       frameContent = aFrame->GetContent();
@@ -575,12 +581,4 @@ bool nsNativeTheme::IsWidgetScrollbarPart(StyleAppearance aAppearance) {
     default:
       return false;
   }
-}
-
-/*static*/
-bool nsNativeTheme::IsWidgetAlwaysNonNative(nsIFrame* aFrame,
-                                            StyleAppearance aAppearance) {
-  return IsWidgetScrollbarPart(aAppearance) ||
-         aAppearance == StyleAppearance::FocusOutline ||
-         (aFrame && aFrame->StyleUI()->mMozTheme == StyleMozTheme::NonNative);
 }

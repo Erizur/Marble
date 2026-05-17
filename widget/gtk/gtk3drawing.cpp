@@ -1790,6 +1790,9 @@ gint moz_gtk_get_widget_border(WidgetNodeType widget, gint* left, gint* top,
     case MOZ_GTK_TREE_HEADER_SORTARROW:
       w = GetWidget(MOZ_GTK_TREE_HEADER_SORTARROW);
       break;
+    case MOZ_GTK_DROPDOWN_ARROW:
+      w = GetWidget(MOZ_GTK_COMBOBOX_ENTRY_BUTTON);
+      break;
     case MOZ_GTK_DROPDOWN: {
       /* We need to account for the arrow on the dropdown, so text
        * doesn't come too close to the arrow, or in some cases spill
@@ -1962,6 +1965,24 @@ gint moz_gtk_get_tab_border(gint* left, gint* top, gint* right, gint* bottom,
       *right += margin.right;
     }
   }
+
+  return MOZ_GTK_SUCCESS;
+}
+
+gint moz_gtk_get_combo_box_entry_button_size(gint* width, gint* height) {
+  /*
+   * We get the requisition of the drop down button, which includes
+   * all padding, border and focus line widths the button uses,
+   * as well as the minimum arrow size and its padding
+   * */
+  GtkRequisition requisition;
+
+  gtk_widget_get_preferred_size(GetWidget(MOZ_GTK_COMBOBOX_ENTRY_BUTTON), NULL,
+                                &requisition);
+  moz_gtk_sanity_preferred_size(&requisition);
+
+  *width = requisition.width;
+  *height = requisition.height;
 
   return MOZ_GTK_SUCCESS;
 }

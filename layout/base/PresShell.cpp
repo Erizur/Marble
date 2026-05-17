@@ -5671,7 +5671,13 @@ static SingleCanvasBackground ComputeSingleCanvasBackground(nsIFrame* aCanvas) {
   MOZ_ASSERT(aCanvas->IsCanvasFrame());
   const nsIFrame* bgFrame = nsCSSRendering::FindBackgroundFrame(aCanvas);
   static constexpr nscolor kTransparent = NS_RGBA(0, 0, 0, 0);
-  if (bgFrame->IsThemed()) {
+  const nsStyleDisplay* disp = bgFrame->StyleDisplay();
+  StyleAppearance appearance = disp->EffectiveAppearance();
+  if (bgFrame->IsThemed(disp) &&
+      appearance != StyleAppearance::MozWinBorderlessGlass) {
+    // Ignore the CSS background-color if -moz-appearance is used and it is
+    // not one of the glass values. (Windows 7 Glass has traditionally not
+    // overridden background colors, so we preserve that behavior for now.)
     // Ignore the CSS background-color if `appearance` is used on the root.
     return {kTransparent, false};
   }
@@ -5698,25 +5704,10 @@ PresShell::CanvasBackground PresShell::ComputeCanvasBackground() const {
     // If the root element of the document (ie html) has style 'display: none'
     // then the document's background color does not get drawn; return the color
     // we actually draw.
-    return {GetDefaultBackgroundColorToDraw(), false};
+    return {{color, false}, {color, false}};
   }
 
-  const nsIFrame* bgFrame = nsCSSRendering::FindBackgroundFrame(canvas);
-  nscolor color = NS_RGBA(0, 0, 0, 0);
-  bool drawBackgroundImage = false;
-  bool drawBackgroundColor = false;
-  const nsStyleDisplay* disp = bgFrame->StyleDisplay();
-  StyleAppearance appearance = disp->EffectiveAppearance();
-  if (bgFrame->IsThemed(disp) &&
-      appearance != StyleAppearance::MozWinBorderlessGlass) {
-    // Ignore the CSS background-color if -moz-appearance is used and it is
-    // not one of the glass values. (Windows 7 Glass has traditionally not
-    // overridden background colors, so we preserve that behavior for now.)
-  } else {
-    color = nsCSSRendering::DetermineBackgroundColor(
-        mPresContext, bgFrame->Style(), canvas, drawBackgroundImage,
-        drawBackgroundColor);
-  }
+  auto viewportBg = ComputeSingleCanvasBackground(canvas);
   if (!IsTransparentContainerElement()) {
     viewportBg.mColor =
         NS_ComposeColors(GetDefaultBackgroundColorToDraw(), viewportBg.mColor);

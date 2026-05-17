@@ -1007,6 +1007,7 @@ STATIC_ATOMS = [
     Atom("param", "param"),
     Atom("parameter", "parameter"),
     Atom("parent", "parent"),
+    Atom("parentfocused", "parentfocused"),
     Atom("parsererror", "parsererror"),
     Atom("part", "part"),
     Atom("password", "password"),
