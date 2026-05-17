@@ -212,25 +212,46 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   const bool usingMemoryDC =
       IsPopup() && renderer->GetBackendType() == LayersBackend::LAYERS_NONE &&
       mTransparencyMode == TransparencyMode::Transparent;
-
   HDC hDC = nullptr;
+  const LayoutDeviceIntRect winRect = [&] {
+    RECT r;
+    ::GetWindowRect(mWnd, &r);
+    ::MapWindowPoints(nullptr, mWnd, (LPPOINT)&r, 2);
+    return WinUtils::ToIntRect(r);
+  }();
+  LayoutDeviceIntRegion region;
+  LayoutDeviceIntRegion translucentRegion;
   if (usingMemoryDC) {
+    // BeginPaint/EndPaint must be called to make Windows think that invalid
+    // area is painted. Otherwise it will continue sending the same message
+    // endlessly.
+    ::BeginPaint(mWnd, &ps);
     ::EndPaint(mWnd, &ps);
+
     // We're guaranteed to have a widget proxy since we called
     // GetLayerManager().
     hDC = mBasicLayersSurface->GetTransparentDC();
   } else {
     hDC = ::BeginPaint(mWnd, &ps);
+    region = GetRegionToPaint(ps, hDC);
+    if (mTransparencyMode == TransparencyMode::Transparent) {
+      translucentRegion = LayoutDeviceIntRegion{winRect};
+      translucentRegion.SubOut(mOpaqueRegion);
+      region.OrWith(translucentRegion);
+    }
   }
 
-  const bool forceRepaint = mTransparencyMode == TransparencyMode::Transparent;
-  const LayoutDeviceIntRegion region = GetRegionToPaint(forceRepaint, ps, hDC);
-
-  RefPtr<nsWindow> strongThis(this);
-
-  if (nsIWidgetListener* listener = GetPaintListener()) {
-    // Note that this might kill the listener.
-    listener->WillPaintWindow(this);
+  if (!usingMemoryDC && (mNeedsNCAreaClear || didResize)) {
+    // We need to clear the non-client-area region, and the transparent parts
+    // of the window to black (once).
+    auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
+    nsAutoRegion regionToClear(ComputeNonClientHRGN());
+    if (mTransparencyMode == TransparencyMode::Transparent &&
+        !translucentRegion.IsEmpty()) {
+      nsAutoRegion translucent(WinUtils::RegionToHRGN(translucentRegion));
+      ::CombineRgn(regionToClear, regionToClear, translucent, RGN_OR);
+    }
+    ::FillRgn(hDC, regionToClear, black);
   }
 
   bool didPaint = false;
