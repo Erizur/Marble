@@ -99,7 +99,8 @@ void nsLookAndFeel::RefreshImpl() {
 }
 
 static bool UseNonNativeMenuColors(ColorScheme aScheme) {
-  return !nsUXThemeData::IsHighContrastOn() || aScheme == ColorScheme::Dark;
+  return LookAndFeel::GetInt(LookAndFeel::IntID::WindowsDefaultTheme) ||
+         aScheme == ColorScheme::Dark;
 }
 
 nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
@@ -479,7 +480,10 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
     case IntID::TreeScrollLinesMax:
       aResult = 3;
       break;
-    case IntID::WindowsAccentColorInTitlebar:
+    case IntID::WindowsDefaultTheme:
+      aResult = nsUXThemeData::IsDefaultWindowTheme();
+      break;
+    case IntID::WindowsAccentColorInTitlebar: {
       aResult = mTitlebarColors.mUseAccent;
       break;
     case IntID::WindowsMica:
