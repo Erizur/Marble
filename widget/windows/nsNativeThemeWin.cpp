@@ -1850,6 +1850,7 @@ nsresult nsNativeThemeWin::ClassicGetThemePartAndState(
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Tab:
     case StyleAppearance::Tabpanels:
+    case StyleAppearance::Groupbox:
       // these don't use DrawFrameControl
       return NS_OK;
     case StyleAppearance::MozMenulistArrowButton: {
