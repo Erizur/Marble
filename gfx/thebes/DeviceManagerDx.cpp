@@ -1403,6 +1403,19 @@ bool DeviceManagerDx::IsWARP() {
   return IsWARPLocked();
 }
 
+bool DeviceManagerDx::CheckRemotePresentSupport() {
+  MOZ_ASSERT(XRE_IsParentProcess());
+
+  RefPtr<IDXGIAdapter1> adapter = GetDXGIAdapter();
+  if (!adapter) {
+    return false;
+  }
+  if (!D3D11Checks::DoesRemotePresentWork(adapter)) {
+    return false;
+  }
+  return true;
+}
+
 bool DeviceManagerDx::IsWARPLocked() {
   if (!mDeviceStatus) {
     return false;
