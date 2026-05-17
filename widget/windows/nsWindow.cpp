@@ -1210,9 +1210,9 @@ const wchar_t* nsWindow::ChooseWindowClass(WindowType aWindowType) {
     case WindowType::Invisible:
       return RegisterWindowClass(kClassNameHidden, 0, gStockApplicationIcon);
     case WindowType::Dialog:
-      return RegisterWindowClass(kClassNameDialog, 0, nullptr);
+      return RegisterWindowClass(kClassNameDialog, 0, 0);
     case WindowType::Popup:
-      return RegisterWindowClass(kClassNameDropShadow, 0,
+      return RegisterWindowClass(kClassNameDropShadow, CS_DROPSHADOW,
                                  gStockApplicationIcon);
     default:
       return RegisterWindowClass(GetMainWindowClass(), 0,
@@ -1546,6 +1546,15 @@ void nsWindow::Show(bool aState) {
 
   if (mWindowType == WindowType::Popup) {
     MOZ_ASSERT(ChooseWindowClass(mWindowType) == kClassNameDropShadow);
+    const bool shouldUseDropShadow =
+        mTransparencyMode != TransparencyMode::Transparent;
+
+    static bool sShadowEnabled = true;
+    if (sShadowEnabled != shouldUseDropShadow) {
+      ::SetClassLongA(mWnd, GCL_STYLE, shouldUseDropShadow ? CS_DROPSHADOW : 0);
+      sShadowEnabled = shouldUseDropShadow;
+    }
+
     // WS_EX_COMPOSITED conflicts with the WS_EX_LAYERED style and causes
     // some popup menus to become invisible.
     LONG_PTR exStyle = ::GetWindowLongPtrW(mWnd, GWL_EXSTYLE);
@@ -1674,6 +1683,26 @@ void nsWindow::Show(bool aState) {
 //
 // This does not take cloaking into account.
 bool nsWindow::IsVisible() const { return mIsVisible; }
+
+/**************************************************************
+ *
+ * SECTION: Window clipping utilities
+ *
+ * Used in Size and Move operations for setting the proper
+ * window clipping regions for window transparency.
+ *
+ **************************************************************/
+
+// XP and Vista visual styles sometimes require window clipping regions to be
+// applied for proper transparency. These routines are called on size and move
+// operations.
+// XXX this is apparently still needed in Windows 7 and later
+void nsWindow::ClearThemeRegion() {
+  if (mWindowType == WindowType::Popup && !IsPopupWithTitleBar() &&
+      (mPopupType == PopupType::Tooltip || mPopupType == PopupType::Panel)) {
+    SetWindowRgn(mWnd, nullptr, false);
+  }
+}
 
 /**************************************************************
  *
@@ -1814,49 +1843,26 @@ void nsWindow::Move(double aX, double aY) {
     MONITORINFO mi = {sizeof(MONITORINFO)};
     VERIFY(::GetMonitorInfo(monitor, &mi));
 
-    int32_t deltaX =
-        x + mi.rcWork.left - mi.rcMonitor.left - pl.rcNormalPosition.left;
-    int32_t deltaY =
-        y + mi.rcWork.top - mi.rcMonitor.top - pl.rcNormalPosition.top;
-    pl.rcNormalPosition.left += deltaX;
-    pl.rcNormalPosition.right += deltaX;
-    pl.rcNormalPosition.top += deltaY;
-    pl.rcNormalPosition.bottom += deltaY;
-    VERIFY(::SetWindowPlacement(mWnd, &pl));
-    return;
-  }
+      int32_t deltaX =
+          x + mi.rcWork.left - mi.rcMonitor.left - pl.rcNormalPosition.left;
+      int32_t deltaY =
+          y + mi.rcWork.top - mi.rcMonitor.top - pl.rcNormalPosition.top;
+      pl.rcNormalPosition.left += deltaX;
+      pl.rcNormalPosition.right += deltaX;
+      pl.rcNormalPosition.top += deltaY;
+      pl.rcNormalPosition.bottom += deltaY;
+      VERIFY(::SetWindowPlacement(mWnd, &pl));
+    } else {
+      ClearThemeRegion();
 
-  mBounds.MoveTo(x, y);
-
-  if (mWnd) {
-#ifdef DEBUG
-    // complain if a window is moved offscreen (legal, but potentially
-    // worrisome)
-    if (IsTopLevelWidget()) {  // only a problem for top-level windows
-      // Make sure this window is actually on the screen before we move it
-      // XXX: Needs multiple monitor support
-      HDC dc = ::GetDC(mWnd);
-      if (dc) {
-        if (::GetDeviceCaps(dc, TECHNOLOGY) == DT_RASDISPLAY) {
-          RECT workArea;
-          ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
-          // no annoying assertions. just mention the issue.
-          if (x < 0 || x >= workArea.right || y < 0 || y >= workArea.bottom) {
-            MOZ_LOG(gWindowsLog, LogLevel::Info,
-                    ("window moved to offscreen position\n"));
-          }
-        }
-        ::ReleaseDC(mWnd, dc);
+      UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSIZE;
+      double oldScale = mDefaultScale;
+      mResizeState = IN_SIZEMOVE;
+      VERIFY(::SetWindowPos(mWnd, nullptr, x, y, 0, 0, flags));
+      mResizeState = NOT_RESIZING;
+      if (WinUtils::LogToPhysFactor(mWnd) != oldScale) {
+        ChangedDPI();
       }
-    }
-#endif
-    UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSIZE;
-    double oldScale = mDefaultScale;
-    mResizeState = IN_SIZEMOVE;
-    VERIFY(::SetWindowPos(mWnd, nullptr, x, y, 0, 0, flags));
-    mResizeState = NOT_RESIZING;
-    if (WinUtils::LogToPhysFactor(mWnd) != oldScale) {
-      ChangedDPI();
     }
 
     ResizeDirectManipulationViewport();
@@ -1889,18 +1895,6 @@ void nsWindow::Resize(double aWidth, double aHeight, bool aRepaint) {
     return;
   }
 
-  // Refer to the comment above a similar check in nsWindow::Move
-  if (mIsShowingPreXULSkeletonUI && WasPreXULSkeletonUIMaximized()) {
-    WINDOWPLACEMENT pl = {sizeof(WINDOWPLACEMENT)};
-    VERIFY(::GetWindowPlacement(mWnd, &pl));
-    pl.rcNormalPosition.right = pl.rcNormalPosition.left + width;
-    pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + height;
-    mResizeState = RESIZING;
-    VERIFY(::SetWindowPlacement(mWnd, &pl));
-    mResizeState = NOT_RESIZING;
-    return;
-  }
-
   // Set cached value for lightweight and printing
   bool wasLocking = mAspectRatio != 0.0;
   mBounds.SizeTo(width, height);
@@ -1909,17 +1903,34 @@ void nsWindow::Resize(double aWidth, double aHeight, bool aRepaint) {
   }
 
   if (mWnd) {
-    UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE;
-    if (!aRepaint) {
-      flags |= SWP_NOREDRAW;
+    // Refer to the comment above a similar check in nsWindow::Move
+    if (mIsShowingPreXULSkeletonUI && WasPreXULSkeletonUIMaximized()) {
+      WINDOWPLACEMENT pl = {sizeof(WINDOWPLACEMENT)};
+      VERIFY(::GetWindowPlacement(mWnd, &pl));
+      pl.rcNormalPosition.right = pl.rcNormalPosition.left + width;
+      pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + GetHeight(height);
+      mResizeState = RESIZING;
+      VERIFY(::SetWindowPlacement(mWnd, &pl));
+      mResizeState = NOT_RESIZING;
+    } else {
+      UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE;
+
+      if (!aRepaint) {
+        flags |= SWP_NOREDRAW;
+      }
+
+      ClearThemeRegion();
+      double oldScale = mDefaultScale;
+      mResizeState = RESIZING;
+      VERIFY(
+          ::SetWindowPos(mWnd, nullptr, 0, 0, width, GetHeight(height), flags));
+
+      mResizeState = NOT_RESIZING;
+      if (WinUtils::LogToPhysFactor(mWnd) != oldScale) {
+        ChangedDPI();
+      }
     }
-    double oldScale = mDefaultScale;
-    mResizeState = RESIZING;
-    VERIFY(::SetWindowPos(mWnd, nullptr, 0, 0, width, height, flags));
-    mResizeState = NOT_RESIZING;
-    if (WinUtils::LogToPhysFactor(mWnd) != oldScale) {
-      ChangedDPI();
-    }
+
     ResizeDirectManipulationViewport();
   }
 
@@ -1968,26 +1979,22 @@ void nsWindow::Resize(double aX, double aY, double aWidth, double aHeight,
     MONITORINFO mi = {sizeof(MONITORINFO)};
     VERIFY(::GetMonitorInfo(monitor, &mi));
 
-    int32_t deltaX =
-        x + mi.rcWork.left - mi.rcMonitor.left - pl.rcNormalPosition.left;
-    int32_t deltaY =
-        y + mi.rcWork.top - mi.rcMonitor.top - pl.rcNormalPosition.top;
-    pl.rcNormalPosition.left += deltaX;
-    pl.rcNormalPosition.right = pl.rcNormalPosition.left + width;
-    pl.rcNormalPosition.top += deltaY;
-    pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + height;
-    VERIFY(::SetWindowPlacement(mWnd, &pl));
-    return;
-  }
+      int32_t deltaX =
+          x + mi.rcWork.left - mi.rcMonitor.left - pl.rcNormalPosition.left;
+      int32_t deltaY =
+          y + mi.rcWork.top - mi.rcMonitor.top - pl.rcNormalPosition.top;
+      pl.rcNormalPosition.left += deltaX;
+      pl.rcNormalPosition.right = pl.rcNormalPosition.left + width;
+      pl.rcNormalPosition.top += deltaY;
+      pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + GetHeight(height);
+      VERIFY(::SetWindowPlacement(mWnd, &pl));
+    } else {
+      UINT flags = SWP_NOZORDER | SWP_NOACTIVATE;
+      if (!aRepaint) {
+        flags |= SWP_NOREDRAW;
+      }
 
-  // Set cached value for lightweight and printing
-  mBounds.SetRect(x, y, width, height);
-
-  if (mWnd) {
-    UINT flags = SWP_NOZORDER | SWP_NOACTIVATE;
-    if (!aRepaint) {
-      flags |= SWP_NOREDRAW;
-    }
+      ClearThemeRegion();
 
     double oldScale = mDefaultScale;
     mResizeState = RESIZING;
