@@ -35,7 +35,7 @@
 }
 
 #stop-button {
-  list-style-image: url("chrome://global/skin/icons/close.svg");
+  list-style-image: url("chrome://global/skin/icons/close-12.svg");
 }
 
 #home-button {
@@ -56,7 +56,7 @@
 }
 
 #downloads-button {
-  list-style-image: url("chrome://browser/skin/downloads/downloads.svg");
+  list-style-image: url("chrome://browser/skin/downloads/downloads.svg#arrow-with-bar");
 }
 
 #open-file-button {

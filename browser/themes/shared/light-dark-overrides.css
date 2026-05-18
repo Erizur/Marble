@@ -15,8 +15,8 @@
      broken. So instead just show the normal titlebar in that case, and override
      the window color as transparent when the compositor is available. */
   @media not (-moz-windows-compositor) {
-    :root[tabsintitlebar]:not([inDOMFullscreen]) #titlebar:-moz-lwtheme {
-      visibility: visible;
+    :root[tabsintitlebar][lwtheme]:not([inDOMFullscreen]) #titlebar {
+      visibility: visible !important;
     }
 
     /* Prevent accent color overriding the window background for
@@ -53,11 +53,22 @@
       color: black;
       border-radius: 4px;
     }
+
+    @media not (-moz-proton) {
+     /* Show border on tabs with background colors and
+      * show the tabs toolbar background color inside tabs. */
+      .tabbrowser-tab {
+        background-color: var(--lwt-accent-color) !important;
+        color: var(--lwt-text-color) !important;
+        border-top: 1px solid var(--tabs-border-color);
+        background-clip: padding-box;
+      }
+    }
   }
 
   @media (-moz-windows-glass) {
     @media (-moz-windows-compositor) {
-      :root {
+      :root, #navigator-toolbox {
         background: transparent !important;
       }
 

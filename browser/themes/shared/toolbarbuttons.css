@@ -319,40 +319,20 @@ toolbar[brighttext] .toolbaritem-combined-buttons > separator {
 }
 
 @keyframes stop-to-reload {
-  /* pause on the first frame (step 0) for 6 frames of time */
   from {
-    /* 0 */
     transform: translateX(0);
   }
-  /* resume at 7/35 and animate across the next 14 frames */
-  17.14% {
-    animation-timing-function: steps(14);
-    transform: translateX(calc(0  * -20px));
-  }
-  /* pause on the last frame for the remainder of the duration */
-  54.29% {
-    transform: translateX(calc(14 * -20px));
-  }
   to {
-    /* end state for animation: */
-    transform: translateX(calc(var(--anim-frames) * -20px));
+    transform: translateX(-450px);
   }
 }
 
 @keyframes reload-to-stop {
-  /* pause on the first frame (step 0) for 6 frames of time */
   from {
-    /* 0 */
     transform: translateX(0);
-    animation-timing-function: steps(12);
-  }
-  /* pause at 13/15 for 3 frames */
-  86.67% {
-    transform: translateX(calc(var(--anim-frames) * -20px));
   }
   to {
-    /* end state for animation: */
-    transform: translateX(calc(var(--anim-frames) * -20px));
+    transform: translateX(-450px);
   }
 }
 
@@ -385,13 +365,8 @@ toolbar[brighttext] .toolbaritem-combined-buttons > separator {
        pause at frame 0 for 6 ticks,
        pause at frame 15 for 16 ticks
        total 35 steps */
-    --anim-frames: 14;
-    --anim-steps: calc(var(--anim-frames) + 21); /* Add steps for doing the pause at the start and end */
-    width: calc(20px * (var(--anim-frames) + 1));
+    width: 468px;
     height: 20px;
-
-    /* initial state for animation */
-    transform: translateX(0);
   }
 
   > #reload-button:not([displaystop]) > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
@@ -404,31 +379,26 @@ toolbar[brighttext] .toolbaritem-combined-buttons > separator {
        pause at end for 3 frames of time
        pause at ...
        total 15 steps */
-    --anim-frames: 12;
-    --anim-steps: calc(var(--anim-frames) + 3); /* Add steps for doing the pause at the start and end */
-    width: calc(20px * (var(--anim-frames) + 1));
+    width: 468px;
     height: 20px;
 
-    /* initial state for animation */
-    transform: translateX(0);
-
     animation-name: reload-to-stop;
-    animation-duration: calc(var(--anim-steps) * 16.667ms);
   }
 }
 
 #reload-button:not([displaystop]) > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
-  animation-duration: calc(var(--anim-steps) * 16.667ms);
+  animation-timing-function: steps(25);
+  animation-duration: 417ms;
 }
 
 #reload-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
-  transform: translateX(-700px);
+  transform: translateX(-450px);
 }
 
 #reload-button[displaystop] + #stop-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
-  animation-timing-function: steps(15);
-  animation-duration: 0.25s;
-  transform: translateX(-300px);
+  animation-timing-function: steps(25);
+  animation-duration: 417ms;
+  transform: translateX(-450px);
 }
 
 /* Bookmark buttons */
@@ -659,4 +629,69 @@ toolbar[keyNav]:not([collapsed=true], [customizing]) toolbartabstop,
 #tabbrowser-tabs[orient="vertical"] #tabs-newtab-button,
 #vertical-tabs-newtab-button {
   -moz-user-focus: normal;
+}
+
+@media not (-moz-proton) {
+  :root:not([uidensity="compact"]) #back-button {
+    padding-block: 3px !important;
+    padding-inline: 3px 0 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    border-radius: 0 10000px 10000px 0 !important;
+  }
+  :root:not([uidensity="compact"]) #back-button:-moz-locale-dir(rtl) {
+    border-radius: 10000px 0 0 10000px !important;
+  }
+  :root:not([uidensity="compact"]) #back-button > .toolbarbutton-icon {
+    background-color: var(--backbutton-background) !important;
+    background-origin: padding-box !important;
+    background-clip: padding-box !important;
+    border: 1px solid var(--backbutton-border-color) !important;
+    border-radius: 10000px !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 8px !important;
+    transition-property: box-shadow !important;
+    transition-duration: var(--toolbarbutton-hover-transition-duration) !important;
+  }
+  :root:not([uidensity="compact"]) #back-button:not([disabled], [open]):hover > .toolbarbutton-icon {
+    background-color: var(--backbutton-hover-background) !important;
+    box-shadow: 0 1px 6px hsla(0, 0%, 0%, 0.1) !important;
+    border-color: hsla(240, 5%, 5%, 0.35) !important;
+  }
+  :root:not([uidensity="compact"]) #back-button[open] > .toolbarbutton-icon, :root:not([uidensity="compact"]) #back-button:not([disabled]):hover:active > .toolbarbutton-icon {
+    background-color: var(--backbutton-active-background) !important;
+    border-color: hsla(240, 5%, 5%, 0.4) !important;
+  }
+  :root[uidensity="touch"] #back-button {
+    padding-block: 1px !important;
+    padding-inline-start: 1px !important;
+  }
+  :root[uidensity="touch"] #back-button > .toolbarbutton-icon {
+    width: 38px !important;
+    height: 38px !important;
+    padding: 10px !important;
+  }
+  :root[uidensity="touch"] #back-button:-moz-focusring > .toolbarbutton-icon {
+    outline-offset: calc(var(--outline-offset-width) * -1 - 2px) !important;
+  }
+  #main-window #back-button > menupopup {
+    margin-top: -1px !important;
+  }
+
+  /* Adds the Photon separator to the right of the hamburger menu button (the button with the three horizontal lines) */
+  :root:not([uidensity="compact"]) #PanelUI-menu-button::before {
+    content: "";
+    display: block;
+    height: 34px;
+    border-left: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    margin-inline-end: 4px !important;
+    margin-inline-start: -2px !important;
+  }
+  #PanelUI-menu-button {
+    padding-inline-end: 4px !important;
+  }
+  :root:not([uidensity="compact"]) #nav-bar-customization-target {
+    margin-inline-end: 3px !important;
+  }
 }

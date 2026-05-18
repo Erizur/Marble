@@ -46,5 +46,32 @@
 #downloadsListBox > richlistitem[verdict="DownloadSpam"] .downloadBlockedBadge  {
   -moz-context-properties: fill;
   fill: #ffbf00;
-  background-image: url("chrome://global/skin/icons/warning.svg");
+}
+
+@media not (-moz-proton) {
+  .downloadsPanel-blockedSubview-image {
+    display: none !important;
+  }
+  
+  #downloadsPanel-blockedSubview > .panel-view-body-unscrollable {
+    background-size: 32px 32px;
+    background-position: 16px 16px;
+    background-repeat: no-repeat;
+  }
+  
+  #downloadsPanel-blockedSubview-title,
+  #downloadsPanel-blockedSubview-details1,
+  #downloadsPanel-blockedSubview-details2 {
+    margin-inline: 64px 16px !important;
+  }
+  
+  #downloadsPanel-blockedSubview-title {
+    margin-block: 16px !important;
+    font-size: calc(100% / var(--downloads-item-font-size-factor)) !important;
+  }
+  
+  #downloadsPanel-blockedSubview-details1,
+  #downloadsPanel-blockedSubview-details2 {
+    margin-bottom: 16px !important;
+  }
 }

@@ -158,3 +158,46 @@
   font-size: 0.9em;
   margin: 2px 4px;
 }
+
+@media not (-moz-proton) {
+  /* Bookmark properties dialog */
+  #bookmarkpropertiesdialog .expander-up,
+  #bookmarkpropertiesdialog .expander-down {
+    appearance: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    padding: 1px !important;
+    margin: 1px !important;
+  }
+  #bookmarkpropertiesdialog .expander-up .button-box,
+  #bookmarkpropertiesdialog .expander-down .button-box {
+    transform: translateX(-4px);
+  }
+  #bookmarkpropertiesdialog .expander-up {
+    transform: scaleY(-1);
+  }
+  #bookmarkpropertiesdialog html|input {
+    margin: 2px 4px !important;
+  }
+  #bookmarkpropertiesdialog xul|label {
+    margin-block: 1px 4px !important;
+    margin-inline: 6px 5px !important;
+  }
+  #bookmarkpropertiesdialog #editBookmarkPanelContent {
+    margin-inline: 0 !important;
+  }
+  #bookmarkpropertiesdialog #editBookmarkPanelContent > label:not(.editBMPanel_nameRow), #bookmarkpropertiesdialog #editBookmarkPanelContent > #editBMPanel_folderTreeRow, #bookmarkpropertiesdialog #editBookmarkPanelContent > #editBMPanel_tagsSelectorRow {
+    padding-block-start: 0.5em !important;
+  }
+  #bookmarkpropertiesdialog .caption-label {
+    display: none !important;
+  }
+  #bookmarkpropertiesdialog #editBMPanel_tagsSelector {
+    -moz-default-appearance: listbox;
+    appearance: auto;
+    margin: 2px 4px !important;
+    margin-inline-end: 1px !important;
+  }
+}
