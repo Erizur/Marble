@@ -3489,13 +3489,12 @@ impl Renderer {
         }
 
         // Draw clear tiles
-        let clear_tiles = layer.clear_tiles();
-        if !clear_tiles.is_empty() {
+        if !layer.clear_tiles.is_empty() {
             let transparent_sampler = self.gpu_profiler.start_sampler(GPU_SAMPLER_TAG_TRANSPARENT);
             self.set_blend(true, FramebufferKind::Main);
             self.device.set_blend_mode_premultiplied_dest_out();
             self.draw_tile_list(
-                clear_tiles.iter(),
+                layer.clear_tiles.iter(),
                 &composite_state,
                 &composite_state.external_surfaces,
                 projection,
@@ -3724,7 +3723,7 @@ impl Renderer {
                     }
                 }
                 TileKind::Clear => {
-                    layer.occlusion.add(&rect, is_opaque, OcclusionItemKey { tile_index: idx, needs_mask: false });
+                    layer.occlusion.add(&rect, true, OcclusionItemKey { tile_index: idx, needs_mask: false });
                     // Clear tiles are specific to how we render the window buttons on
                     // Windows 8. They clobber what's under them so they can be treated as opaque,
                     // but require a different blend state so they will be rendered after the opaque

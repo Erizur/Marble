@@ -448,6 +448,7 @@ class LookAndFeel {
   };
 
   static bool WindowsNonNativeMenusEnabled();
+  static bool ProtonThemeEnabled();
 
   static ColorScheme SystemColorScheme() {
     return GetInt(IntID::SystemUsesDarkTheme) ? ColorScheme::Dark
