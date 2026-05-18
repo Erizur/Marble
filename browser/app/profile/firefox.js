@@ -1285,6 +1285,7 @@ pref("browser.preferences.moreFromMozilla", true);
 // we will revert those to the default settings.
 pref("browser.preferences.defaultPerformanceSettings.enabled", true);
 
+pref("browser.proton.enabled", false);
 pref("browser.proton.toolbar.version", 0);
 
 // Backspace and Shift+Backspace behavior
