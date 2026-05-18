@@ -2,6 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+"use strict";
+
+var EXPORTED_SYMBOLS = ["CustomizeMode", "_defaultImportantThemes"];
+
 const kPrefCustomizationDebug = "browser.uiCustomization.debug";
 const kPaletteId = "customization-palette";
 const kDragDataTypePrefix = "text/toolbarwrapper-id/";
@@ -53,6 +57,18 @@ ChromeUtils.defineLazyGetter(lazy, "log", () => {
   };
   return new ConsoleAPI(consoleOptions);
 });
+
+const DEFAULT_THEME_ID = "default-theme@mozilla.org";
+const LIGHT_THEME_ID = "firefox-compact-light@mozilla.org";
+const DARK_THEME_ID = "firefox-compact-dark@mozilla.org";
+const ALPENGLOW_THEME_ID = "firefox-alpenglow@mozilla.org";
+
+const _defaultImportantThemes = [
+  DEFAULT_THEME_ID,
+  LIGHT_THEME_ID,
+  DARK_THEME_ID,
+  ALPENGLOW_THEME_ID,
+];
 
 var gDraggingInToolbars;
 
@@ -1927,8 +1943,17 @@ export class CustomizeMode {
   /**
    * Opens about:addons in a new tab, showing the themes list.
    */
-  #openAddonsManagerThemes() {
+  #openAddonsManagerThemes(aEvent) {
+    aEvent.target.parentNode.parentNode.hidePopup();
     this.#window.BrowserAddonUI.openAddonsMgr("addons://list/theme");
+  }
+
+  #getMoreThemes(aEvent) {
+    aEvent.target.parentNode.parentNode.hidePopup();
+    let getMoreURL = Services.urlFormatter.formatURLPref(
+      "lightweightThemes.getMoreURL"
+    );
+    this.#window.openTrustedLinkIn(getMoreURL, "tab");
   }
 
   /**
@@ -2003,12 +2028,8 @@ export class CustomizeMode {
     );
     compactItem.mode = gUIDensity.MODE_COMPACT;
 
-    if (Services.prefs.getBoolPref(kCompactModeShowPref)) {
-      compactItem.hidden = false;
-      items.push(compactItem);
-    } else {
-      compactItem.hidden = true;
-    }
+    compactItem.hidden = false;
+    items.push(compactItem);
 
     let touchItem = doc.getElementById(
       "customization-uidensity-menuitem-touch"
@@ -2077,6 +2098,95 @@ export class CustomizeMode {
     // change because of this.
     this.#onUIDensityMenuShowing();
     this.#onUIChange();
+  }
+
+  async onThemesMenuShowing(aEvent) {
+    const MAX_THEME_COUNT = 6;
+
+    this.#clearThemesMenu(aEvent.target);
+
+    let onThemeSelected = panel => {
+      // This causes us to call _onUIChange when the LWT actually changes,
+      // so the restore defaults / undo reset button is updated correctly.
+      this._nextThemeChangeUserTriggered = true;
+      panel.hidePopup();
+    };
+
+    let doc = this.document;
+
+    function buildToolbarButton(aTheme) {
+      let tbb = doc.createXULElement("toolbarbutton");
+      tbb.theme = aTheme;
+      tbb.setAttribute("label", aTheme.name);
+      tbb.setAttribute(
+        "image",
+        aTheme.iconURL || "chrome://mozapps/skin/extensions/themeGeneric.svg"
+      );
+      if (aTheme.description) {
+        tbb.setAttribute("tooltiptext", aTheme.description);
+      }
+      tbb.setAttribute("tabindex", "0");
+      tbb.classList.add("customization-lwtheme-menu-theme");
+      let isActive = aTheme.isActive;
+      tbb.setAttribute("aria-checked", isActive);
+      tbb.setAttribute("role", "menuitemradio");
+      if (isActive) {
+        tbb.setAttribute("active", "true");
+      }
+
+      return tbb;
+    }
+
+    let themes = await AddonManager.getAddonsByTypes(["theme"]);
+    let currentTheme = themes.find(theme => theme.isActive);
+
+    // Move the current theme (if any) and the default themes to the start:
+    let importantThemes = new Set(_defaultImportantThemes);
+    if (currentTheme) {
+      importantThemes.add(currentTheme.id);
+    }
+    let importantList = [];
+    for (let importantTheme of importantThemes) {
+      importantList.push(
+        ...themes.splice(
+          themes.findIndex(theme => theme.id == importantTheme),
+          1
+        )
+      );
+    }
+
+    // Sort the remainder alphabetically:
+    themes.sort((a, b) => a.name.localeCompare(b.name));
+    themes = importantList.concat(themes);
+
+    if (themes.length > MAX_THEME_COUNT) {
+      themes.length = MAX_THEME_COUNT;
+    }
+
+    let footer = doc.getElementById("customization-lwtheme-menu-footer");
+    let panel = footer.parentNode;
+    for (let theme of themes) {
+      let button = buildToolbarButton(theme);
+      button.addEventListener("command", async () => {
+        onThemeSelected(panel);
+        await button.theme.enable();
+      });
+      panel.insertBefore(button, footer);
+    }
+  }
+
+  #clearThemesMenu(panel) {
+    let footer = this.$("customization-lwtheme-menu-footer");
+    let element = footer;
+    while (
+      element.previousElementSibling &&
+      element.previousElementSibling.localName == "toolbarbutton"
+    ) {
+      element.previousElementSibling.remove();
+    }
+
+    // Workaround for bug 1059934
+    panel.removeAttribute("height");
   }
 
   /**
@@ -2344,6 +2454,12 @@ export class CustomizeMode {
         case "customization-done-button":
           this.exit();
           break;
+        case "customization-lwthemes-menu-manage":
+          this.#openAddonsManagerThemes(event);
+          break;
+        case "customization-lwthemes-menu-get-more":
+          this.#getMoreThemes(event);
+          break;
       }
     });
 
@@ -2354,6 +2470,9 @@ export class CustomizeMode {
           break;
         case "customization-uidensity-menu":
           this.#onUIDensityMenuShowing();
+          break;
+        case "customization-lwtheme-menu":
+          this.onThemesMenuShowing(event);
           break;
       }
     });
