@@ -44,6 +44,7 @@
 #include "nsWindow.h"
 #include "nsLayoutUtils.h"
 #include "Theme.h"
+#include "ScrollbarDrawingGTK.h"
 
 #ifdef MOZ_X11
 #  ifdef CAIRO_HAS_XLIB_SURFACE
@@ -155,6 +156,16 @@ gint nsNativeThemeGTK::GetTabMarginPixels(nsIFrame* aFrame) {
       std::max(0, aFrame->PresContext()->AppUnitsToDevPixels(-margin)));
 }
 
+static bool ShouldScrollbarButtonBeDisabled(int32_t aCurpos, int32_t aMaxpos,
+                                            StyleAppearance aAppearance) {
+  return (aCurpos == 0 &&
+          (aAppearance == StyleAppearance::ScrollbarbuttonUp ||
+           aAppearance == StyleAppearance::ScrollbarbuttonLeft)) ||
+         (aCurpos == aMaxpos &&
+          (aAppearance == StyleAppearance::ScrollbarbuttonDown ||
+           aAppearance == StyleAppearance::ScrollbarbuttonRight));
+}
+
 bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
                                             nsIFrame* aFrame,
                                             WidgetNodeType& aGtkWidgetType,
@@ -218,6 +229,50 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
         aState->focused = FALSE;
       }
 
+      if (aAppearance == StyleAppearance::ScrollbarthumbVertical ||
+          aAppearance == StyleAppearance::ScrollbarthumbHorizontal) {
+        // for scrollbars we need to go up two to go from the thumb to
+        // the slider to the actual scrollbar object
+        nsIFrame* tmpFrame = aFrame->GetParent()->GetParent();
+
+        aState->curpos = CheckIntAttr(tmpFrame, nsGkAtoms::curpos, 0);
+        aState->maxpos = CheckIntAttr(tmpFrame, nsGkAtoms::maxpos, 100);
+
+        if (CheckBooleanAttr(aFrame, nsGkAtoms::active)) {
+          aState->active = TRUE;
+          // Set hover state to emulate Gtk style of active scrollbar thumb
+          aState->inHover = TRUE;
+        }
+      }
+
+      if (aAppearance == StyleAppearance::ScrollbarbuttonUp ||
+          aAppearance == StyleAppearance::ScrollbarbuttonDown ||
+          aAppearance == StyleAppearance::ScrollbarbuttonLeft ||
+          aAppearance == StyleAppearance::ScrollbarbuttonRight) {
+        // set the state to disabled when the scrollbar is scrolled to
+        // the beginning or the end, depending on the button type.
+        int32_t curpos = CheckIntAttr(aFrame, nsGkAtoms::curpos, 0);
+        int32_t maxpos = CheckIntAttr(aFrame, nsGkAtoms::maxpos, 100);
+        if (ShouldScrollbarButtonBeDisabled(curpos, maxpos, aAppearance)) {
+          aState->disabled = true;
+        }
+
+        // In order to simulate native GTK scrollbar click behavior,
+        // we set the active attribute on the element to true if it's
+        // pressed with any mouse button.
+        // This allows us to show that it's active without setting :active
+        else if (CheckBooleanAttr(aFrame, nsGkAtoms::active))
+          aState->active = true;
+
+        if (aWidgetFlags) {
+          *aWidgetFlags = GetScrollbarButtonType(aFrame);
+          if (static_cast<uint8_t>(aAppearance) -
+                  static_cast<uint8_t>(StyleAppearance::ScrollbarbuttonUp) <
+              2)
+            *aWidgetFlags |= MOZ_GTK_STEPPER_VERTICAL;
+        }
+      }
+
       // menu item state is determined by the attribute "_moz-menuactive",
       // and not by the mouse hovering (accessibility).  as a special case,
       // menus which are children of a menu bar are only marked as prelight
@@ -261,6 +316,20 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
       aState->backdrop = aFrame->PresContext()->Document()->State().HasState(
           dom::DocumentState::WINDOW_INACTIVE);
     }
+
+    if (aAppearance == StyleAppearance::ScrollbarbuttonUp ||
+        aAppearance == StyleAppearance::ScrollbarbuttonDown ||
+        aAppearance == StyleAppearance::ScrollbarbuttonLeft ||
+        aAppearance == StyleAppearance::ScrollbarbuttonRight ||
+        aAppearance == StyleAppearance::ScrollbarVertical ||
+        aAppearance == StyleAppearance::ScrollbarHorizontal ||
+        aAppearance == StyleAppearance::ScrollbartrackHorizontal ||
+        aAppearance == StyleAppearance::ScrollbartrackVertical ||
+        aAppearance == StyleAppearance::ScrollbarthumbVertical ||
+        aAppearance == StyleAppearance::ScrollbarthumbHorizontal) {
+      aState->backdrop = aFrame->PresContext()->Document()->State().HasState(
+          dom::DocumentState::WINDOW_INACTIVE);
+    }
   }
 
   switch (aAppearance) {
@@ -278,6 +347,38 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
       aGtkWidgetType = (aAppearance == StyleAppearance::Radio)
                            ? MOZ_GTK_RADIOBUTTON
                            : MOZ_GTK_CHECKBUTTON;
+      break;
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_BUTTON;
+      break;
+    case StyleAppearance::ScrollbarVertical:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_VERTICAL;
+      if (GetWidgetTransparency(aFrame, aAppearance) == eOpaque)
+        *aWidgetFlags = MOZ_GTK_TRACK_OPAQUE;
+      else
+        *aWidgetFlags = 0;
+      break;
+    case StyleAppearance::ScrollbarHorizontal:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_HORIZONTAL;
+      if (GetWidgetTransparency(aFrame, aAppearance) == eOpaque)
+        *aWidgetFlags = MOZ_GTK_TRACK_OPAQUE;
+      else
+        *aWidgetFlags = 0;
+      break;
+    case StyleAppearance::ScrollbartrackHorizontal:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_TROUGH_HORIZONTAL;
+      break;
+    case StyleAppearance::ScrollbartrackVertical:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_TROUGH_VERTICAL;
+      break;
+    case StyleAppearance::ScrollbarthumbVertical:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_THUMB_VERTICAL;
+      break;
+    case StyleAppearance::ScrollbarthumbHorizontal:
+      aGtkWidgetType = MOZ_GTK_SCROLLBAR_THUMB_HORIZONTAL;
       break;
     case StyleAppearance::Spinner:
       aGtkWidgetType = MOZ_GTK_SPINBUTTON;
@@ -739,6 +840,12 @@ CSSIntMargin nsNativeThemeGTK::GetExtraSizeForWidget(
   // GTK2 themes (Ximian Industrial, Bluecurve, Misty, at least);
   // We modify the frame's overflow area.  See bug 297508.
   switch (aAppearance) {
+    case StyleAppearance::ScrollbarthumbVertical:
+      extra.top = extra.bottom = 1;
+      break;
+    case StyleAppearance::ScrollbarthumbHorizontal:
+      extra.left = extra.right = 1;
+      break;
     case StyleAppearance::Button: {
       if (IsDefaultButton(aFrame)) {
         // Some themes draw a default indicator outside the widget,
@@ -964,6 +1071,36 @@ LayoutDeviceIntMargin nsNativeThemeGTK::GetWidgetBorder(
   CSSIntMargin result;
   GtkTextDirection direction = GetTextDirection(aFrame);
   switch (aAppearance) {
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarVertical: {
+      GtkOrientation orientation =
+          aAppearance == StyleAppearance::ScrollbarHorizontal
+              ? GTK_ORIENTATION_HORIZONTAL
+              : GTK_ORIENTATION_VERTICAL;
+      const ScrollbarGTKMetrics* metrics =
+          GetActiveScrollbarMetrics(orientation);
+
+      const GtkBorder& border = metrics->border.scrollbar;
+      result.top = border.top;
+      result.right = border.right;
+      result.bottom = border.bottom;
+      result.left = border.left;
+    } break;
+    case StyleAppearance::ScrollbartrackHorizontal:
+    case StyleAppearance::ScrollbartrackVertical: {
+      GtkOrientation orientation =
+          aAppearance == StyleAppearance::ScrollbartrackHorizontal
+              ? GTK_ORIENTATION_HORIZONTAL
+              : GTK_ORIENTATION_VERTICAL;
+      const ScrollbarGTKMetrics* metrics =
+          GetActiveScrollbarMetrics(orientation);
+
+      const GtkBorder& border = metrics->border.track;
+      result.top = border.top;
+      result.right = border.right;
+      result.bottom = border.bottom;
+      result.left = border.left;
+    } break;
     case StyleAppearance::Toolbox:
       // gtk has no toolbox equivalent.  So, although we map toolbox to
       // gtk's 'toolbar' for purposes of painting the widget background,
@@ -1051,9 +1188,31 @@ bool nsNativeThemeGTK::GetWidgetOverflow(nsDeviceContext* aContext,
 auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
                                          StyleAppearance aAppearance)
     -> NonNative {
-  if (IsWidgetScrollbarPart(aAppearance) ||
-      aAppearance == StyleAppearance::FocusOutline) {
-    return NonNative::Always;
+  // WIP: TEST IF THIS WORKS
+  /*
+  if (!StaticPrefs::widget_non_native_theme_enabled()) {
+    return NonNative::No;
+  }*/
+
+  if (IsWidgetScrollbarPart(aAppearance)) {
+    if (StaticPrefs::widget_native_controls_scrollbar_style() == 0) {
+      return NonNative::No;
+    } else if (StaticPrefs::widget_native_controls_scrollbar_style() == 1) {
+      return NonNative::Always;
+    } else /* >= 2, < 0 */
+    {
+      // Photon behaviour: native on light, non-native on dark or custom styles:
+      if (GetCustomScrollbarStyle(aFrame) == nullptr) {
+        return NonNative::No;
+      } else {
+        return NonNative::Always;
+      }
+    }
+  }
+
+  if (aAppearance == StyleAppearance::Tooltip &&
+      StaticPrefs::widget_native_controls_tooltip_style() == 0) {
+    return NonNative::No;
   }
 
   // If the current GTK theme color scheme matches our color-scheme, then we
@@ -1066,6 +1225,10 @@ auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
   // As an special-case, for tooltips, we check if the tooltip color is the
   // same between the light and dark themes. If so we can get away with drawing
   // the native widget, see bug 1817396.
+
+  // Maybe not?!??!?!?
+  /*
+
   if (aAppearance == StyleAppearance::Tooltip) {
     auto darkColor =
         LookAndFeel::Color(StyleSystemColor::Infotext, ColorScheme::Dark,
@@ -1076,7 +1239,7 @@ auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
     if (darkColor == lightColor) {
       return NonNative::No;
     }
-  }
+  }*/
 
   // If the non-native theme doesn't support the widget then oh well...
   if (!Theme::ThemeSupportsWidget(aFrame->PresContext(), aFrame, aAppearance)) {
@@ -1095,12 +1258,57 @@ LayoutDeviceIntSize nsNativeThemeGTK::GetMinimumWidgetSize(
 
   CSSIntSize result;
   switch (aAppearance) {
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown: {
+      const ScrollbarGTKMetrics* metrics =
+          GetActiveScrollbarMetrics(GTK_ORIENTATION_VERTICAL);
+
+      result.width = metrics->size.button.width;
+      result.height = metrics->size.button.height;
+    } break;
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight: {
+      const ScrollbarGTKMetrics* metrics =
+          GetActiveScrollbarMetrics(GTK_ORIENTATION_HORIZONTAL);
+
+      result.width = metrics->size.button.width;
+      result.height = metrics->size.button.height;
+    } break;
     case StyleAppearance::Splitter: {
       if (IsHorizontal(aFrame)) {
         moz_gtk_splitter_get_metrics(GTK_ORIENTATION_HORIZONTAL, &result.width);
       } else {
         moz_gtk_splitter_get_metrics(GTK_ORIENTATION_VERTICAL, &result.height);
       }
+    } break;
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarVertical: {
+      /* While we enforce a minimum size for the thumb, this is ignored
+       * for the some scrollbars if buttons are hidden (bug 513006) because
+       * the thumb isn't a direct child of the scrollbar, unlike the buttons
+       * or track. So add a minimum size to the track as well to prevent a
+       * 0-width scrollbar. */
+      GtkOrientation orientation =
+          aAppearance == StyleAppearance::ScrollbarHorizontal
+              ? GTK_ORIENTATION_HORIZONTAL
+              : GTK_ORIENTATION_VERTICAL;
+      const ScrollbarGTKMetrics* metrics =
+          GetActiveScrollbarMetrics(orientation);
+
+      result.width = metrics->size.scrollbar.width;
+      result.height = metrics->size.scrollbar.height;
+    } break;
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal: {
+      GtkOrientation orientation =
+          aAppearance == StyleAppearance::ScrollbarthumbHorizontal
+              ? GTK_ORIENTATION_HORIZONTAL
+              : GTK_ORIENTATION_VERTICAL;
+      const ScrollbarGTKMetrics* metrics =
+          GetActiveScrollbarMetrics(orientation);
+
+      result.width = metrics->size.thumb.width;
+      result.height = metrics->size.thumb.height;
     } break;
     case StyleAppearance::RangeThumb: {
       if (IsRangeHorizontal(aFrame)) {
@@ -1265,6 +1473,41 @@ bool nsNativeThemeGTK::WidgetAttributeChangeRequiresRepaint(
     return true;
   }
 
+  if ((aAppearance == StyleAppearance::ScrollbarthumbVertical ||
+       aAppearance == StyleAppearance::ScrollbarthumbHorizontal) &&
+      aAttribute == nsGkAtoms::active) {
+    return true;
+  }
+
+  if ((aAppearance == StyleAppearance::ScrollbarbuttonUp ||
+       aAppearance == StyleAppearance::ScrollbarbuttonDown ||
+       aAppearance == StyleAppearance::ScrollbarbuttonLeft ||
+       aAppearance == StyleAppearance::ScrollbarbuttonRight) &&
+      (aAttribute == nsGkAtoms::curpos || aAttribute == nsGkAtoms::maxpos)) {
+    // If 'curpos' has changed and we are passed its old value, we can
+    // determine whether the button's enablement actually needs to change.
+    if (aAttribute == nsGkAtoms::curpos && aOldValue) {
+      int32_t curpos = CheckIntAttr(aFrame, nsGkAtoms::curpos, 0);
+      int32_t maxpos = CheckIntAttr(aFrame, nsGkAtoms::maxpos, 0);
+      nsAutoString str;
+      aOldValue->ToString(str);
+      nsresult err;
+      int32_t oldCurpos = str.ToInteger(&err);
+      if (str.IsEmpty() || NS_FAILED(err)) {
+        return true;
+      } else {
+        bool disabledBefore =
+            ShouldScrollbarButtonBeDisabled(oldCurpos, maxpos, aAppearance);
+        bool disabledNow =
+            ShouldScrollbarButtonBeDisabled(curpos, maxpos, aAppearance);
+        return (disabledBefore != disabledNow);
+      }
+    } else {
+      return true;
+    }
+    return false;
+  }
+
   // XXXdwh Not sure what can really be done here.  Can at least guess for
   // specific widgets that they're highly unlikely to have certain states.
   // For example, a toolbar doesn't care about any states.
@@ -1294,6 +1537,11 @@ nsNativeThemeGTK::ThemeChanged() {
   return NS_OK;
 }
 
+static bool CanHandleScrollbar(const ComputedStyle& aStyle) {
+  return !aStyle.StyleUI()->HasCustomScrollbars() &&
+         aStyle.StyleUIReset()->mScrollbarWidth != StyleScrollbarWidth::Thin;
+}
+
 NS_IMETHODIMP_(bool)
 nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
                                       nsIFrame* aFrame,
@@ -1304,6 +1552,13 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
 
   if (IsWidgetNonNative(aFrame, aAppearance) == NonNative::Always) {
     return Theme::ThemeSupportsWidget(aPresContext, aFrame, aAppearance);
+  }
+
+  if (IsWidgetScrollbarPart(aAppearance)) {
+    ComputedStyle* cs = nsLayoutUtils::StyleForScrollbar(aFrame);
+    if (!CanHandleScrollbar(*cs)) {
+      return false;
+    }
   }
 
   switch (aAppearance) {
@@ -1351,6 +1606,16 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton:
     case StyleAppearance::SpinnerTextfield:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbartrackHorizontal:
+    case StyleAppearance::ScrollbartrackVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::ScrollbarthumbVertical:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
     case StyleAppearance::Textfield:
@@ -1441,6 +1706,16 @@ nsITheme::Transparency nsNativeThemeGTK::GetWidgetTransparency(
   }
 
   switch (aAppearance) {
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+      // Make scrollbar tracks opaque on the window's scroll frame to prevent
+      // leaf layers from overlapping. See bug 1179780.
+      if (!(CheckBooleanAttr(aFrame, nsGkAtoms::root_) &&
+            aFrame->PresContext()->IsRootContentDocumentCrossProcess() &&
+            IsFrameContentNodeInNamespace(aFrame, kNameSpaceID_XUL))) {
+        return eTransparent;
+      }
+      return eOpaque;
     // Tooltips use gtk_paint_flat_box() on Gtk2
     // but are shaped on Gtk3
     case StyleAppearance::Tooltip:
@@ -1448,6 +1723,31 @@ nsITheme::Transparency nsNativeThemeGTK::GetWidgetTransparency(
     default:
       return eUnknownTransparency;
   }
+}
+
+auto nsNativeThemeGTK::GetScrollbarSize(nsPresContext* aPresContext,
+                                         StyleScrollbarWidth aWidth,
+                                         Overlay aOverlay) -> ScrollbarSizes {
+  if (StaticPrefs::widget_non_native_theme_enabled()) {
+    return Theme::GetScrollbarSize(aPresContext, aWidth,
+                                                 aOverlay);
+  }
+
+  CSSIntCoord vertical;
+  CSSIntCoord horizontal;
+  if (aWidth != StyleScrollbarWidth::Thin) {
+    const ScrollbarGTKMetrics* verticalMetrics =
+        GetActiveScrollbarMetrics(GTK_ORIENTATION_VERTICAL);
+    const ScrollbarGTKMetrics* horizontalMetrics =
+        GetActiveScrollbarMetrics(GTK_ORIENTATION_HORIZONTAL);
+    vertical = verticalMetrics->size.scrollbar.width;
+    horizontal = horizontalMetrics->size.scrollbar.height;
+  } else {
+    auto unthemed = nsLayoutUtils::UnthemedScrollbarSize(aWidth);
+    vertical = horizontal = unthemed;
+  }
+  auto scale = aPresContext->CSSToDevPixelScale();
+  return {int32_t(vertical) * scale, int32_t(horizontal) * scale};
 }
 
 already_AddRefed<Theme> do_CreateNativeThemeDoNotUseDirectly() {

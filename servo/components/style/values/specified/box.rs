@@ -1608,6 +1608,9 @@ pub enum Appearance {
     /// A status bar in a main application window.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Statusbar,
+    /// A single pane of a status bar.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Statusbarpanel,
     /// A single tab in a tab widget.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Tab,

@@ -220,6 +220,31 @@ bool nsNativeTheme::IsWidgetStyled(nsPresContext* aPresContext,
     return false;
   }
 
+  // Resizers have some special handling, dependent on whether in a scrollable
+  // container or not. If so, use the scrollable container's to determine
+  // whether the style is overriden instead of the resizer. This allows a
+  // non-native transparent resizer to be used instead. Otherwise, we just
+  // fall through and return false.
+  if (aAppearance == StyleAppearance::Resizer) {
+    nsIFrame* parentFrame = aFrame->GetParent();
+    if (parentFrame && parentFrame->IsScrollContainerFrame()) {
+      // if the parent is a scrollframe, the resizer should be native themed
+      // only if the scrollable area doesn't override the widget style.
+      //
+      // note that the condition below looks a bit suspect but it's the right
+      // one. If there's no valid appearance, then we should return true, it's
+      // effectively the same as if it had overridden the appearance.
+      parentFrame = parentFrame->GetParent();
+      if (!parentFrame) {
+        return false;
+      }
+      auto parentAppearance =
+          parentFrame->StyleDisplay()->EffectiveAppearance();
+      return parentAppearance == StyleAppearance::None ||
+             IsWidgetStyled(aPresContext, parentFrame, parentAppearance);
+    }
+  }
+
   /**
    * Progress bar appearance should be the same for the bar and the container
    * frame. nsProgressFrame owns the logic and will tell us what we should do.
@@ -284,6 +309,34 @@ bool nsNativeTheme::IsHTMLContent(nsIFrame* aFrame) {
   }
   nsIContent* content = aFrame->GetContent();
   return content && content->IsHTMLElement();
+}
+
+// scrollbar button:
+int32_t nsNativeTheme::GetScrollbarButtonType(nsIFrame* aFrame) {
+  if (!aFrame) return 0;
+
+  static Element::AttrValuesArray strings[] = {
+      nsGkAtoms::scrollbarDownBottom, nsGkAtoms::scrollbarDownTop,
+      nsGkAtoms::scrollbarUpBottom, nsGkAtoms::scrollbarUpTop, nullptr};
+
+  nsIContent* content = aFrame->GetContent();
+  if (!content || !content->IsElement()) {
+    return 0;
+  }
+
+  switch (content->AsElement()->FindAttrValueIn(
+      kNameSpaceID_None, nsGkAtoms::sbattr, strings, eCaseMatters)) {
+    case 0:
+      return eScrollbarButton_Down | eScrollbarButton_Bottom;
+    case 1:
+      return eScrollbarButton_Down;
+    case 2:
+      return eScrollbarButton_Bottom;
+    case 3:
+      return eScrollbarButton_UpTop;
+  }
+
+  return 0;
 }
 
 // treeheadercell:

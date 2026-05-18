@@ -88,10 +88,34 @@ struct ToolbarGTKMetrics {
   ToolbarButtonGTKMetrics button[TOOLBAR_BUTTONS];
 };
 
+struct ScrollbarGTKMetrics {
+  bool initialized;
+  struct {
+    MozGtkSize scrollbar;
+    MozGtkSize thumb;
+    MozGtkSize button;
+  } size;
+  struct {
+    GtkBorder scrollbar;
+    GtkBorder track;
+  } border;
+  struct {
+    GtkBorder thumb;
+  } margin;
+};
+
 struct CSDWindowDecorationSize {
   bool initialized;
   GtkBorder decorationSize;
 };
+
+enum GtkScrollbarButtonFlags {
+  MOZ_GTK_STEPPER_DOWN = 1 << 0,
+  MOZ_GTK_STEPPER_BOTTOM = 1 << 1,
+  MOZ_GTK_STEPPER_VERTICAL = 1 << 2
+};
+
+enum GtkScrollbarTrackFlags { MOZ_GTK_TRACK_OPAQUE = 1 << 0 };
 
 /** flags for tab state **/
 enum GtkTabFlags {
@@ -136,6 +160,20 @@ enum WidgetNodeType : int {
   MOZ_GTK_RADIOBUTTON,
   /* Paints the label of a GtkRadioButton (focus outline) */
   MOZ_GTK_RADIOBUTTON_LABEL,
+  /**
+   * Paints the button of a GtkScrollbar. flags is a GtkArrowType giving
+   * the arrow direction.
+   */
+  MOZ_GTK_SCROLLBAR_BUTTON,
+
+  /* Horizontal GtkScrollbar counterparts */
+  MOZ_GTK_SCROLLBAR_HORIZONTAL,
+  MOZ_GTK_SCROLLBAR_CONTENTS_HORIZONTAL,
+  /* Paints the trough (track) of a GtkScrollbar. */
+  MOZ_GTK_SCROLLBAR_TROUGH_HORIZONTAL,
+  /* Paints the slider (thumb) of a GtkScrollbar. */
+  MOZ_GTK_SCROLLBAR_THUMB_HORIZONTAL,
+
   /* Vertical GtkScrollbar counterparts */
   MOZ_GTK_SCROLLBAR_VERTICAL,
   MOZ_GTK_SCROLLBAR_CONTENTS_VERTICAL,
@@ -438,6 +476,20 @@ void moz_gtk_get_scale_metrics(GtkOrientation orient, gint* scale_width,
  */
 gint moz_gtk_get_scalethumb_metrics(GtkOrientation orient, gint* thumb_length,
                                     gint* thumb_height);
+
+/**
+ * Get the metrics in GTK pixels for a scrollbar.
+ * aOrientation:     [IN] the scrollbar orientation
+ */
+const ScrollbarGTKMetrics* GetScrollbarMetrics(GtkOrientation aOrientation);
+
+/**
+ * Get the metrics in GTK pixels for a scrollbar which is active
+ * (selected by mouse pointer).
+ * aOrientation:     [IN] the scrollbar orientation
+ */
+const ScrollbarGTKMetrics* GetActiveScrollbarMetrics(
+    GtkOrientation aOrientation);
 
 /**
  * Get the desired size of a dropdown arrow button
