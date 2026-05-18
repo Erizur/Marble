@@ -16,3 +16,9 @@ extension-firefox-compact-dark-description=A theme with a dark color scheme.
 
 extension-firefox-alpenglow-name=Firefox Alpenglow
 extension-firefox-alpenglow-description=Use a colorful appearance for buttons, menus, and windows.
+
+extension-marble-canica-name=Marble Canica
+extension-marble-canica-description=Use a fresh and stylish appearance for buttons, menus, and windows.
+
+extension-marble-lounge-name=Orange Lounge
+extension-marble-lounge-description=A refreshing appearance for your browser, inspired by TOMOSUKE's music project.
