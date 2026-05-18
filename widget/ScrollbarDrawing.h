@@ -110,14 +110,29 @@ class ScrollbarDrawing {
                                ScrollbarKind, nsIFrame*, const ComputedStyle&,
                                const ElementState&, const DocumentState&,
                                const Colors&, const DPIRatio&);
-  virtual bool PaintScrollbar(DrawTarget&, const LayoutDeviceRect&,
-                              ScrollbarKind, nsIFrame*, const ComputedStyle&,
-                              const ElementState&, const DocumentState&,
-                              const Colors&, const DPIRatio&);
-  virtual bool PaintScrollbar(WebRenderBackendData&, const LayoutDeviceRect&,
-                              ScrollbarKind, nsIFrame*, const ComputedStyle&,
-                              const ElementState&, const DocumentState&,
-                              const Colors&, const DPIRatio&);
+  bool PaintScrollbar(DrawTarget&, const LayoutDeviceRect&, ScrollbarKind,
+                      nsIFrame*, const ComputedStyle&, const ElementState&,
+                      const DocumentState&, const Colors&, const DPIRatio&);
+  bool PaintScrollbar(WebRenderBackendData&, const LayoutDeviceRect&,
+                      ScrollbarKind, nsIFrame*, const ComputedStyle&,
+                      const ElementState&, const DocumentState&, const Colors&,
+                      const DPIRatio&);
+
+  virtual bool PaintScrollbarTrack(DrawTarget&, const LayoutDeviceRect&,
+                                   ScrollbarKind, nsIFrame*,
+                                   const ComputedStyle&, const DocumentState&,
+                                   const Colors&, const DPIRatio&) {
+    // Draw nothing by default. Subclasses can override this.
+    return true;
+  }
+  virtual bool PaintScrollbarTrack(WebRenderBackendData&,
+                                   const LayoutDeviceRect&, ScrollbarKind,
+                                   nsIFrame*, const ComputedStyle&,
+                                   const DocumentState&, const Colors&,
+                                   const DPIRatio&) {
+    // Draw nothing by default. Subclasses can override this.
+    return true;
+  }
 
   template <typename PaintBackendData>
   bool DoPaintDefaultScrollCorner(PaintBackendData&, const LayoutDeviceRect&,
