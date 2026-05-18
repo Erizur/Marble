@@ -48,8 +48,10 @@
   --toolbar-field-focus-color: FieldText;
   --toolbar-field-focus-border-color: color-mix(in srgb, var(--focus-outline-color) 50%, transparent);
 
-  --toolbar-bgcolor: color-mix(in srgb, -moz-dialog 85%, white);
-  --toolbar-color: -moz-dialogtext;
+  --toolbar-non-lwt-bgcolor: color-mix(in srgb, -moz-dialog 85%, white);
+  --toolbar-non-lwt-textcolor: -moz-dialogtext;
+  --toolbar-bgcolor: var(--toolbar-non-lwt-bgcolor);
+  --toolbar-color: var(--toolbar-non-lwt-textcolor);
 
   /* Override some toolbar colors when not under prefers-contrast. Note that
    * for the browser window these might be overridden by
@@ -65,7 +67,7 @@
     --toolbar-field-color: inherit;
 
     @media (prefers-color-scheme: light) {
-      --toolbar-bgcolor: white;
+      --toolbar-non-lwt-bgcolor: white;
     }
   }
 

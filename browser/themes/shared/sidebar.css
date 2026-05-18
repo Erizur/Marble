@@ -63,13 +63,18 @@
     color: var(--sidebar-text-color);
     /* Note that with sidebar.revamp we apply the --sidebar-background-color to the
      * #sidebar browser. We still need the #sidebar-box background to match the
-     * toolbar tho - this background is set on the #browser ancestor rather than here */
-  }
-}
+     * toolbar tho */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media (-moz-bool-pref: "sidebar.revamp") {
+      background-color: var(--toolbar-bgcolor);
+      color: var(--toolbar-color);
 
-.sidebar-browser-stack > .dialogStack > .dialogTemplate > .dialogBox {
-  /* Not enough horizontal space, remove the margin */
-  margin-inline: 0;
+      :root[lwtheme] & {
+        background-color: var(--lwt-accent-color);
+        background-image: linear-gradient(var(--toolbar-bgcolor), var(--toolbar-bgcolor));
+      }
+    }
+  }
 }
 
 #sidebar-header {
