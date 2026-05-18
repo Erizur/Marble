@@ -37,10 +37,7 @@ body {
 }
 
 :root {
-  --toolbar-bgcolor: var(--toolbar-non-lwt-bgcolor);
-  --toolbar-color: var(--toolbar-non-lwt-textcolor);
   --toolbarbutton-border-radius: 4px;
-
   --tabs-navbar-shadow-size: 1px;
 
   --panel-separator-color: color-mix(in srgb, currentColor 25%, transparent);
