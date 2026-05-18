@@ -1563,6 +1563,13 @@ pub enum Appearance {
     Range,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     RangeThumb,
+	/// The resizer background area in a status bar for the resizer widget in
+    /// the corner of a window.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Resizerpanel,
+    /// The resizer itself.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Resizer,
     /// The scrollbar slider
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     ScrollbarHorizontal,

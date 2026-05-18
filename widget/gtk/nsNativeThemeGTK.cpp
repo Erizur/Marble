@@ -1189,10 +1189,9 @@ auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
                                          StyleAppearance aAppearance)
     -> NonNative {
   // WIP: TEST IF THIS WORKS
-  /*
   if (!StaticPrefs::widget_non_native_theme_enabled()) {
     return NonNative::No;
-  }*/
+  }
 
   if (IsWidgetScrollbarPart(aAppearance)) {
     if (StaticPrefs::widget_native_controls_scrollbar_style() == 0) {
@@ -1486,10 +1485,13 @@ bool nsNativeThemeGTK::WidgetAttributeChangeRequiresRepaint(
       (aAttribute == nsGkAtoms::curpos || aAttribute == nsGkAtoms::maxpos)) {
     // If 'curpos' has changed and we are passed its old value, we can
     // determine whether the button's enablement actually needs to change.
-    if (aAttribute == nsGkAtoms::curpos && aOldValue) {
-      int32_t curpos = CheckIntAttr(aFrame, nsGkAtoms::curpos, 0);
-      int32_t maxpos = CheckIntAttr(aFrame, nsGkAtoms::maxpos, 0);
-      nsAutoString str;
+    if (aAttribute == nsGkAtoms::curpos) {
+      // Because this logic is faulty, and because we don't have aOldValue
+      // anymore, we should just return true for now
+      return true;
+      /*int32_t curpos =
+      CheckIntAttr(aFrame, nsGkAtoms::curpos, 0); int32_t maxpos =
+      CheckIntAttr(aFrame, nsGkAtoms::maxpos, 0); nsAutoString str;
       aOldValue->ToString(str);
       nsresult err;
       int32_t oldCurpos = str.ToInteger(&err);
@@ -1501,11 +1503,10 @@ bool nsNativeThemeGTK::WidgetAttributeChangeRequiresRepaint(
         bool disabledNow =
             ShouldScrollbarButtonBeDisabled(curpos, maxpos, aAppearance);
         return (disabledBefore != disabledNow);
-      }
+      }*/
     } else {
       return true;
     }
-    return false;
   }
 
   // XXXdwh Not sure what can really be done here.  Can at least guess for
@@ -1539,7 +1540,7 @@ nsNativeThemeGTK::ThemeChanged() {
 
 static bool CanHandleScrollbar(const ComputedStyle& aStyle) {
   return !aStyle.StyleUI()->HasCustomScrollbars() &&
-         aStyle.StyleUIReset()->mScrollbarWidth != StyleScrollbarWidth::Thin;
+         aStyle.StyleUIReset()->ScrollbarWidth() != StyleScrollbarWidth::Thin;
 }
 
 NS_IMETHODIMP_(bool)
@@ -1697,7 +1698,7 @@ bool nsNativeThemeGTK::ThemeDrawsFocusForWidget(nsIFrame* aFrame,
   }
 }
 
-bool nsNativeThemeGTK::ThemeNeedsComboboxDropmarker() { return false; }
+bool nsNativeThemeGTK::ThemeNeedsComboboxDropmarker() { return true; }
 
 nsITheme::Transparency nsNativeThemeGTK::GetWidgetTransparency(
     nsIFrame* aFrame, StyleAppearance aAppearance) {
@@ -1710,7 +1711,7 @@ nsITheme::Transparency nsNativeThemeGTK::GetWidgetTransparency(
     case StyleAppearance::ScrollbarHorizontal:
       // Make scrollbar tracks opaque on the window's scroll frame to prevent
       // leaf layers from overlapping. See bug 1179780.
-      if (!(CheckBooleanAttr(aFrame, nsGkAtoms::root_) &&
+      if (!(CheckBooleanAttr(aFrame, nsGkAtoms::root) &&
             aFrame->PresContext()->IsRootContentDocumentCrossProcess() &&
             IsFrameContentNodeInNamespace(aFrame, kNameSpaceID_XUL))) {
         return eTransparent;
@@ -1723,31 +1724,6 @@ nsITheme::Transparency nsNativeThemeGTK::GetWidgetTransparency(
     default:
       return eUnknownTransparency;
   }
-}
-
-auto nsNativeThemeGTK::GetScrollbarSize(nsPresContext* aPresContext,
-                                         StyleScrollbarWidth aWidth,
-                                         Overlay aOverlay) -> ScrollbarSizes {
-  if (StaticPrefs::widget_non_native_theme_enabled()) {
-    return Theme::GetScrollbarSize(aPresContext, aWidth,
-                                                 aOverlay);
-  }
-
-  CSSIntCoord vertical;
-  CSSIntCoord horizontal;
-  if (aWidth != StyleScrollbarWidth::Thin) {
-    const ScrollbarGTKMetrics* verticalMetrics =
-        GetActiveScrollbarMetrics(GTK_ORIENTATION_VERTICAL);
-    const ScrollbarGTKMetrics* horizontalMetrics =
-        GetActiveScrollbarMetrics(GTK_ORIENTATION_HORIZONTAL);
-    vertical = verticalMetrics->size.scrollbar.width;
-    horizontal = horizontalMetrics->size.scrollbar.height;
-  } else {
-    auto unthemed = nsLayoutUtils::UnthemedScrollbarSize(aWidth);
-    vertical = horizontal = unthemed;
-  }
-  auto scale = aPresContext->CSSToDevPixelScale();
-  return {int32_t(vertical) * scale, int32_t(horizontal) * scale};
 }
 
 already_AddRefed<Theme> do_CreateNativeThemeDoNotUseDirectly() {

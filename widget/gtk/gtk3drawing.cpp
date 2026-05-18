@@ -776,7 +776,7 @@ static gint moz_gtk_scrollbar_button_paint(cairo_t* cr,
 
   gtk_style_context_save(style);
   gtk_style_context_add_class(style, GTK_STYLE_CLASS_BUTTON);
-  StyleContextSetScale(style, state->scale);
+  StyleContextSetScale(style, state->image_scale);
   gtk_style_context_set_state(style, state_flags);
   if (arrow_angle == ARROW_RIGHT) {
     gtk_style_context_add_class(style, GTK_STYLE_CLASS_RIGHT);
@@ -884,7 +884,7 @@ static gint moz_gtk_scrollbar_trough_paint(WidgetNodeType widget, cairo_t* cr,
                                ? MOZ_GTK_SCROLLBAR_THUMB_VERTICAL
                                : MOZ_GTK_SCROLLBAR_THUMB_HORIZONTAL;
     MozGtkSize thumbSize = GetMinMarginBox(GetStyleContext(thumb));
-    style = GetStyleContext(widget, state->scale, direction, state_flags);
+    style = GetStyleContext(widget, state->image_scale, direction, state_flags);
     MozGtkSize trackSize = GetMinContentBox(style);
     trackSize.Include(thumbSize);
     trackSize += GetMarginBorderPadding(style);
@@ -899,7 +899,7 @@ static gint moz_gtk_scrollbar_trough_paint(WidgetNodeType widget, cairo_t* cr,
       rect.height = trackSize.height;
     }
   } else {
-    style = GetStyleContext(widget, state->scale, direction, state_flags);
+    style = GetStyleContext(widget, state->image_scale, direction, state_flags);
   }
 
   moz_gtk_draw_styled_frame(style, cr, &rect, state->focused);
@@ -913,7 +913,7 @@ static gint moz_gtk_scrollbar_paint(WidgetNodeType widget, cairo_t* cr,
                                     GtkTextDirection direction) {
   GtkStateFlags state_flags = GetStateFlagsFromGtkWidgetState(state);
   GtkStyleContext* style =
-      GetStyleContext(widget, state->scale, direction, state_flags);
+      GetStyleContext(widget, state->image_scale, direction, state_flags);
 
   moz_gtk_update_scrollbar_style(style, widget, direction);
 
@@ -922,7 +922,7 @@ static gint moz_gtk_scrollbar_paint(WidgetNodeType widget, cairo_t* cr,
   style = GetStyleContext((widget == MOZ_GTK_SCROLLBAR_HORIZONTAL)
                               ? MOZ_GTK_SCROLLBAR_CONTENTS_HORIZONTAL
                               : MOZ_GTK_SCROLLBAR_CONTENTS_VERTICAL,
-                          state->scale, direction, state_flags);
+                          state->image_scale, direction, state_flags);
   moz_gtk_draw_styled_frame(style, cr, rect, state->focused);
 
   return MOZ_GTK_SUCCESS;
@@ -934,7 +934,7 @@ static gint moz_gtk_scrollbar_thumb_paint(WidgetNodeType widget, cairo_t* cr,
                                           GtkTextDirection direction) {
   GtkStateFlags state_flags = GetStateFlagsFromGtkWidgetState(state);
   GtkStyleContext* style =
-      GetStyleContext(widget, state->scale, direction, state_flags);
+      GetStyleContext(widget, state->image_scale, direction, state_flags);
 
   GtkOrientation orientation = (widget == MOZ_GTK_SCROLLBAR_THUMB_HORIZONTAL)
                                    ? GTK_ORIENTATION_HORIZONTAL

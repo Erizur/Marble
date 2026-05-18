@@ -77,8 +77,6 @@ class nsNativeThemeGTK final : public mozilla::widget::Theme {
 
   bool ThemeNeedsComboboxDropmarker() override;
   Transparency GetWidgetTransparency(nsIFrame*, StyleAppearance) override;
-  LayoutDeviceIntCoord GetScrollbarSize(nsPresContext*, StyleScrollbarWidth,
-                                   Overlay) override;
 
   nsNativeThemeGTK();
 
