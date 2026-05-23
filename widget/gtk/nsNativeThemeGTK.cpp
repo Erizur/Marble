@@ -1071,36 +1071,6 @@ LayoutDeviceIntMargin nsNativeThemeGTK::GetWidgetBorder(
   CSSIntMargin result;
   GtkTextDirection direction = GetTextDirection(aFrame);
   switch (aAppearance) {
-    case StyleAppearance::ScrollbarHorizontal:
-    case StyleAppearance::ScrollbarVertical: {
-      GtkOrientation orientation =
-          aAppearance == StyleAppearance::ScrollbarHorizontal
-              ? GTK_ORIENTATION_HORIZONTAL
-              : GTK_ORIENTATION_VERTICAL;
-      const ScrollbarGTKMetrics* metrics =
-          GetActiveScrollbarMetrics(orientation);
-
-      const GtkBorder& border = metrics->border.scrollbar;
-      result.top = border.top;
-      result.right = border.right;
-      result.bottom = border.bottom;
-      result.left = border.left;
-    } break;
-    case StyleAppearance::ScrollbartrackHorizontal:
-    case StyleAppearance::ScrollbartrackVertical: {
-      GtkOrientation orientation =
-          aAppearance == StyleAppearance::ScrollbartrackHorizontal
-              ? GTK_ORIENTATION_HORIZONTAL
-              : GTK_ORIENTATION_VERTICAL;
-      const ScrollbarGTKMetrics* metrics =
-          GetActiveScrollbarMetrics(orientation);
-
-      const GtkBorder& border = metrics->border.track;
-      result.top = border.top;
-      result.right = border.right;
-      result.bottom = border.bottom;
-      result.left = border.left;
-    } break;
     case StyleAppearance::Toolbox:
       // gtk has no toolbox equivalent.  So, although we map toolbox to
       // gtk's 'toolbar' for purposes of painting the widget background,
@@ -1188,12 +1158,16 @@ bool nsNativeThemeGTK::GetWidgetOverflow(nsDeviceContext* aContext,
 auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
                                          StyleAppearance aAppearance)
     -> NonNative {
-  // WIP: TEST IF THIS WORKS
-  if (!StaticPrefs::widget_non_native_theme_enabled()) {
-    return NonNative::No;
-  }
-
   if (IsWidgetScrollbarPart(aAppearance)) {
+    // GTK native scrollbar rendering cannot handle custom scrollbar colors
+    // (set via scrollbar-color CSS property) or thin scrollbar widths.
+    // In those cases, always use the non-native Theme drawing path.
+    ComputedStyle* cs = nsLayoutUtils::StyleForScrollbar(aFrame);
+    if (cs->StyleUI()->HasCustomScrollbars() ||
+        cs->StyleUIReset()->ScrollbarWidth() == StyleScrollbarWidth::Thin) {
+      return NonNative::Always;
+    }
+
     if (StaticPrefs::widget_native_controls_scrollbar_style() == 0) {
       return NonNative::No;
     } else if (StaticPrefs::widget_native_controls_scrollbar_style() == 1) {
@@ -1257,22 +1231,6 @@ LayoutDeviceIntSize nsNativeThemeGTK::GetMinimumWidgetSize(
 
   CSSIntSize result;
   switch (aAppearance) {
-    case StyleAppearance::ScrollbarbuttonUp:
-    case StyleAppearance::ScrollbarbuttonDown: {
-      const ScrollbarGTKMetrics* metrics =
-          GetActiveScrollbarMetrics(GTK_ORIENTATION_VERTICAL);
-
-      result.width = metrics->size.button.width;
-      result.height = metrics->size.button.height;
-    } break;
-    case StyleAppearance::ScrollbarbuttonLeft:
-    case StyleAppearance::ScrollbarbuttonRight: {
-      const ScrollbarGTKMetrics* metrics =
-          GetActiveScrollbarMetrics(GTK_ORIENTATION_HORIZONTAL);
-
-      result.width = metrics->size.button.width;
-      result.height = metrics->size.button.height;
-    } break;
     case StyleAppearance::Splitter: {
       if (IsHorizontal(aFrame)) {
         moz_gtk_splitter_get_metrics(GTK_ORIENTATION_HORIZONTAL, &result.width);
@@ -1280,34 +1238,37 @@ LayoutDeviceIntSize nsNativeThemeGTK::GetMinimumWidgetSize(
         moz_gtk_splitter_get_metrics(GTK_ORIENTATION_VERTICAL, &result.height);
       }
     } break;
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarVertical:
     case StyleAppearance::ScrollbarHorizontal:
-    case StyleAppearance::ScrollbarVertical: {
-      /* While we enforce a minimum size for the thumb, this is ignored
-       * for the some scrollbars if buttons are hidden (bug 513006) because
-       * the thumb isn't a direct child of the scrollbar, unlike the buttons
-       * or track. So add a minimum size to the track as well to prevent a
-       * 0-width scrollbar. */
-      GtkOrientation orientation =
-          aAppearance == StyleAppearance::ScrollbarHorizontal
-              ? GTK_ORIENTATION_HORIZONTAL
-              : GTK_ORIENTATION_VERTICAL;
-      const ScrollbarGTKMetrics* metrics =
-          GetActiveScrollbarMetrics(orientation);
-
-      result.width = metrics->size.scrollbar.width;
-      result.height = metrics->size.scrollbar.height;
-    } break;
     case StyleAppearance::ScrollbarthumbVertical:
     case StyleAppearance::ScrollbarthumbHorizontal: {
-      GtkOrientation orientation =
-          aAppearance == StyleAppearance::ScrollbarthumbHorizontal
-              ? GTK_ORIENTATION_HORIZONTAL
-              : GTK_ORIENTATION_VERTICAL;
-      const ScrollbarGTKMetrics* metrics =
-          GetActiveScrollbarMetrics(orientation);
-
-      result.width = metrics->size.thumb.width;
-      result.height = metrics->size.thumb.height;
+      auto* style = nsLayoutUtils::StyleForScrollbar(aFrame);
+      auto width = style->StyleUIReset()->ScrollbarWidth();
+      auto overlay = aPresContext->UseOverlayScrollbars() ? nsITheme::Overlay::Yes : nsITheme::Overlay::No;
+      auto relevantSize = GetScrollbarDrawing().GetCSSScrollbarSize(width, overlay);
+      const bool isHorizontal =
+          aAppearance == StyleAppearance::ScrollbarHorizontal ||
+          aAppearance == StyleAppearance::ScrollbarthumbHorizontal ||
+          aAppearance == StyleAppearance::ScrollbarbuttonLeft ||
+          aAppearance == StyleAppearance::ScrollbarbuttonRight;
+      
+      result.width = relevantSize;
+      result.height = relevantSize;
+      
+      if (aAppearance == StyleAppearance::ScrollbarHorizontal ||
+          aAppearance == StyleAppearance::ScrollbarVertical) {
+        // Always reserve some space in the right direction. Historically we've
+        // reserved 2 times the size in the other axis (for the buttons).
+        if (isHorizontal) {
+          result.width *= 2;
+        } else {
+          result.height *= 2;
+        }
+      }
     } break;
     case StyleAppearance::RangeThumb: {
       if (IsRangeHorizontal(aFrame)) {
@@ -1538,11 +1499,6 @@ nsNativeThemeGTK::ThemeChanged() {
   return NS_OK;
 }
 
-static bool CanHandleScrollbar(const ComputedStyle& aStyle) {
-  return !aStyle.StyleUI()->HasCustomScrollbars() &&
-         aStyle.StyleUIReset()->ScrollbarWidth() != StyleScrollbarWidth::Thin;
-}
-
 NS_IMETHODIMP_(bool)
 nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
                                       nsIFrame* aFrame,
@@ -1553,13 +1509,6 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
 
   if (IsWidgetNonNative(aFrame, aAppearance) == NonNative::Always) {
     return Theme::ThemeSupportsWidget(aPresContext, aFrame, aAppearance);
-  }
-
-  if (IsWidgetScrollbarPart(aAppearance)) {
-    ComputedStyle* cs = nsLayoutUtils::StyleForScrollbar(aFrame);
-    if (!CanHandleScrollbar(*cs)) {
-      return false;
-    }
   }
 
   switch (aAppearance) {

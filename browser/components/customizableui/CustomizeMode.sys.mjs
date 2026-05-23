@@ -29,6 +29,7 @@ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   BrowserUsageTelemetry: "resource:///modules/BrowserUsageTelemetry.sys.mjs",
   DragPositionManager: "resource:///modules/DragPositionManager.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
@@ -2112,7 +2113,7 @@ export class CustomizeMode {
       panel.hidePopup();
     };
 
-    let doc = this.document;
+    let doc = this.#document;
 
     function buildToolbarButton(aTheme) {
       let tbb = doc.createXULElement("toolbarbutton");
@@ -2137,7 +2138,7 @@ export class CustomizeMode {
       return tbb;
     }
 
-    let themes = await AddonManager.getAddonsByTypes(["theme"]);
+    let themes = await lazy.AddonManager.getAddonsByTypes(["theme"]);
     let currentTheme = themes.find(theme => theme.isActive);
 
     // Move the current theme (if any) and the default themes to the start:
@@ -2501,10 +2502,6 @@ export class CustomizeMode {
     };
     densityMenu.addEventListener("blur", resetDensity);
     densityMenu.addEventListener("mouseout", resetDensity);
-
-    this.$("customization-lwtheme-link").addEventListener("click", () => {
-      this.#openAddonsManagerThemes();
-    });
 
     this.$(kPaletteItemContextMenu).addEventListener("popupshowing", event => {
       this.#onPaletteContextMenuShowing(event);

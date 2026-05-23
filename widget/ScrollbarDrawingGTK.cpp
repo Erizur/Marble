@@ -39,6 +39,53 @@ LayoutDeviceIntSize ScrollbarDrawingGTK::GetMinimumWidgetSize(
   return size;
 }
 
+/*LayoutDeviceIntSize ScrollbarDrawingGTK::GetMinimumWidgetSize(
+    nsPresContext* aPresContext, StyleAppearance aAppearance,
+    nsIFrame* aFrame) {
+  MOZ_ASSERT(nsNativeTheme::IsWidgetScrollbarPart(aAppearance));
+
+  switch (aAppearance) {
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+      // For scrollbar-width:thin, we don't display the buttons.
+      if (IsScrollbarWidthThin(aFrame)) {
+        return LayoutDeviceIntSize{};
+      }
+      [[fallthrough]];
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal: {
+      // TODO: for short scrollbars it could be nice if the thumb could shrink
+      // under this size.
+      auto relevantSize = GetScrollbarSize(aPresContext, aFrame);
+      const bool isHorizontal =
+          aAppearance == StyleAppearance::ScrollbarHorizontal ||
+          aAppearance == StyleAppearance::ScrollbarthumbHorizontal ||
+          aAppearance == StyleAppearance::ScrollbarbuttonLeft ||
+          aAppearance == StyleAppearance::ScrollbarbuttonRight;
+      auto size = LayoutDeviceIntSize{relevantSize, relevantSize};
+      if (aAppearance == StyleAppearance::ScrollbarHorizontal ||
+          aAppearance == StyleAppearance::ScrollbarVertical) {
+        // Always reserve some space in the right direction. Historically we've
+        // reserved 2 times the size in the other axis (for the buttons).
+        // We do this even when painting thin scrollbars just for consistency,
+        // though there just one would probably do there.
+        if (isHorizontal) {
+          size.width *= 2;
+        } else {
+          size.height *= 2;
+        }
+      }
+      return size;
+    }
+    default:
+      return LayoutDeviceIntSize{};
+  }
+}*/
+
 Maybe<nsITheme::Transparency> ScrollbarDrawingGTK::GetScrollbarPartTransparency(
     nsIFrame* aFrame, StyleAppearance aAppearance) {
   if (!aFrame->PresContext()->UseOverlayScrollbars() &&
