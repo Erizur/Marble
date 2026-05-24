@@ -1264,80 +1264,132 @@ moz-input-box > menupopup .context-menu-add-engine > .menu-iconic-left::after {
 }
 
 @media not (-moz-proton) {
-  :root {
+  /* URL bar */
+  #urlbar,
+  #searchbar,
+  #searchbar-new {
     --urlbar-container-padding: 0px !important;
-    --urlbar-min-height: 30px !important;
-    --urlbar-icon-padding: 6px !important; /* (30px - 2px border - 16px icon) / 2 */
+    --urlbar-inner-border-radius: 0px !important;
+    &[breakout-extend] {
+      --urlbar-inner-border-radius: var(--photon-border-radius) !important;
+    }
+    --urlbar-height: 30px !important;
+    align-content: center !important;
+    :root[uidensity="touch"] & {
+      --urlbar-height: 36px !important;
+    }
+    :root[uidensity="compact"] & {
+      --urlbar-height: 26px !important;
+    }
+    :root:not([uidensity="touch"]) &[breakout-extend] {
+      translate: 0 1px !important;
+    }
+    &#searchbar,
+    &#searchbar-new {
+      --urlbar-min-height: 30px !important;
+      :root[uidensity="touch"] & {
+        --urlbar-min-height: 36px !important;
+      }
+      :root[uidensity="compact"] & {
+        --urlbar-min-height: 26px !important;
+      }
+    }
   }
-  :root[uidensity=compact] {
-    --urlbar-min-height: 26px !important;
-    --urlbar-icon-padding: 4px !important; /* (26px - 2px border - 16px icon) / 2 */
+  .urlbar-input-container {
+    border-radius: 0 !important;
   }
-  :root[uidensity=touch] {
-    --urlbar-min-height: 32px !important;
-    --urlbar-icon-padding: 7px !important; /* (32px - 2px border - 16px icon) / 2 */
+  #urlbar:not([breakout-extend]) {
+    height: var(--urlbar-height) !important;
+    max-height: var(--urlbar-height) !important;
+    min-height: var(--urlbar-height) !important;
   }
-
-  #urlbar-background, #searchbar {
-    background-clip: padding-box !important;
-    border-radius: var(--toolbarbutton-border-radius) !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+  :root[uidensity="touch"] #urlbar :is(#page-action-buttons,
+  .urlbar-input-box,
+  box) {
+    height: calc(var(--urlbar-height) - 2px) !important;
+    max-height: calc(var(--urlbar-height) - 2px) !important;
+    min-height: calc(var(--urlbar-height) - 2px) !important;
+    align-items: center !important;
   }
-  #urlbar-background:not(:-moz-lwtheme), #searchbar:not(:-moz-lwtheme) {
-    background-color: Field !important;
+  :root[uidensity="compact"] #urlbar :is(#page-action-buttons,
+  .urlbar-input-box,
+  box) {
+    height: var(--urlbar-height) !important;
+    max-height: var(--urlbar-height) !important;
+    min-height: var(--urlbar-height) !important;
+    align-items: center !important;
   }
-  
+  .urlbar-button {
+    align-self: center !important;
+  }
   #urlbar-container {
-    --urlbar-container-height: 40.00px !important;
-  }
-  :root[uidensity=compact] #urlbar-container {
-    --urlbar-container-height: 32.00px !important;
-  }
-  :root[uidensity=touch] #urlbar-container {
-    --urlbar-container-height: 40.00px !important;
-  }
-
-  @keyframes urlbar-grow-phroton {
-    0% {
-      transform: scaleX(0.99) scaleY(0.95);
+    --urlbar-container-height: 40px !important;
+    :root[uidensity="touch"] & {
+      --urlbar-container-height: 42px !important;
     }
-    100% {
-      transform: scale(1);
+    :root[uidensity="compact"] & {
+      --urlbar-container-height: 32px !important;
     }
   }
-  #urlbar {
-    --urlbar-height: 30.00px !important;
-    --urlbar-toolbar-height: 40.00px !important;
+  #searchbar:focus-within,
+  #searchbar-new:focus-within .urlbar-background {
+    border: 1px solid #0a84ff !important;
+    outline: none !important;
   }
-  :root[uidensity=compact] #urlbar {
-    --urlbar-height: 26.00px !important;
-    --urlbar-toolbar-height: 32.00px !important;
+  .search-go-button {
+    margin: 0 !important;
+    height: 100% !important;
   }
-  :root[uidensity=touch] #urlbar {
-    --urlbar-height: 32.00px !important;
-    --urlbar-toolbar-height: 40.00px !important;
+  .urlbar-input-container {
+    padding-left: 5px !important;
+    :root[uidensity="touch"] & {
+      margin-top: 0px !important;
+    }
+    #urlbar:not([breakout-extend]) & {
+      padding-inline: 0 !important;
+    }
+    #urlbar[breakout-extend] &,
+    :root:is([sizemode="maximized"],
+    [sizemode="fullscreen"]) & {
+      padding-right: 5px !important;
+    }
   }
-  #urlbar[open] #urlbar-background {
-    border-color: var(--toolbar-field-focus-border-color) !important;
+  #urlbar-results[wrap] .urlbarView-url {
+    margin-left: 26px !important;
   }
-  #urlbar[breakout][breakout-extend] {
-    top: -2px !important;
-    left: -7px !important;
-    width: calc(100% + 10px + 4px) !important;
+  .urlbarView-favicon {
+    margin-inline: 0px !important;
+    margin-right: 10px !important;
   }
-  #urlbar[breakout][breakout-extend] > #urlbar-background {
-    animation-name: urlbar-grow-phroton !important;
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.2) !important;
+  .urlbarView-type-icon {
+    margin-inline-start: calc(var(--urlbarView-favicon-width) - 6px) !important;
   }
-  #urlbar[breakout][breakout-extend] > #urlbar-input-container {
-    height: calc(var(--urlbar-toolbar-height) + 4px) !important;
-    padding-block: calc(2px + (var(--urlbar-toolbar-height) - var(--urlbar-height)) / 2) !important;
-    padding-inline: 7px !important;
+  .urlbarView-dynamic-quickactions-buttons > span {
+    box-shadow: none !important;
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent)
+  }
+  #urlbar-go-button,
+  .urlbar-go-button,
+  .urlbar-revert-button {
+    margin: 0 !important;
+    margin-inline-end: 1px !important;
+    align-self: center !important;
+  }
+  .urlbarView-action {
+    :root[uidensity="compact"] & {
+      translate: -1px -1px;
+    }
+    :root:not([uidensity]) & {
+      margin-block-end: -3px !important;
+      margin-inline-end: -3px !important;
+    }
   }
 
-    /* Adds a separator between the tracking-protection icon and the rest of the urlbar */
+  /* Adds a separator between the tracking-protection icon and the rest of the urlbar */
   #tracking-protection-icon-container {
     margin-right: 1px !important;
+    height: calc(var(--urlbar-height) - 2px) !important;
+    align-self: center !important;
     &:not(:hover, [open])::after {
       content: "";
       position: absolute;
@@ -1347,20 +1399,25 @@ moz-input-box > menupopup .context-menu-add-engine > .menu-iconic-left::after {
       top: 3px;
       border-right: 1px solid color-mix(in srgb, var(--toolbar-field-color, currentColor) 20%, transparent);
     }
-    &:is(:hover, [open]) {
+    &:is(:hover,
+    [open]) {
       padding-inline-end: calc(var(--urlbar-icon-padding) + 1px) !important;
       margin-right: 0px !important;
     }
   }
-  #urlbar[breakout][breakout-extend="true"] #tracking-protection-icon-container:not(:hover, :active, [open])::after {
+  #urlbar[breakout][breakout-extend] #tracking-protection-icon-container:not(:hover,
+  :active,
+  [open])::after {
     top: 2px;
   }
+
   /* Adds a separator between the Firefox/Nightly label and the urlbar */
   #identity-box.chromeUI {
     &[pageproxystate="invalid"] #identity-icon-box {
       margin-right: 5px !important;
     }
-    #identity-icon-box:not(:hover, [open]) {
+    #identity-icon-box:not(:hover,
+    [open]) {
       background: transparent !important;
     }
     #identity-icon-box::after {
@@ -1369,10 +1426,150 @@ moz-input-box > menupopup .context-menu-add-engine > .menu-iconic-left::after {
       translate: 6px 0px;
       height: calc(var(--urlbar-height) - 8px);
       border-left: 1px solid color-mix(in srgb, var(--toolbar-field-color, currentColor) 20%, transparent);
-      opacity: 0
+      opacity: 0;
     }
-    #identity-icon-box:not(:hover, :active, [open])::after {
+    #identity-icon-box:not(:hover,
+    :active,
+    [open])::after {
       opacity: 1;
+    }
+  }
+
+  /* Makes the page-action buttons full sized */
+  #identity-icon-box {
+    padding: 6px !important;
+  }
+  #identity-box {
+    height: calc(var(--urlbar-height) - 2px) !important;
+    align-self: center !important;
+  }
+  #page-action-buttons {
+    margin: -1px !important;
+  }
+  #translations-button-locale {
+    translate: 4px -2px;
+  }
+  toolbarbutton#urlbar-searchmode-switcher {
+    height: calc(var(--urlbar-height) - 2px) !important;
+    align-self: center !important;
+    padding: var(--urlbar-searchmodeswitcher-inline-padding) !important;
+    &:hover {
+      background-color: var(--urlbar-box-hover-bgcolor) !important;
+    }
+    &:hover:active,
+    &[open] {
+      background-color: var(--urlbar-box-active-bgcolor) !important;
+    }
+  }
+  .urlbar-page-action {
+    padding-block: calc(var(--urlbar-icon-padding) + 1px) !important;
+    height: calc(var(--urlbar-height) - 2px) !important;
+    width: var(--urlbar-height) !important;
+    &[translationsactive="true"] {
+      width: calc(var(--urlbar-height) + 20px) !important;
+    }
+    image {
+      translate: 1px !important;
+    }
+  }
+  .identity-box-button:not(:hover,
+  :active,
+  [open]) {
+    background-color: transparent !important;
+  }
+  #trust-icon-container {
+    align-self: center !important;
+  }
+  /* Compact mode fixes */
+  :root[uidensity="compact"] {
+    .urlbar-page-action {
+      padding-block: calc(var(--urlbar-icon-padding) + 2px) !important;
+      &[translationsactive="true"] {
+        width: calc(var(--urlbar-height) + 18px) !important;
+      }
+    }
+    .urlbar-page-action image {
+      translate: 2px !important;
+    }
+    .urlbar-input-container {
+      height: calc(var(--urlbar-height) + 2px) !important;
+    }
+    #urlbar[breakout-extend] {
+      padding-top: 4px !important;
+      #tracking-protection-icon-container, #identity-box {
+        height: calc(var(--urlbar-height) - 4px) !important;
+        margin-block: -2px !important;
+      }
+    }
+    #nav-bar {
+      height: 32px !important;
+    }
+  }
+  /* Touch mode fixes */
+  :root[uidensity="touch"] {
+    .urlbar-page-action {
+      padding-block: calc(var(--urlbar-icon-padding) + 3px) !important;
+      height: calc(var(--urlbar-height) - 1px) !important;
+    }
+    .urlbar-page-action image {
+      translate: 3px !important;
+    }
+    #tracking-protection-icon-container:not(:hover,
+    :active,
+    [open])::after {
+      top: 2px;
+    }
+    #trust-icon-container,
+    #identity-box {
+      align-self: start !important;
+    }
+  }
+
+  #urlbar[breakout][breakout-extend][open] > :is(#urlbar-background,
+  .urlbar-background) {
+    box-shadow: 0 5px 18px rgba(0,0,0,.2) !important;
+  }
+  #urlbar .search-one-offs *:not(toolbarseparator) {
+    color: var(--toolbarbutton-icon-fill) !important;
+  }
+
+  .urlbarView-row[has-action]:is([type=switchtab],
+  [type=remotetab],
+  [type=clipboard]) .urlbarView-action {
+    background-image: none !important;
+    color: var(--urlbar-box-text-color) !important;
+    background-color: var(--urlbar-box-focus-bgcolor);
+    border: none !important;
+    padding-inline: 8px !important;
+    &.urlbarView-userContext {
+      padding-top: 0;
+    }
+    .urlbarView-row:is([selected],
+    :hover) > .urlbarView-row-inner > .urlbarView-no-wrap > & {
+      color: var(--urlbarView-result-button-selected-color) !important;
+      background-color: var(--urlbarView-result-button-selected-background-color);
+    }
+  }
+
+  /* special case for review checker */
+  #shopping-sidebar-button[shoppingsidebaropen="true"] {
+    background-color: var(--urlbar-box-active-bgcolor);
+  }
+
+  /* URL bar zoom button */
+  #urlbar-zoom-button {
+    border-radius: 9px !important;
+    border: 1px solid var(--panel-separator-color) !important;
+    background-color: color-mix(in srgb, currentColor 9%, transparent) !important;
+    padding-block: 0 !important;
+    .toolbarbutton-text {
+      padding-inline: 4px !important;
+    }
+    &:hover {
+      background-color: color-mix(in srgb, currentColor 25%, transparent) !important;
+      &:active {
+        background-color: color-mix(in srgb, currentColor 30%, transparent) !important;
+      }
     }
   }
 }

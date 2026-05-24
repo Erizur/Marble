@@ -225,6 +225,7 @@
   skin/classic/browser/trending.svg                   (../shared/icons/trending.svg)
   skin/classic/browser/window.svg                     (../shared/icons/window.svg)
   skin/classic/browser/zoom.svg                       (../shared/icons/zoom.svg)
+  skin/classic/browser/close-tab.svg                  (../shared/icons/close-tab.svg)
 
 
   skin/classic/browser/search-engine-placeholder.png           (../shared/search/search-engine-placeholder.png)

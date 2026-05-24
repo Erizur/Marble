@@ -275,12 +275,12 @@ body {
     }
   }
   :root:not([lwtheme]) {
+    --toolbar-bgcolor: var(--toolbar-non-lwt-bgcolor) !important;
     --toolbar-color: var(--toolbar-non-lwt-textcolor) !important;
     --chrome-content-separator-color: #e1e1e2 !important;
     --toolbarbutton-icon-fill: unset !important;
     --toolbarbutton-icon-fill-opacity: .7 !important;
     --panel-separator-color: hsla(210,4%,10%,.14) !important;
-    --chrome-content-separator-color: #e1e1e2 !important;
     --toolbar-field-background-color: #f0f0f4 !important;
     --toolbar-field-border-color: hsla(240,5%,5%,.25) !important;
     --autocomplete-popup-background: var(--arrowpanel-background) !important;
@@ -483,6 +483,23 @@ body {
     background-image: var(--lwt-additional-images);
     background-repeat: var(--lwt-background-tiling);
     background-position: var(--lwt-background-alignment);
+    background-color: var(--lwt-accent-color);
+    color: inherit;
+
+    &:-moz-window-inactive {
+      background-color: var(--lwt-accent-color-inactive, var(--lwt-accent-color));
+    }
+  }
+
+  @media not (-moz-windows-glass) {
+    background-color: var(--toolbox-non-lwt-bgcolor);
+    
+    will-change: background-color;
+    transition: background-color var(--inactive-window-transition);
+
+    &:-moz-window-inactive {
+      background-color: var(--toolbox-non-lwt-bgcolor-inactive);
+    }
   }
 
   /* When a theme defines both theme_frame and additional_backgrounds, show
