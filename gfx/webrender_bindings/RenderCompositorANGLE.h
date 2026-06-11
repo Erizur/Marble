@@ -130,7 +130,8 @@ class RenderCompositorANGLE : public RenderCompositor {
                      bool* aNeedsYFlip) override;
 
  protected:
-  bool UseCompositor();
+  bool UseCompositor() const;
+  bool UseLayerCompositor() const;
   void InitializeUsePartialPresent();
   void InsertGraphicsCommandsFinishedWaitQuery(
       RenderedFrameId aRenderedFrameId);
@@ -140,12 +141,16 @@ class RenderCompositorANGLE : public RenderCompositor {
   void DestroyEGLSurface();
   ID3D11Device* GetDeviceOfEGLDisplay(nsACString& aError);
   bool CreateSwapChain(nsACString& aError);
-  void CreateSwapChainForDCompIfPossible(IDXGIFactory2* aDXGIFactory2);
+  void CreateSwapChainForDCompIfPossible();
+  bool CreateSwapChainForHWND();
   RefPtr<IDXGISwapChain1> CreateSwapChainForDComp(bool aUseTripleBuffering,
                                                   bool aUseAlpha);
   RefPtr<ID3D11Query> GetD3D11Query();
   void ReleaseNativeCompositorResources();
   HWND GetCompositorHwnd();
+
+  RefPtr<IDXGIDevice> DXGIDevice();
+  RefPtr<IDXGIFactory> DXGIFactory();
 
   RefPtr<gl::GLContext> mGL;
 
@@ -168,11 +173,12 @@ class RenderCompositorANGLE : public RenderCompositor {
   RenderedFrameId mLastCompletedFrameId;
 
   Maybe<LayoutDeviceIntSize> mBufferSize;
-  bool mUseNativeCompositor;
   bool mUsePartialPresent;
   bool mFullRender;
   // Used to know a timing of disabling native compositor.
   bool mDisablingNativeCompositor;
+  bool mFirstPresent = true;
+  RefPtr<layers::FenceD3D11> mFence;
 };
 
 }  // namespace wr
