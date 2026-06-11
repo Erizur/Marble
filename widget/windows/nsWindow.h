@@ -87,7 +87,8 @@ const CLSID CLSID_ImmersiveShell = {
  * Native WIN32 window wrapper.
  */
 
-class nsWindow final : public nsBaseWidget {
+class nsWindow final : public nsBaseWidget,
+                       public mozilla::SupportsThreadSafeWeakPtr<nsWindow> {
  public:
   using WindowHook = mozilla::widget::WindowHook;
   using IMEContext = mozilla::widget::IMEContext;
@@ -626,6 +627,8 @@ class nsWindow final : public nsBaseWidget {
   bool IsSimulatedClientArea(int32_t clientX, int32_t clientY);
   bool IsWindowButton(int32_t hitTestResult);
 
+  void SetColorScheme(const mozilla::Maybe<mozilla::ColorScheme>&) override;
+
   bool DispatchTouchEventFromWMPointer(UINT msg, LPARAM aLParam,
                                        const WinPointerInfo& aPointerInfo,
                                        mozilla::MouseButton aButton);
@@ -779,7 +782,7 @@ class nsWindow final : public nsBaseWidget {
   PlatformCompositorWidgetDelegate* mCompositorWidgetDelegate = nullptr;
 
   LayoutDeviceIntMargin NonClientSizeMargin() const {
-    return NonClientSizeMargin(mCustomNonClientMetrics.mOffset);
+    return NonClientSizeMargin(mNonClientOffset);
   }
   LayoutDeviceIntMargin NonClientSizeMargin(
       const LayoutDeviceIntMargin& aNonClientOffset) const;

@@ -101,6 +101,10 @@ LayoutDeviceIntSize InProcessWinCompositorWidget::GetClientSize() {
   return LayoutDeviceIntSize(r.right - r.left, r.bottom - r.top);
 }
 
+bool InProcessWinCompositorWidget::DrawsToMemoryDC() const {
+  return ::GetWindowLongPtrW(mWnd, GWL_EXSTYLE) & WS_EX_LAYERED;
+}
+
 already_AddRefed<gfx::DrawTarget>
 InProcessWinCompositorWidget::StartRemoteDrawing() {
   MutexAutoLock lock(mTransparentSurfaceLock);

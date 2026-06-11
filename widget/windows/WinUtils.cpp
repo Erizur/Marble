@@ -2017,11 +2017,6 @@ bool WinUtils::GetTimezoneName(wchar_t* aBuffer) {
   return true;
 }
 
-bool WinUtils::MicaEnabled() {
-  static bool sEnabled =
-      IsWin1122H2OrLater() && StaticPrefs::widget_windows_mica_AtStartup();
-  return sEnabled;
-}
 
 // There are undocumented APIs to query/change the system DPI settings found by
 // https://github.com/lihas/ . We use those APIs only for testing purpose, i.e.

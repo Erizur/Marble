@@ -138,7 +138,7 @@ void nsWindow::ForcePresent() {
 }
 
 bool nsWindow::OnPaint(HDC aDC, uint32_t aNestingLevel) {
-  DeviceResetReason resetReason = DeviceResetReason::OK;
+  gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
   if (gfxWindowsPlatform::GetPlatform()->DidRenderingDeviceReset(
           &resetReason)) {
     gfxCriticalNote << "(nsWindow) Detected device reset: " << (int)resetReason;
@@ -237,6 +237,7 @@ bool nsWindow::OnPaint(HDC aDC, uint32_t aNestingLevel) {
   }
 
   HDC hDC = aDC ? aDC : ::BeginPaint(mWnd, &ps);
+  bool usingMemoryDC = aDC != nullptr;
 
   bool forceRepaint = aDC || TransparencyMode::Transparent == mTransparencyMode;
   LayoutDeviceIntRegion region = GetRegionToPaint(forceRepaint, ps, hDC);
@@ -305,27 +306,17 @@ bool nsWindow::OnPaint(HDC aDC, uint32_t aNestingLevel) {
         return false;
       }
 
-        // don't need to double buffer with anything but GDI
-        BufferMode doubleBuffering = mozilla::layers::BufferMode::BUFFER_NONE;
-        switch (mTransparencyMode) {
-          case TransparencyMode::BorderlessGlass:
-          default:
-            // If we're not doing translucency, then double buffer
-            doubleBuffering = mozilla::layers::BufferMode::BUFFERED;
-            break;
-          case TransparencyMode::Transparent:
-            // If we're rendering with translucency, we're going to be
-            // rendering the whole window; make sure we clear it first
-            dt->ClearRect(
-                Rect(0.f, 0.f, dt->GetSize().width, dt->GetSize().height));
-            break;
+        // If we're rendering with translucency, we're going to be rendering
+        // the whole window; make sure we clear it first.
+        if (mTransparencyMode == TransparencyMode::Transparent) {
+          dt->ClearRect(
+              Rect(0.f, 0.f, dt->GetSize().width, dt->GetSize().height));
         }
 
     gfxContext thebesContext(dt);
 
       {
-        AutoLayerManagerSetup setupLayerManager(this, &thebesContext,
-                                                doubleBuffering);
+        AutoLayerManagerSetup setupLayerManager(this, &thebesContext);
         if (nsIWidgetListener* listener = GetPaintListener()) {
           result = listener->PaintWindow(this, region);
         }

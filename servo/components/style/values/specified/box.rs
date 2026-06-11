@@ -1525,6 +1525,13 @@ pub enum Appearance {
     /// Menu Popup background.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menupopup,
+    /// menu checkbox/radio appearances
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menucheckbox,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuradio,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuseparator,
     /// Menu item arrow.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menuarrow,
@@ -1626,6 +1633,9 @@ pub enum Appearance {
     /// A single tab in a tab widget.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Tab,
+    /// A single pane (inside the tabpanels container).
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Tabpanel,
     /// The tab panels container.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Tabpanels,

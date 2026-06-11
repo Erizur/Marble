@@ -344,8 +344,8 @@ impl CustomWindowClass for AppWindow {
                         win::HWND_TOP,
                         0,
                         0,
-                        me.renderer.min_width().try_into().unwrap(),
-                        me.renderer.min_height().try_into().unwrap(),
+                        me.renderer.min_size.0.try_into().unwrap(),
+                        me.renderer.min_size.1.try_into().unwrap(),
                         win::SWP_NOZORDER | win::SWP_NOACTIVATE | win::SWP_NOMOVE,
                     )
                 };

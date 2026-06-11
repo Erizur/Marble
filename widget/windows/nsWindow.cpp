@@ -752,10 +752,6 @@ nsWindow::~nsWindow() {
  *
  **************************************************************/
 
-// Allow Derived classes to modify the height that is passed
-// when the window is created or resized.
-int32_t nsWindow::GetHeight(int32_t aProposedHeight) { return aProposedHeight; }
-
 static bool ShouldCacheTitleBarInfo(WindowType aWindowType,
                                     BorderStyle aBorderStyle) {
   return (aWindowType == WindowType::TopLevel) &&
@@ -955,10 +951,9 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   }
 
   if (!mWnd) {
-    mWnd =
-        ::CreateWindowExW(extendedStyle, className, L"", style, aRect.X(),
-                          aRect.Y(), aRect.Width(), GetHeight(aRect.Height()),
-                          parent, nullptr, nsToolkit::mDllInstance, nullptr);
+    mWnd = ::CreateWindowExW(extendedStyle, className, L"", style, aRect.X(),
+                             aRect.Y(), aRect.Width(), aRect.Height(), parent,
+                             nullptr, nsToolkit::mDllInstance, nullptr);
   }
 
   if (!mWnd) {
@@ -1021,10 +1016,45 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
         PropVariantClear(&pv);
       }
     }
-    HICON icon =
-        ::LoadIconW(::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APPICON));
-    SetBigIcon(icon);
-    SetSmallIcon(icon);
+
+    bool loadSmallIconProperly =
+        Preferences::GetBool("browser.smallIcons.enabled", true);
+    bool useSeparateIcons =
+        Preferences::GetBool("browser.splitIcons.enabled", true);
+
+    HICON smallIcon;
+    if (loadSmallIconProperly) {
+      smallIcon = (HICON)::LoadImageW(
+          ::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APPICON),
+          IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON),
+          ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+    } else {
+      smallIcon = ::LoadIconW(::GetModuleHandleW(nullptr),
+                              MAKEINTRESOURCEW(IDI_APPICON));
+    }
+
+    if (useSeparateIcons) {
+      // This is commented/explained in the Nocturne source.
+      // Most of it doesn't apply to Marble (not my priority)
+      // but it's still good to look it up:
+      // https://github.com/raytek-cafe/Nocturne/commit/f881b8545c5347a009ed554d918fe9344906f962
+      if (loadSmallIconProperly) {
+        smallIcon = (HICON)::LoadImageW(
+            ::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(32512), IMAGE_ICON,
+            ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON),
+            LR_DEFAULTCOLOR);
+      } else {
+        smallIcon =
+            ::LoadIconW(::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(32512));
+      }
+      SetSmallIcon(smallIcon);
+      SetBigIcon(::LoadIconW(::GetModuleHandleW(nullptr),
+                              MAKEINTRESOURCEW(IDI_APPICON)));
+    } else {
+      SetSmallIcon(smallIcon);
+      SetBigIcon(::LoadIconW(::GetModuleHandleW(nullptr),
+                              MAKEINTRESOURCEW(IDI_APPICON)));
+    }
   }
 
   // If mDefaultScale is set before mWnd has been set, it will have the scale of
@@ -1398,8 +1428,6 @@ DWORD nsWindow::WindowExStyle() {
       }
       return WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME;
     }
-    case WindowType::Sheet:
-      MOZ_FALLTHROUGH_ASSERT("Sheets are macOS specific");
     case WindowType::TopLevel:
     case WindowType::Invisible:
       break;
@@ -1576,9 +1604,8 @@ void nsWindow::Show(bool aState) {
 #endif  // defined(ACCESSIBILITY)
   }
 
-  if (mForMenupopupFrame) {
-    MOZ_ASSERT(ChooseWindowClass(mWindowType, mForMenupopupFrame) ==
-               kClassNameDropShadow);
+  if (mWindowType == WindowType::Popup) {
+    MOZ_ASSERT(ChooseWindowClass(mWindowType) == kClassNameDropShadow);
     const bool shouldUseDropShadow = [&] {
       if (mTransparencyMode == TransparencyMode::Transparent) {
         return false;
@@ -1914,7 +1941,6 @@ void nsWindow::Move(double aX, double aY) {
 
   ResizeDirectManipulationViewport();
 }
-}
 
 // Resize this component
 void nsWindow::Resize(double aWidth, double aHeight, bool aRepaint) {
@@ -1955,7 +1981,7 @@ void nsWindow::Resize(double aWidth, double aHeight, bool aRepaint) {
       WINDOWPLACEMENT pl = {sizeof(WINDOWPLACEMENT)};
       VERIFY(::GetWindowPlacement(mWnd, &pl));
       pl.rcNormalPosition.right = pl.rcNormalPosition.left + width;
-      pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + GetHeight(height);
+      pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + height;
       mResizeState = RESIZING;
       VERIFY(::SetWindowPlacement(mWnd, &pl));
       mResizeState = NOT_RESIZING;
@@ -1969,8 +1995,7 @@ void nsWindow::Resize(double aWidth, double aHeight, bool aRepaint) {
       ClearThemeRegion();
       double oldScale = mDefaultScale;
       mResizeState = RESIZING;
-      VERIFY(
-          ::SetWindowPos(mWnd, nullptr, 0, 0, width, GetHeight(height), flags));
+      VERIFY(::SetWindowPos(mWnd, nullptr, 0, 0, width, height, flags));
 
       mResizeState = NOT_RESIZING;
       if (WinUtils::LogToPhysFactor(mWnd) != oldScale) {
@@ -2033,7 +2058,7 @@ void nsWindow::Resize(double aX, double aY, double aWidth, double aHeight,
     pl.rcNormalPosition.left += deltaX;
     pl.rcNormalPosition.right = pl.rcNormalPosition.left + width;
     pl.rcNormalPosition.top += deltaY;
-    pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + GetHeight(height);
+    pl.rcNormalPosition.bottom = pl.rcNormalPosition.top + height;
     VERIFY(::SetWindowPlacement(mWnd, &pl));
   } else {
     UINT flags = SWP_NOZORDER | SWP_NOACTIVATE;
@@ -2554,17 +2579,6 @@ void nsWindow::SetColorScheme(const Maybe<ColorScheme>& aScheme) {
                         sizeof dark);
 }
 
-void nsWindow::SetMicaBackdrop(bool aEnabled) {
-  if (!WinUtils::MicaEnabled()) {
-    return;
-  }
-
-  // Enable Mica Alt Material if available.
-  const DWM_SYSTEMBACKDROP_TYPE type =
-      aEnabled ? DWMSBT_TABBEDWINDOW : DWMSBT_AUTO;
-  DwmSetWindowAttribute(mWnd, DWMWA_SYSTEMBACKDROP_TYPE, &type, sizeof type);
-}
-
 LayoutDeviceIntMargin nsWindow::NormalWindowNonClientOffset() const {
   bool glass = StaticPrefs::widget_native_controls_force_dwm_report_off()
                    ? false
@@ -2656,8 +2670,6 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
 
   float dpi = GetDPI();
 
-  auto& metrics = mCustomNonClientMetrics;
-
   // mCaptionHeight is the default size of the NC area at
   // the top of the window. If the window has a caption,
   // the size is calculated as the sum of:
@@ -2703,7 +2715,7 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
                     : 0);
   }
 
-  metrics.mOffset = {};
+  mNonClientOffset = {};
   if (sizeMode == nsSizeMode_Fullscreen) {
     // Remove the default frame from the top of our fullscreen window.  This
     // makes the whole caption part of our client area, allowing us to draw
@@ -2762,7 +2774,7 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
       }
     }
   } else {
-    metrics.mOffset = NormalWindowNonClientOffset();
+    mNonClientOffset = NormalWindowNonClientOffset();
   }
 
   if (aReflowWindow) {
@@ -3852,7 +3864,7 @@ LayoutDeviceIntPoint nsWindow::WidgetToScreenOffset() {
   return LayoutDeviceIntPoint(point.x, point.y);
 }
 
-LayoutDeviceIntMargin nsWindow::ClientToWindowMargin() {
+LayoutDeviceIntMargin nsWindow::NormalSizeModeClientToWindowMargin() {
   if (mWindowType == WindowType::Popup && !IsPopupWithTitleBar()) {
     return {};
   }
