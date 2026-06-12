@@ -338,12 +338,16 @@ pref("browser.startup.couldRestoreSession.count", 0);
 // Show a skeleton UI window prior to loading libxul. Only visible for windows
 // users as it is not implemented anywhere else.
 #if defined(XP_WIN)
-pref("browser.startup.preXulSkeletonUI", true);
+pref("browser.startup.preXulSkeletonUI", false);
 
 // Whether the checkbox to enable Windows launch on login is shown
 pref("browser.startup.windowsLaunchOnLogin.enabled", true);
 // Whether to show the launch on login infobar notification
 pref("browser.startup.windowsLaunchOnLogin.disableLaunchOnLoginPrompt", false);
+
+// Legacy icons from nocturne
+pref("browser.smallIcons.enabled", true);
+pref("browser.splitIcons.enabled", true);
 #endif
 
 // Show an upgrade dialog on major upgrades.
