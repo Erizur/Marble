@@ -2434,8 +2434,7 @@ bool nsNativeThemeWin::WidgetAttributeChangeRequiresRepaint(
       aAppearance == StyleAppearance::Tabpanel ||
       aAppearance == StyleAppearance::Separator ||
       aAppearance == StyleAppearance::MozWinBorderlessGlass) {
-    *aShouldRepaint = false;
-    return NS_OK;
+    return false;
   }
 
   if (aAppearance == StyleAppearance::MozWindowTitlebar ||
@@ -2444,18 +2443,17 @@ bool nsNativeThemeWin::WidgetAttributeChangeRequiresRepaint(
       aAppearance == StyleAppearance::MozWindowButtonMinimize ||
       aAppearance == StyleAppearance::MozWindowButtonMaximize ||
       aAppearance == StyleAppearance::MozWindowButtonRestore) {
-    *aShouldRepaint = true;
-    return NS_OK;
+    return true;
   }
 
-  // We need to repaint the dropdown arrow in vista HTML combobox controls when
-  // the control is closed to get rid of the hover effect.
-  if ((aAppearance == StyleAppearance::Menulist ||
-       aAppearance == StyleAppearance::MenulistButton ||
-       aAppearance == StyleAppearance::MozMenulistArrowButton) &&
-      nsNativeTheme::IsHTMLContent(aFrame)) {
-    *aShouldRepaint = true;
-    return NS_OK;
+  // We need to repaint the dropdown arrow in HTML combobox controls when the
+  // control is closed to get rid of the hover effect.  We no longer have the
+  // frame here to restrict this to HTML content, so just repaint these widget
+  // types whenever an attribute changes.
+  if (aAppearance == StyleAppearance::Menulist ||
+      aAppearance == StyleAppearance::MenulistButton ||
+      aAppearance == StyleAppearance::MozMenulistArrowButton) {
+    return true;
   }
 
   // XXXdwh Not sure what can really be done here.  Can at least guess for
@@ -2463,20 +2461,17 @@ bool nsNativeThemeWin::WidgetAttributeChangeRequiresRepaint(
   // For example, a toolbar doesn't care about any states.
   if (!aAttribute) {
     // Hover/focus/active changed.  Always repaint.
-    *aShouldRepaint = true;
-  } else {
-    // Check the attribute to see if it's relevant.
-    // disabled, checked, dlgtype, default, etc.
-    *aShouldRepaint = false;
-    if (aAttribute == nsGkAtoms::disabled || aAttribute == nsGkAtoms::checked ||
-        aAttribute == nsGkAtoms::selected ||
-        aAttribute == nsGkAtoms::visuallyselected ||
-        aAttribute == nsGkAtoms::readonly || aAttribute == nsGkAtoms::open ||
-        aAttribute == nsGkAtoms::menuactive || aAttribute == nsGkAtoms::focused)
-      *aShouldRepaint = true;
+    return true;
   }
 
-  return NS_OK;
+  // Check the attribute to see if it's relevant.
+  // disabled, checked, dlgtype, default, etc.
+  return aAttribute == nsGkAtoms::disabled || aAttribute == nsGkAtoms::checked ||
+         aAttribute == nsGkAtoms::selected ||
+         aAttribute == nsGkAtoms::visuallyselected ||
+         aAttribute == nsGkAtoms::readonly || aAttribute == nsGkAtoms::open ||
+         aAttribute == nsGkAtoms::menuactive ||
+         aAttribute == nsGkAtoms::focused;
 }
 
 NS_IMETHODIMP
