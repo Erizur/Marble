@@ -1,6 +1,7 @@
 #filter substitution
 #include @TOPOBJDIR@/source-repo.h
 #include @TOPOBJDIR@/buildid.h
+#include @TOPOBJDIR@/brightwork-abi.h
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -167,6 +168,9 @@ export var AppConstants = Object.freeze({
   MOZ_APP_VERSION_DISPLAY: "@MOZ_APP_VERSION_DISPLAY@",
   MOZ_BUILDID: "@MOZ_BUILDID@",
   MOZ_BUILD_APP: "@MOZ_BUILD_APP@",
+
+  // Brightwork ABI. This is used by the Add-ons Manager BrightworkProvider to gate package compatibility.
+  MOZ_BRIGHTWORK_ABI: @MOZ_BRIGHTWORK_ABI@,
   MOZ_MACBUNDLE_ID: "@MOZ_MACBUNDLE_ID@",
   MOZ_MACBUNDLE_NAME: "@MOZ_MACBUNDLE_NAME@",
   MOZ_UPDATE_CHANNEL: "@MOZ_UPDATE_CHANNEL@",
