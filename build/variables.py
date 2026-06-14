@@ -9,6 +9,16 @@ from datetime import datetime
 
 SOURCESTAMP_FILENAME = "sourcestamp.txt"
 
+# Brightwork's ABI version, which lets you update the frontend code and invalidate
+# addons that don't follow the current ABI version.
+# This value should only be updated when a major release happens, and minor ones
+# should keep it as it is unless it's an emergency of sorts.
+MOZ_BRIGHTWORK_ABI = 1
+
+
+def brightwork_abi_header(output):
+    output.write("#define MOZ_BRIGHTWORK_ABI %d\n" % MOZ_BRIGHTWORK_ABI)
+
 
 def get_buildid():
     import buildconfig

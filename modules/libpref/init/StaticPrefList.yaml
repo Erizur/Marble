@@ -1751,6 +1751,24 @@
   value: false
   mirror: always
 
+#ifdef XP_WIN
+- name: browser.splitIcons.enabled
+  type: bool
+  value: true
+  mirror: always
+- name: browser.smallIcons.enabled
+  type: bool
+  value: true
+  mirror: always
+#endif
+
+# Id of the active Brightwork UI package, or empty for none. 
+# Set by the addons manager.
+- name: browser.brightwork.active
+  type: String
+  value: ""
+  mirror: never
+
 # Open PDFs in Edge with the --app flag if it is the default.
 - name: browser.pdf.launchDefaultEdgeAsApp
   type: bool
@@ -6783,6 +6801,7 @@
   value: true # Match naive behavior, but hopefully we can stop soon!
   mirror: always
 
+# I don't know if this does anything but i'll keep it here coz i removed it by accident
 - name: gfx.compositor.clearstate
   type: RelaxedAtomicBool
   value: false
@@ -7581,6 +7600,14 @@
 - name: gfx.webrender.layer-compositor-use-composition-surface
   type: bool
   value: true
+  mirror: once
+  # My experimental feature: Disabling DWM can bring back vsync.
+  # This isn't really useful when we are just spoofing it to be disabled,
+  # so this becomes optional and may not cause breakage if used properly.
+  # uhhhhhhhh
+- name: gfx.compositor.force-dwmless-vsync
+  type: bool
+  value: false
   mirror: once
 #endif
 
@@ -19043,13 +19070,6 @@
 - name: widget.windows.apply-dwm-resize-hack
   type: RelaxedAtomicInt32
   value: 2
-  mirror: always
-
-# Whether we use the mica backdrop for top level windows. Off by default for
-# now.
-- name: widget.windows.mica
-  type: bool
-  value: false
   mirror: always
 
 # Whether we paint the bottom taskbar edge on maximized windows.

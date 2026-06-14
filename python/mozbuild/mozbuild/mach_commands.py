@@ -3708,3 +3708,66 @@ def repackage_flatpak(
         template_dir,
         langpack_pattern,
     )
+
+
+# init Brightwork:
+def _brightwork_manifests(command_context):
+    """
+    Locate the FasterMake install manifests describing the chrome resources.
+
+    unified_install_dist_bin is the aggregate of every install_dist_bin* tier
+    (GRE + browser + the src/localization components), so it alone captures
+    all resources. Returns [] if the tree hasn't been staged yet.
+    """
+    faster_dir = os.path.join(command_context.topobjdir, "faster")
+    unified = os.path.join(faster_dir, "unified_install_dist_bin")
+    if os.path.exists(unified):
+        return [unified]
+    if os.path.isdir(faster_dir):
+        return sorted(
+            os.path.join(faster_dir, n)
+            for n in os.listdir(faster_dir)
+            if n.startswith("install_dist_bin") and not n.endswith(".track")
+        )
+    return []
+
+
+@Command(
+    "brightwork-extract",
+    category="post-build",
+    description="Assemble a self-contained standalone packager (source + ADK + tools) that rebuilds known omni.ja",
+)
+@CommandArgument(
+    "--output",
+    "-o",
+    default=None,
+    help="Directory to write the standalone repo into. ",
+)
+def brightwork_extract(command_context, output=None):
+    from mozpack.brightwork.extract import extract_standalone
+
+    config = command_context.config_environment
+    output = output or os.path.join(command_context.distdir, "bw-pkg")
+
+    manifests = _brightwork_manifests(command_context)
+    if not manifests:
+        print(
+            "No FasterMake install manifests found under %s/faster. Run "
+            "./mach build first."
+            % command_context.topobjdir
+        )
+        return 1
+
+    summary = extract_standalone(config, manifests, output)
+    print(
+        "Wrote standalone work dir to %s\n"
+        "  source files: %d (%.1f MiB)\n"
+        "  to build, use python on the root folder and build.py"
+        % (
+            output,
+            summary["source_files"],
+            summary["source_bytes"] / (1024 * 1024),
+            output,
+        )
+    )
+    return 0
