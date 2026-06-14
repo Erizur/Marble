@@ -119,6 +119,14 @@ function init() {
     document.getElementById("release").hidden = false;
   }
 
+  let boxLogo = document.getElementById("leftBox");
+  document.addEventListener("keydown", (e) => {
+    if (e.shiftKey) { boxLogo.setAttribute("sajoumode", ""); }
+  });
+  document.addEventListener("keyup", (e) => {
+    if (!e.shiftKey) { boxLogo.removeAttribute("sajoumode"); }
+  });
+
   document
     .getElementById("aboutDialogEscapeKey")
     .addEventListener("command", () => {

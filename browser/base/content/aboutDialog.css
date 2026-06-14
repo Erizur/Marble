@@ -29,6 +29,19 @@
   margin-inline-start: 30px;
 }
 
+#leftBox[sajoumode] {
+  background-image: image-set(url("chrome://branding/content/rihito-marble.png"), url("chrome://branding/content/rihito-marble@2x.png") 2x);
+  background-repeat: no-repeat;
+  background-size: 192px auto;
+  background-position: center 40px;
+  /* min-width and min-height create room for the logo; logo is 192px tall w/
+     40px above it, this leaves 8px on the bottom at the minimum height */
+  min-width: 210px;
+  min-height: 240px;
+  margin-top: 20px;
+  margin-inline-start: 30px;
+}
+
 #rightBox {
   background-image: url("chrome://branding/content/about-wordmark.svg");
   background-repeat: no-repeat;
