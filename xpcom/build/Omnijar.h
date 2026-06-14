@@ -48,6 +48,12 @@ class Omnijar {
    */
   static bool sIsUnified;
 
+  /**
+   * Whether a Brightwork custom omni.ja was loaded in place of the bundled
+   * one, per type.
+   */
+  static bool sBrightworkActive[2];
+
  public:
   enum Type { GRE = 0, APP = 1 };
 
@@ -162,6 +168,20 @@ class Omnijar {
    * The returned URI is guaranteed to end with a slash.
    */
   static nsresult GetURIString(Type aType, nsACString& aResult);
+
+  /**
+   * Computes a short fingerprint of the Brightwork custom omni.ja(s) the loader
+   * will select for aProfileDir, by inspecting disk directly, or leaves aResult
+   * empty when only bundled jars are in use. Folded into the startup
+   * compatibility-version string so that enabling, disabling or swapping a
+   * custom package invalidates the (otherwise same-build-ID) startup cache.
+   *
+   * Crucially this does NOT depend on Omnijar being initialized as it runs at the
+   * early compatibility check, before the pref service exist or we fully initialize stuff.
+   * aProfileDir may be null (the directory service is consulted as a fallback).
+   */
+  static void ComputeBrightworkFingerprint(nsIFile* aProfileDir,
+                                            nsACString& aResult);
 
  private:
   /**

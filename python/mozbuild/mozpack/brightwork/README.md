@@ -15,7 +15,7 @@ The fallback basically works by checking the ABI of the current addon at runtime
 
 ## AI code usage warning
 
-Because of this being a general **proof of concept** and because of how **complex** this task can become (Firefox's codebase is unironically large and a little complicated to navigate), most of the backend code (more specifically, the mach scripts and xpcom) was **conceptualized and developed** by an LLM. The frontend code (brightwork page in the addons section, localization, preferences, javascript, this README, designs and icons) was entirely written and done by hand me (AM_Erizur). The LLM-written code was tested and corrected in some (many) cases.
+Because of this being a general **proof of concept** and because of how **complex** this task can become (Firefox's codebase is unironically large and a little complicated to navigate), most of the backend code (more specifically, the mach scripts and xpcom) was **conceptualized and developed** by an LLM. The frontend code (brightwork page in the addons section, localization, preferences, javascript, this README, designs and icons) was entirely written and done by hand me (AM_Erizur). The LLM-written code was tested extensively and corrected in some (many) cases.
 
 Either way, you are free to completely ignore this feature if you don't feel confortable with knowing this and resort to other customization methods. I plan on continuing this by myself in the future.
 

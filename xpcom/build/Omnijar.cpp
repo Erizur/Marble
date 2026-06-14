@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "Omnijar.h"
+#include "brightwork-abi.h"  // this is a generated header from variables.py under mach!
 
 #include "nsDirectoryService.h"
 #include "nsDirectoryServiceDefs.h"
@@ -14,6 +15,11 @@
 #include "nsZipArchive.h"
 #include "nsNetUtil.h"
 
+#include "mozilla/Debug.h"
+#include "nsTArray.h"
+#include "prenv.h"
+#include "prio.h"
+
 namespace mozilla {
 
 StaticRefPtr<nsIFile> Omnijar::sPath[2];
@@ -21,10 +27,195 @@ StaticRefPtr<nsZipArchive> Omnijar::sReader[2];
 StaticRefPtr<nsZipArchive> Omnijar::sOuterReader[2];
 bool Omnijar::sInitialized = false;
 bool Omnijar::sIsUnified = false;
+bool Omnijar::sBrightworkActive[2] = {false, false};
 
 static const char* sProp[2] = {NS_GRE_DIR, NS_XPCOM_CURRENT_PROCESS_DIR};
 
 #define SPROP(Type) ((Type == mozilla::Omnijar::GRE) ? sProp[GRE] : sProp[APP])
+
+// BEGIN BRIGHTWORK.
+//
+// A custom jar is only accepted when its embedded brightwork.abi check declares an
+// ABI equal to MOZ_BRIGHTWORK_ABI. That constant is defined once in
+// build/variables.py (emitted to the generated brightwork-abi.h) and shared
+// with the front end via AppConstants, so the compatibility check has a single
+// source of truth. Any mismatch, missing token, or I/O error falls back to the bundled jar.
+
+// Parse the brightwork.abi entry and returns
+// false if it is missing or malformed.
+static bool ReadBrightworkAbi(nsZipArchive* aReader, uint32_t& aAbi) {
+  nsZipItemPtr<char> item(aReader, "brightwork.abi"_ns);
+  if (!item) {
+    return false;
+  }
+  nsDependentCSubstring data(item.Buffer(), item.Length());
+
+  int32_t nl = data.FindChar('\n');
+  nsCString line(
+      Substring(data, 0, nl == kNotFound ? data.Length() : nl));
+  line.Trim(" \t\r\n");
+
+  nsresult rv;
+  aAbi = line.ToInteger(&rv);
+  return NS_SUCCEEDED(rv);
+}
+
+static bool IsSafePackageId(const nsACString& aId) {
+  return !aId.IsEmpty() && aId.FindChar('/') < 0 && aId.FindChar('\\') < 0 &&
+         aId.Find(".."_ns) == kNotFound;
+}
+
+// Read the active package id from the profile's prefs.js. The native loader runs before
+// the pref service exists, so we parse the file directly. A bunch of boilerplate just for this!
+// Mr. T. (Take Me Higher) - Risky Men feat. Asuka M.
+static bool ReadActiveId(nsIFile* aPrefsJs, nsACString& aId) {
+  PRFileDesc* fd = nullptr;
+  if (NS_FAILED(aPrefsJs->OpenNSPRFileDesc(PR_RDONLY, 0, &fd)) || !fd) {
+    return false;
+  }
+  nsAutoCString contents;
+  char buf[4096];
+  int32_t n;
+  const uint32_t kMax = 4 * 1024 * 1024;  // memory cap
+  while ((n = PR_Read(fd, buf, sizeof(buf))) > 0) {
+    contents.Append(buf, n);
+    if (contents.Length() > kMax) {
+      break;
+    }
+  }
+  PR_Close(fd);
+
+  constexpr auto kKey = "\"browser.brightwork.active\""_ns;
+  int32_t at = contents.Find(kKey);
+  if (at < 0) {
+    return false;
+  }
+  
+  const int32_t len = static_cast<int32_t>(contents.Length());
+  int32_t pos = at + static_cast<int32_t>(kKey.Length());
+  while (pos < len && contents[pos] != ',') {
+    pos++;
+  }
+  pos++;  // past comma
+  while (pos < len && (contents[pos] == ' ' || contents[pos] == '\t')) {
+    pos++;
+  }
+  if (pos >= len || contents[pos] != '"') {
+    return false;
+  }
+  pos++;  // past opening quote
+  int32_t start = pos;
+  while (pos < len && contents[pos] != '"') {
+    pos++;
+  }
+  if (pos >= len) {
+    return false;
+  }
+  nsAutoCString id(Substring(contents, start, pos - start));
+  id.Trim(" \t\r\n");
+  if (!IsSafePackageId(id)) {
+    return false;
+  }
+  aId = id;
+  return true;
+}
+
+// Resolve the directory that should contain the active custom omni.jas.
+// Returns nullptr when nothing is opted in. Every directory-service lookup is
+// guarded so absent state (e.g. no profile yet) simply falls through.
+static already_AddRefed<nsIFile> ResolveBrightworkPackageDir(
+    nsIFile* aProfileOverride) {
+  // Environment override
+  const char* env = PR_GetEnv("MOZ_BRIGHTWORK_DIR");
+  if (env && *env) {
+    nsCOMPtr<nsIFile> dir;
+    if (NS_SUCCEEDED(NS_NewNativeLocalFile(nsDependentCString(env),
+                                           getter_AddRefs(dir)))) {
+      return dir.forget();
+    }
+    return nullptr;
+  }
+
+  // Profile-managed active package. Two callers reach this with the profile dir available at different
+  // times: the omnijar loader runs after SetProfile, so the directory service
+  // can supply it (aProfileOverride is null). The early compatibility /
+  // startup-cache check runs before SetProfile, so it passes the profile dir
+  // explicitly. Either way the pref service does not exist yet, so we read the
+  // persisted value from prefs.js directly.
+  nsCOMPtr<nsIFile> profDir = aProfileOverride;
+  if (!profDir && nsDirectoryService::gService) {
+    nsDirectoryService::gService->Get(NS_APP_USER_PROFILE_50_DIR,
+                                      NS_GET_IID(nsIFile),
+                                      getter_AddRefs(profDir));
+  }
+  if (profDir) {
+    nsCOMPtr<nsIFile> prefsJs;
+    profDir->Clone(getter_AddRefs(prefsJs));
+    if (prefsJs) {
+      prefsJs->AppendNative("prefs.js"_ns);
+      nsAutoCString id;
+      if (ReadActiveId(prefsJs, id)) {
+        nsCOMPtr<nsIFile> pkg;
+        profDir->Clone(getter_AddRefs(pkg));
+        pkg->AppendNative("brightwork"_ns);
+        pkg->AppendNative("packages"_ns);
+        pkg->AppendNative(id);
+        return pkg.forget();
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+static already_AddRefed<nsIFile> ResolveBrightworkCandidate(
+    mozilla::Omnijar::Type aType, nsIFile* aProfileOverride) {
+  nsCOMPtr<nsIFile> dir = ResolveBrightworkPackageDir(aProfileOverride);
+  if (!dir) {
+    return nullptr;
+  }
+  constexpr auto kOmnijarName = nsLiteralCString{MOZ_STRINGIFY(OMNIJAR_NAME)};
+  nsCOMPtr<nsIFile> file;
+  dir->Clone(getter_AddRefs(file));
+  if (!file) {
+    return nullptr;
+  }
+  // GRE jar at <dir>/omni.ja and the browser jar at <dir>/browser/omni.ja.
+  // this is a hardcoded lock but i find it consistent with how the layout gets produced
+  // under normal circumstances, so lets keep it like that here lol.
+  if (aType == mozilla::Omnijar::APP) {
+    file->AppendNative("browser"_ns);
+  }
+  file->AppendNative(kOmnijarName);
+  return file.forget();
+}
+
+static already_AddRefed<nsIFile> TryBrightwork(mozilla::Omnijar::Type aType) {
+  nsCOMPtr<nsIFile> file = ResolveBrightworkCandidate(aType, nullptr);
+  if (!file) {
+    return nullptr;
+  }
+  bool isFile = false;
+  if (NS_FAILED(file->IsFile(&isFile)) || !isFile) {
+    return nullptr;
+  }
+  RefPtr<nsZipArchive> reader = nsZipArchive::OpenArchive(file);
+  if (!reader) {
+    return nullptr;
+  }
+  uint32_t abi = 0;
+  if (!ReadBrightworkAbi(reader, abi) || abi != MOZ_BRIGHTWORK_ABI) {
+    printf_stderr(
+        "brightwork: rejecting custom %s omni.ja (abi %u, need %u); using "
+        "bundled\n",
+        aType == mozilla::Omnijar::GRE ? "GRE" : "APP", abi,
+        static_cast<unsigned>(MOZ_BRIGHTWORK_ABI));
+    return nullptr;
+  }
+  printf_stderr("brightwork: using custom %s omni.ja (abi %u)\n",
+                aType == mozilla::Omnijar::GRE ? "GRE" : "APP", abi);
+  return file.forget();
+}
 
 void Omnijar::CleanUpOne(Type aType) {
   if (sReader[aType]) {
@@ -34,6 +225,20 @@ void Omnijar::CleanUpOne(Type aType) {
     sOuterReader[aType] = nullptr;
   }
   sPath[aType] = nullptr;
+  sBrightworkActive[aType] = false;
+}
+
+void Omnijar::ComputeBrightworkFingerprint(nsIFile* aProfileDir,
+                                           nsACString& aResult) {
+  aResult.Truncate();
+  nsCOMPtr<nsIFile> dir = ResolveBrightworkPackageDir(aProfileDir);
+  if (!dir) {
+    return;
+  }
+  nsAutoCString leaf;
+  if (NS_SUCCEEDED(dir->GetNativeLeafName(leaf))) {
+    aResult.Assign(leaf);
+  }
 }
 
 nsresult Omnijar::InitOne(nsIFile* aPath, Type aType) {
@@ -41,6 +246,9 @@ nsresult Omnijar::InitOne(nsIFile* aPath, Type aType) {
   nsCOMPtr<nsIFile> file;
   if (aPath) {
     file = aPath;
+  } else if (nsCOMPtr<nsIFile> brightwork = TryBrightwork(aType)) {
+    file = brightwork;
+    sBrightworkActive[aType] = true;
   } else {
     nsCOMPtr<nsIFile> dir;
     MOZ_TRY(nsDirectoryService::gService->Get(SPROP(aType), NS_GET_IID(nsIFile),
@@ -51,8 +259,6 @@ nsresult Omnijar::InitOne(nsIFile* aPath, Type aType) {
 
   bool isFile = false;
   if (NS_FAILED(file->IsFile(&isFile)) || !isFile) {
-    // If we're not using an omni.jar for GRE, and we don't have an
-    // omni.jar for APP, check if both directories are the same.
     if ((aType == APP) && (!sPath[GRE])) {
       nsCOMPtr<nsIFile> greDir, appDir;
       bool equals;
