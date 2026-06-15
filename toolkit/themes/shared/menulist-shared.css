@@ -57,10 +57,7 @@ dropmarker:not([native]) {
   appearance: none;
   width: 12px;
   height: unset;
-}
-
-dropmarker:not([native])::part(icon) {
-  list-style-image: url(chrome://global/skin/icons/arrow-down.svg);
+  content: url(chrome://global/skin/icons/arrow-down-12.svg);
   -moz-context-properties: fill;
   fill: currentColor;
 }

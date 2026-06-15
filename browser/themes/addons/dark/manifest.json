@@ -17,14 +17,14 @@
   "theme": {
     "colors": {
       "tab_background_text": "rgb(249, 249, 250)",
-      "tab_selected": "rgb(66,65,77)",
-      "tab_text": "rgb(251,251,254)",
+      "tab_selected": "hsl(240, 1%, 20%)",
+      "tab_text": "rgb(249, 249, 250)",
       "icons": "rgb(249, 249, 250, 0.7)",
       "frame": "hsl(240, 5%, 5%)",
       "popup": "#4a4a4f",
       "popup_text": "rgb(249, 249, 250)",
       "popup_border": "#27272b",
-      "popup_highlight": "rgb(43,42,51)",
+      "popup_highlight": "rgb(42, 42, 46)",
       "tab_line": "#0a84ff",
       "toolbar": "hsl(240, 1%, 20%)",
       "toolbar_top_separator": "transparent",
@@ -32,31 +32,32 @@
       "toolbar_field": "rgb(71, 71, 73)",
       "toolbar_field_border": "rgba(249, 249, 250, 0.2)",
       "toolbar_field_text": "rgb(249, 249, 250)",
-      "toolbar_field_focus": "rgb(66,65,77)",
-      "toolbar_text": "rgb(251, 251, 254)",
+      "toolbar_field_focus": "rgb(74, 74, 79)",
+      "toolbar_text": "rgb(249, 249, 250)",
       "ntp_background": "#2A2A2E",
       "ntp_text": "rgb(249, 249, 250)",
       "sidebar": "#38383D",
       "sidebar_text": "rgb(249, 249, 250)",
       "sidebar_border": "rgba(255, 255, 255, 0.1)",
-      "button": "rgb(43,42,51)",
-      "button_hover": "rgb(82,82,94)",
-      "button_active": "rgb(91,91,102)",
-      "button_primary": "rgb(0, 221, 255)",
-      "button_primary_hover": "rgb(128, 235, 255)",
-      "button_primary_active": "rgb(170, 242, 255)",
-      "button_primary_color": "rgb(43, 42, 51)",
-      "input_background": "#42414D",
-      "input_color": "rgb(251,251,254)",
-      "urlbar_popup_separator": "rgb(82,82,94)",
-      "tab_icon_overlay_stroke": "rgb(66,65,77)",
-      "tab_icon_overlay_fill": "rgb(251,251,254)"
+      "button": "rgba(249, 249, 250, 0.1)",
+      "button_hover": "rgba(249, 249, 250, 0.15)",
+      "button_active": "rgba(249, 249, 250, 0.2)",
+      "button_primary": "#45a1ff",
+      "button_primary_hover": "#0a84ff",
+      "button_primary_active": "#0060df",
+      "button_primary_color": "#fff",
+      "input_background": "rgb(71, 71, 73)",
+      "input_color": "rgb(249, 249, 250)",
+      "urlbar_popup_separator": "#5F6670",
+      "tab_icon_overlay_stroke": "hsl(240, 1%, 20%)",
+      "tab_icon_overlay_fill": "rgb(249, 249, 250)"
     },
     "properties": {
       "panel_hover": "color-mix(in srgb, currentColor 9%, transparent)",
       "panel_active": "color-mix(in srgb, currentColor 14%, transparent)",
       "panel_active_darker": "color-mix(in srgb, currentColor 25%, transparent)",
       "toolbar_field_icon_opacity": "1",
+      "tabstrip_overlap": "0px",
       "zap_gradient": "linear-gradient(90deg, #9059FF 0%, #FF4AA2 52.08%, #FFBD4F 100%)"
     }
   },
@@ -81,6 +82,7 @@
     "properties": {
       "panel_active": "--arrowpanel-dimmed-further",
       "toolbar_field_icon_opacity": "--urlbar-icon-fill-opacity",
+      "tabstrip_overlap": "--lwt-tabstrip-overlap",
       "zap_gradient": "--panel-separator-zap-gradient"
     }
   }

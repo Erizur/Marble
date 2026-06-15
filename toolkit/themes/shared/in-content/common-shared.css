@@ -177,6 +177,27 @@
   }
 }
 
+/* Restore the Photon in-content palette */
+@media not (-moz-proton) {
+  :host(.anonymous-content-host),
+  :root {
+    --background-color-canvas: #f9f9fa;
+    --in-content-page-color: #0c0c0d;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :host(.anonymous-content-host),
+    :root {
+      --background-color-canvas: #2a2a2e;
+      --background-color-box: #202023;
+      --color-accent-primary: #45a1ff;
+      --button-text-color-primary: #fff;
+      --in-content-page-color: rgb(249, 249, 250);
+      --in-content-primary-button-text-color: #fff;
+    }
+  }
+}
+
 :root {
   appearance: none;
   background-color: var(--in-content-page-background);
@@ -294,6 +315,24 @@ xul|menulist {
   margin: 4px 8px;
   /* Ensure font-size isn't overridden by widget styling (e.g. in forms.css) */
   font-size: 1em;
+}
+
+@media not (-moz-proton) {
+  :host(.anonymous-content-host),
+  :root {
+    /* --button-border-radius drives moz-button */
+    --button-border-radius: 2px;
+    --in-content-button-background: color-mix(in srgb, currentColor 10%, transparent);
+    --in-content-button-background-hover: color-mix(in srgb, currentColor 20%, transparent);
+    --in-content-button-background-active: color-mix(in srgb, currentColor 30%, transparent);
+  }
+
+  button,
+  html|select,
+  html|input[type="color"],
+  xul|menulist {
+    border-radius: 2px;
+  }
 }
 
 button {
