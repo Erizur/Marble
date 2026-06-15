@@ -579,6 +579,7 @@ recommended-theme-1 = Feeling creative? <a data-l10n-name="link">Build your own 
 extension-heading = Manage Your Extensions
 theme-heading = Manage Your Themes
 plugin-heading = Manage Your Plugins
+brightwork-heading = Manage Your Brightwork Add-ons
 dictionary-heading = Manage Your Dictionaries
 locale-heading = Manage Your Languages
 updates-heading = Manage Your Updates
