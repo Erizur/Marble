@@ -12,6 +12,10 @@
     /* Create a stacking context for the box-shadow */
     position: relative;
     z-index: 1;
+
+    @media not (-moz-proton) {
+      box-shadow: 0 3px 10px -7px rgba(0, 0, 0, 0.5);
+    }
   }
 }
 

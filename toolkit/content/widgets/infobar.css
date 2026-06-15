@@ -96,3 +96,42 @@ strong {
 :host([type=system]) .content {
   margin-inline-start: 0;
 }
+
+@media not (-moz-proton) {
+  :host(.infobar) {
+    --info-bar-background-color: light-dark(var(--color-white), #38383d);
+    --info-bar-text-color: light-dark(var(--color-gray-100), rgb(249, 249, 250));
+    --message-bar-border-radius: 0;
+    --message-bar-border-color: light-dark(rgba(12, 12, 13, 0.2), rgba(249, 249, 250, 0.2));
+    border-inline: none;
+  }
+
+  :host(.infobar[type=warning]) {
+    --info-bar-background-color: #ffe900;
+    --info-bar-text-color: #0c0c0d;
+    --message-bar-border-color: color-mix(in srgb, currentColor 20%, transparent);
+    --message-bar-icon-color: currentColor;
+  }
+
+  :host(.infobar[type=critical]) {
+    --info-bar-background-color: #d70022;
+    --info-bar-text-color: #fff;
+    --message-bar-border-color: color-mix(in srgb, currentColor 20%, transparent);
+    --message-bar-icon-color: currentColor;
+  }
+
+  :host([message-bar-type=infobar]),
+  :host([message-bar-type=infobar]:first-of-type) {
+    margin: 0;
+  }
+
+  @media not (prefers-contrast) {
+    :host(.infobar) {
+      box-shadow: none;
+    }
+
+    :host(.infobar)::before {
+      background-image: none;
+    }
+  }
+}
