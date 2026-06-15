@@ -1068,6 +1068,12 @@ class AddonPageOptions extends HTMLElement {
           installAddonsFromFilePicker();
         }
         break;
+      case "install-brightwork-from-folder":
+        installBrightworkFromFolder();
+        break;
+      case "install-brightwork-from-file":
+        installBrightworkFromFile();
+        break;
       case "debug-addons":
         this.openAboutDebugging();
         break;
@@ -2833,7 +2839,8 @@ class AddonCard extends HTMLElement {
         );
       } else if (
         addon.type === "extension" ||
-        addon.type === "sitepermission"
+        addon.type === "sitepermission" ||
+        addon.type === "brightwork"
       ) {
         toggleDisabledButton.pressed = !addon.userDisabled;
       }
@@ -2997,7 +3004,11 @@ class AddonCard extends HTMLElement {
     if (addon.type != "theme") {
       this.card.querySelector(".theme-enable-button").remove();
     }
-    if (addon.type != "extension" && addon.type != "sitepermission") {
+    if (
+      addon.type != "extension" &&
+      addon.type != "sitepermission" &&
+      addon.type != "brightwork"
+    ) {
       this.card.querySelector(".extension-enable-button").remove();
     }
     let nameContainer = this.card.querySelector(".addon-name-container");

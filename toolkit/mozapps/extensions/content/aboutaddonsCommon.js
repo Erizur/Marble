@@ -7,6 +7,7 @@
 
 /* exported attachUpdateHandler, detachUpdateHandler,
  *          getBrowserElement, installAddonsFromFilePicker,
+ *          installBrightworkFromFolder, installBrightworkFromFile,
  *          isCorrectlySigned, isDisabledUnsigned, isDiscoverEnabled,
  *          isPending, loadReleaseNotes, openOptionsInTab, promiseEvent,
  *          shouldShowPermissionsPrompt, showPermissionsPrompt,
@@ -282,4 +283,67 @@ async function installAddonsFromFilePicker() {
       resolve(installs);
     });
   });
+}
+
+// --- Brightwork: install a custom UI package from a folder or a .zip/.bwpkg --
+
+function _brightworkProvider() {
+  return ChromeUtils.importESModule(
+    "resource://gre/modules/addons/BrightworkProvider.sys.mjs"
+  ).BrightworkProvider;
+}
+
+async function _pickBrightworkPath(mode, titleId, filter) {
+  let [title] = await document.l10n.formatMessages([{ id: titleId }]);
+  const nsIFilePicker = Ci.nsIFilePicker;
+  let fp = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+  fp.init(window.browsingContext, title.value, mode);
+  if (filter) {
+    let [filterName] = await document.l10n.formatMessages([
+      { id: "addon-install-brightwork-filter-name" },
+    ]);
+    try {
+      fp.appendFilter(filterName.value, filter);
+    } catch (e) {}
+  }
+  return new Promise(resolve => {
+    fp.open(result => {
+      resolve(result == nsIFilePicker.returnOK ? fp.file.path : null);
+    });
+  });
+}
+
+async function _doBrightworkInstall(path) {
+  if (!path) {
+    return;
+  }
+  try {
+    await _brightworkProvider().installFromPath(path);
+  } catch (e) {
+    // The provider already localizes its error detail; localize the title here.
+    let title = await document.l10n.formatValue("brightwork-install-failed-title");
+    Services.prompt.alert(window, title, e.message || String(e));
+    return;
+  }
+  if (window.gViewController) {
+    window.gViewController.loadView("list/brightwork");
+  }
+}
+
+async function installBrightworkFromFolder() {
+  let path = await _pickBrightworkPath(
+    Ci.nsIFilePicker.modeGetFolder,
+    "addon-install-brightwork-folder-dialog-title",
+    null
+  );
+  await _doBrightworkInstall(path);
+}
+
+async function installBrightworkFromFile() {
+  let path = await _pickBrightworkPath(
+    Ci.nsIFilePicker.modeOpen,
+    "addon-install-brightwork-file-dialog-title",
+    "*.zip;*.bwpkg"
+  );
+  await _doBrightworkInstall(path);
 }

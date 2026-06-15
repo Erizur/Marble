@@ -94,7 +94,7 @@ h2 {
 }
 
 .category[name="discover"] {
-  background-image: url("chrome://global/skin/icons/trophy.svg");
+  background-image: url("chrome://mozapps/skin/extensions/category-discover.svg");
 }
 .category[name="locale"] {
   background-image: url("chrome://mozapps/skin/extensions/category-languages.svg");
@@ -107,6 +107,9 @@ h2 {
 }
 .category[name="plugin"] {
   background-image: url("chrome://mozapps/skin/extensions/category-plugins.svg");
+}
+.category[name="brightwork"] {
+  background-image: url("chrome://mozapps/skin/extensions/category-brightwork.svg");
 }
 .category[name="dictionary"] {
   background-image: url("chrome://mozapps/skin/extensions/category-dictionaries.svg");
@@ -364,7 +367,7 @@ addon-card[expanded] .update-postponed-bar + .addon-card-message {
 }
 
 .addon-badge-recommended {
-  background-image: url("chrome://global/skin/icons/trophy.svg");
+  background-image: url("chrome://mozapps/skin/extensions/recommended.svg");
   background-size: 14px;
   fill: var(--orange-50);
 }
