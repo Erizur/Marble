@@ -2,8 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const SCREENSHOT_FORMAT = { format: "jpeg", quality: 75 };
-
 function RunScriptInFrame(win, script) {
   const contentPrincipal = win.document.nodePrincipal;
   const sandbox = Cu.Sandbox([contentPrincipal], {
@@ -203,10 +201,7 @@ const FrameworkDetector = {
       `;
       return RunScriptInFrame(window, script);
     } catch (e) {
-      console.error(
-        "GetWebcompatInfoFromParentProcess: Error detecting JS frameworks",
-        e
-      );
+      console.error("GetWebcompatInfo: Error detecting JS frameworks", e);
       return {
         fastclick: false,
         mobify: false,
@@ -218,31 +213,17 @@ const FrameworkDetector = {
 
 export class ReportBrokenSiteChild extends JSWindowActorChild {
   #getWebCompatInfo(docShell) {
-    return Promise.all([
-      this.#getConsoleLogs(docShell),
-      this.sendQuery("GetWebcompatInfoFromParentProcess", SCREENSHOT_FORMAT),
-    ])
-      .then(([consoleLog, infoFromParent]) => {
-        const { antitracking, browser, devicePixelRatio, screenshot } =
-          infoFromParent;
-
+    return Promise.all([this.#getConsoleLogs(docShell)])
+      .then(([consoleLog]) => {
         const win = docShell.domWindow;
 
         const frameworks = FrameworkDetector.checkWindow(win);
         const { languages, userAgent } = win.navigator;
 
-        if (browser.platform.name !== "linux") {
-          delete browser.prefs["layers.acceleration.force-enabled"];
-        }
-
         return {
-          antitracking,
-          browser,
           consoleLog,
-          devicePixelRatio,
           frameworks,
           languages,
-          screenshot,
           url: win.location.href,
           userAgent,
         };
@@ -484,9 +465,6 @@ export class ReportBrokenSiteChild extends JSWindowActorChild {
       }
       case "GetWebCompatInfo": {
         return this.#getWebCompatInfo(docShell);
-      }
-      case "GetConsoleLog": {
-        return this.#getLoggedMessages();
       }
     }
     return null;

@@ -1276,7 +1276,8 @@ nsJARChannel::OnStartRequest(nsIRequest* req) {
   LOG(("nsJARChannel::OnStartRequest [this=%p %s]\n", this, mSpec.get()));
 
   mRequest = req;
-  nsresult rv = mListener->OnStartRequest(this);
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  nsresult rv = listener->OnStartRequest(this);
   if (NS_FAILED(rv)) {
     return rv;
   }
@@ -1310,13 +1311,13 @@ nsJARChannel::OnStopRequest(nsIRequest* req, nsresult status) {
 
   if (NS_SUCCEEDED(mStatus)) mStatus = status;
 
-  if (mListener) {
+  if (nsCOMPtr<nsIStreamListener> listener = mListener) {
     if (!mOnDataCalled || NS_FAILED(status)) {
       RecordZeroLengthEvent(false, mSpec, status, mCanceled, mCanceledReason,
                             mLoadInfo);
     }
 
-    mListener->OnStopRequest(this, status);
+    listener->OnStopRequest(this, status);
     mListener = nullptr;
   }
 
@@ -1352,7 +1353,8 @@ nsJARChannel::OnDataAvailable(nsIRequest* req, nsIInputStream* stream,
   }
 
   mOnDataCalled = true;
-  rv = mListener->OnDataAvailable(this, stream, offset, count);
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  rv = listener->OnDataAvailable(this, stream, offset, count);
 
   // simply report progress here instead of hooking ourselves up as a
   // nsITransportEventSink implementation.

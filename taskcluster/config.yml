@@ -688,6 +688,11 @@ workers:
             implementation: generic-worker
             os: windows
             worker-type: 'win11-a64-24h2-builder'
+        b-win-aarch64-25h2:
+            provisioner: '{trust-domain}-{level}'
+            implementation: generic-worker
+            os: windows
+            worker-type: 'win11-a64-25h2-builder'
         image:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
@@ -970,6 +975,11 @@ workers:
             os: windows
             worker-type: '{alias}'
         win11-64-24h2(|-gpu|-source|-large):
+            provisioner: 'gecko-t'
+            implementation: generic-worker
+            os: windows
+            worker-type: '{alias}'
+        win11-64-25h2(-gpu|-webgpu):
             provisioner: 'gecko-t'
             implementation: generic-worker
             os: windows

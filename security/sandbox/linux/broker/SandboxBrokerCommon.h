@@ -32,7 +32,6 @@ class SandboxBrokerCommon {
     SANDBOX_FILE_STAT,
     SANDBOX_FILE_CHMOD,
     SANDBOX_FILE_LINK,
-    SANDBOX_FILE_SYMLINK,
     SANDBOX_FILE_MKDIR,
     SANDBOX_FILE_RENAME,
     SANDBOX_FILE_RMDIR,
@@ -53,7 +52,6 @@ class SandboxBrokerCommon {
   USING_OP(SANDBOX_FILE_STAT);
   USING_OP(SANDBOX_FILE_CHMOD);
   USING_OP(SANDBOX_FILE_LINK);
-  USING_OP(SANDBOX_FILE_SYMLINK);
   USING_OP(SANDBOX_FILE_MKDIR);
   USING_OP(SANDBOX_FILE_RENAME);
   USING_OP(SANDBOX_FILE_RMDIR);
@@ -68,6 +66,16 @@ class SandboxBrokerCommon {
   static bool OperationIsValid(Operation aOp) {
     return static_cast<unsigned>(aOp) <=
            static_cast<unsigned>(SANDBOX_OP_MAX_VALUE);
+  }
+
+  static int OperationPaths(Operation aOp) {
+    switch (aOp) {
+      case SANDBOX_FILE_LINK:
+      case SANDBOX_FILE_RENAME:
+        return 2;
+      default:
+        return 1;
+    }
   }
 
   static unsigned OperationToInt(Operation);

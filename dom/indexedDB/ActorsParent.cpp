@@ -6550,7 +6550,8 @@ class DeserializeIndexValueHelper final : public Runnable {
         mLocale(aLocale),
         mCloneReadInfo(aCloneReadInfo),
         mUpdateInfoArray(aUpdateInfoArray),
-        mStatus(NS_ERROR_FAILURE) {}
+        mStatus(NS_ERROR_FAILURE),
+        mDone{false} {}
 
   nsresult DispatchAndWait() {
     // FIXME(Bug 1637530) Re-enable optimization using a non-system-principaled
@@ -6582,7 +6583,10 @@ class DeserializeIndexValueHelper final : public Runnable {
     RefPtr<Runnable> self = this;
     QM_TRY(MOZ_TO_RESULT(SchedulerGroup::Dispatch(self.forget())));
 
-    lock.Wait();
+    while (!mDone) {
+      lock.Wait();
+    }
+
     return mStatus;
   }
 
@@ -6645,10 +6649,11 @@ class DeserializeIndexValueHelper final : public Runnable {
     mStatus = aStatus;
 
     MonitorAutoLock lock(mMonitor);
+    mDone = true;
     lock.Notify();
   }
 
-  Monitor mMonitor MOZ_UNANNOTATED;
+  Monitor mMonitor;
 
   const int64_t mIndexID;
   const KeyPath& mKeyPath;
@@ -6657,6 +6662,7 @@ class DeserializeIndexValueHelper final : public Runnable {
   StructuredCloneReadInfoParent& mCloneReadInfo;
   nsTArray<IndexUpdateInfo>& mUpdateInfoArray;
   nsresult mStatus;
+  bool mDone MOZ_GUARDED_BY(mMonitor);
 };
 
 auto DeserializeIndexValueToUpdateInfos(

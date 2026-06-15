@@ -139,8 +139,8 @@ bool CompositorManagerChild::CreateContentCompositorBridge(
   CompositorBridgeOptions options = ContentCompositorOptions();
 
   RefPtr<CompositorBridgeChild> bridge = new CompositorBridgeChild(sInstance);
-  if (NS_WARN_IF(
-          !sInstance->SendPCompositorBridgeConstructor(bridge, options))) {
+  if (NS_WARN_IF(!sInstance->SendPCompositorBridgeConstructor(bridge, options,
+                                                              aNamespace))) {
     return false;
   }
 
@@ -169,8 +169,8 @@ CompositorManagerChild::CreateWidgetCompositorBridge(
       aInnerWindowId);
 
   RefPtr<CompositorBridgeChild> bridge = new CompositorBridgeChild(sInstance);
-  if (NS_WARN_IF(
-          !sInstance->SendPCompositorBridgeConstructor(bridge, options))) {
+  if (NS_WARN_IF(!sInstance->SendPCompositorBridgeConstructor(bridge, options,
+                                                              aNamespace))) {
     return nullptr;
   }
 
@@ -191,8 +191,8 @@ CompositorManagerChild::CreateSameProcessWidgetCompositorBridge(
   CompositorBridgeOptions options = SameProcessWidgetCompositorOptions();
 
   RefPtr<CompositorBridgeChild> bridge = new CompositorBridgeChild(sInstance);
-  if (NS_WARN_IF(
-          !sInstance->SendPCompositorBridgeConstructor(bridge, options))) {
+  if (NS_WARN_IF(!sInstance->SendPCompositorBridgeConstructor(bridge, options,
+                                                              aNamespace))) {
     return nullptr;
   }
 

@@ -355,32 +355,37 @@ export class ReportBrokenSiteParent extends JSWindowActorParent {
     return dataURL;
   }
 
-  async receiveMessage(msg) {
-    switch (msg.name) {
-      case "GetWebcompatInfoFromParentProcess": {
-        const { browsingContext } = msg.target;
-        const { format, quality } = msg.data;
-        const screenshot = await this.#getScreenshot(
-          browsingContext,
-          format,
-          quality
-        ).catch(e => {
-          console.error("Report Broken Site: getting a screenshot failed", e);
-          return Promise.resolve(undefined);
-        });
+  async getWebCompatInfo(options = {}) {
+    const { browsingContext } = this;
 
-        const zoom = browsingContext.fullZoom;
-        const scale = browsingContext.topChromeWindow?.devicePixelRatio || 1;
-        const devicePixelRatio = scale * zoom;
-
-        return {
-          antitracking: this.#getAntitrackingInfo(msg.target.browsingContext),
-          browser: await this.#getBrowserInfo(),
-          devicePixelRatio,
-          screenshot,
-        };
-      }
+    let info = {};
+    try {
+      info = await this.sendQuery("GetWebCompatInfo");
+    } catch (e) {
+      console.error("Report Broken Site: failed to get child data", e);
     }
-    return null;
+
+    info.antitracking = this.#getAntitrackingInfo(browsingContext);
+    info.browser = await this.#getBrowserInfo();
+
+    if (info.browser.platform.name !== "linux") {
+      delete info.browser.prefs["layers.acceleration.force-enabled"];
+    }
+
+    const zoom = browsingContext.fullZoom;
+    const scale = browsingContext.topChromeWindow?.devicePixelRatio || 1;
+    info.devicePixelRatio = scale * zoom;
+
+    try {
+      info.screenshot = await this.#getScreenshot(
+        browsingContext,
+        options.screenshotFormat || "jpeg",
+        options.screenshotQuality || 75
+      );
+    } catch (e) {
+      console.error("Report Broken Site: failed to get a screenshot", e);
+    }
+
+    return info;
   }
 }

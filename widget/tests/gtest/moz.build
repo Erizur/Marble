@@ -7,6 +7,8 @@
 UNIFIED_SOURCES = [
     "TestTimeConverter.cpp",
     "TestTouchResampler.cpp",
+    "TestWidgetMouseEventCtors.cpp",
+    "TestWidgetTouchEventCtors.cpp",
 ]
 
 if CONFIG["OS_ARCH"] == "WINNT":

@@ -104,18 +104,6 @@ class Call {
   // remove this method interface.
   virtual RtpTransportControllerSendInterface* GetTransportControllerSend() = 0;
 
-  // A class that keeps track of payload types on the transport(s), and
-  // suggests new ones when needed.
-  virtual PayloadTypeSuggester* GetPayloadTypeSuggester() {
-    // TODO: https://issues.webrtc.org/360058654 - make pure virtual
-    RTC_CHECK_NOTREACHED();
-    return nullptr;
-  }
-  virtual void SetPayloadTypeSuggester(PayloadTypeSuggester* /* suggester */) {
-    // TODO: https://issues.webrtc.org/360058654 - make pure virtual
-    RTC_CHECK_NOTREACHED();
-  }
-
   // Returns the call statistics, such as estimated send and receive bandwidth,
   // pacing delay, etc.
   virtual Stats GetStats() const = 0;

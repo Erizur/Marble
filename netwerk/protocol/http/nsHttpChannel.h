@@ -305,7 +305,13 @@ class nsHttpChannel final : public HttpBaseChannel,
 
   // Based on the proxy configuration determine the strategy for resolving the
   // end server host name.
-  ProxyDNSStrategy GetProxyDNSStrategy();
+  nsIHttpChannelInternal::ProxyDNSStrategy ComputeProxyDNSStrategy();
+
+ public:
+  NS_IMETHOD GetProxyDNSStrategy(
+      nsIHttpChannelInternal::ProxyDNSStrategy* aStrategy) override;
+
+ private:
   bool DispatchRelease();
 
   // We might synchronously or asynchronously call BeginConnect,

@@ -1498,20 +1498,25 @@ void BrowserChild::ProcessPendingCoalescedMouseDataAndDispatchEvents() {
     UniquePtr<CoalescedMouseData> data(
         static_cast<CoalescedMouseData*>(mToBeDispatchedMouseData.PopFront()));
 
-    UniquePtr<WidgetMouseEvent> event = data->TakeCoalescedEvent();
-    if (event) {
+    if (const UniquePtr<WidgetMouseEvent> mouseOrPointerEvent =
+            data->TakeCoalescedEvent()) {
+      MOZ_ASSERT_IF(mouseOrPointerEvent->AsPointerEvent(),
+                    IsPointerEventMessage(mouseOrPointerEvent->mMessage));
+      MOZ_ASSERT_IF(!mouseOrPointerEvent->AsPointerEvent(),
+                    !IsPointerEventMessage(mouseOrPointerEvent->mMessage));
       // When the real mouse event receivers put the received event into the
       // queue, they should dispatch eMouseRawUpdate event immediately (if and
       // only if it's required).  Therefore, unless the event is the last one
       // of the queue, the pending events should've been marked as "Do not
       // convert to "pointerrawupdate".
       MOZ_ASSERT_IF(mToBeDispatchedMouseData.GetSize() > 0,
-                    !event->convertToPointerRawUpdate);
+                    !mouseOrPointerEvent->convertToPointerRawUpdate);
       // Dispatch the pending events. Using HandleRealMouseButtonEvent
       // to bypass the coalesce handling in RecvRealMouseMoveEvent. Can't use
       // RecvRealMouseButtonEvent because we may also put some mouse events
       // other than mousemove.
-      HandleRealMouseButtonEvent(*event, data->GetScrollableLayerGuid(),
+      HandleRealMouseButtonEvent(*mouseOrPointerEvent,
+                                 data->GetScrollableLayerGuid(),
                                  data->GetInputBlockId());
     }
   }
@@ -1557,19 +1562,21 @@ void BrowserChild::FlushAllCoalescedMouseData() {
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
+  MOZ_ASSERT(!aMouseEvent.AsPointerEvent());
+  MOZ_ASSERT(!aMouseEvent.AsDragEvent());
   if (mCoalesceMouseMoveEvents && mCoalescedMouseEventFlusher) {
     CoalescedMouseData* data =
-        mCoalescedMouseData.GetOrInsertNew(aEvent.pointerId);
+        mCoalescedMouseData.GetOrInsertNew(aMouseEvent.pointerId);
     MOZ_ASSERT(data);
-    if (data->CanCoalesce(aEvent, aGuid, aInputBlockId,
+    if (data->CanCoalesce(aMouseEvent, aGuid, aInputBlockId,
                           mCoalescedMouseEventFlusher->GetRefreshDriver())) {
-      // We don't need to dispatch aEvent immediately.  However, we need to
+      // We don't need to dispatch aMouseEvent immediately.  However, we need to
       // dispatch eMouseRawUpdate immediately if there is a `pointerrawupdate`
       // event listener.  Therefore, the cloned event in the queue shouldn't
       // cause eMouseRawUpdate later when it'll be dispatched.
-      WidgetMouseEvent pendingMouseMoveEvent(aEvent);
+      WidgetMouseEvent pendingMouseMoveEvent(aMouseEvent);
       pendingMouseMoveEvent.convertToPointerRawUpdate = false;
       data->Coalesce(pendingMouseMoveEvent, aGuid, aInputBlockId);
       mCoalescedMouseEventFlusher->StartObserver();
@@ -1589,13 +1596,14 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
     // Put new data to replace the old one in the hash table.
     CoalescedMouseData* newData =
         mCoalescedMouseData
-            .InsertOrUpdate(aEvent.pointerId, MakeUnique<CoalescedMouseData>())
+            .InsertOrUpdate(aMouseEvent.pointerId,
+                            MakeUnique<CoalescedMouseData>())
             .get();
-    // We don't want to dispatch aEvent immediately.  However, we need to
+    // We don't want to dispatch aMouseEvent immediately.  However, we need to
     // dispatch eMouseRawUpdate immediately if there is a `pointerrawupdate`
     // event listener.  Therefore, the cloned event in the queue shouldn't
     // cause eMouseRawUpdate later when it'll be dispatched.
-    WidgetMouseEvent pendingMouseMoveEvent(aEvent);
+    WidgetMouseEvent pendingMouseMoveEvent(aMouseEvent);
     pendingMouseMoveEvent.convertToPointerRawUpdate = false;
     newData->Coalesce(pendingMouseMoveEvent, aGuid, aInputBlockId);
 
@@ -1608,7 +1616,7 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
     return IPC_OK();
   }
 
-  if (!RecvRealMouseButtonEvent(aEvent, aGuid, aInputBlockId)) {
+  if (!RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId)) {
     return IPC_FAIL_NO_REASON(this);
   }
   return IPC_OK();
@@ -1617,6 +1625,8 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
 void BrowserChild::HandleMouseRawUpdateEvent(
     const WidgetMouseEvent& aPendingMouseEvent,
     const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
+  MOZ_ASSERT(!aPendingMouseEvent.AsPointerEvent());
+  MOZ_ASSERT(!aPendingMouseEvent.AsDragEvent());
   // If there is no window containing pointerrawupdate event listeners or the
   // event is a synthesized mousemove, we don't need to dispatch eMouseRawUpdate
   // event.
@@ -1636,44 +1646,45 @@ void BrowserChild::HandleMouseRawUpdateEvent(
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEventForTests(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseMoveEvent(aEvent, aGuid, aInputBlockId);
+  return RecvRealMouseMoveEvent(aMouseEvent, aGuid, aInputBlockId);
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvNormalPriorityRealMouseMoveEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseMoveEvent(aEvent, aGuid, aInputBlockId);
+  return RecvRealMouseMoveEvent(aMouseEvent, aGuid, aInputBlockId);
 }
 
 mozilla::ipc::IPCResult
 BrowserChild::RecvNormalPriorityRealMouseMoveEventForTests(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseMoveEvent(aEvent, aGuid, aInputBlockId);
+  return RecvRealMouseMoveEvent(aMouseEvent, aGuid, aInputBlockId);
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvSynthMouseMoveEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  if (!RecvRealMouseButtonEvent(aEvent, aGuid, aInputBlockId)) {
+  if (!RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId)) {
     return IPC_FAIL_NO_REASON(this);
   }
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvNormalPrioritySynthMouseMoveEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvSynthMouseMoveEvent(aEvent, aGuid, aInputBlockId);
+  return RecvSynthMouseMoveEvent(aMouseEvent, aGuid, aInputBlockId);
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseButtonEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-    const uint64_t& aInputBlockId) {
+    const WidgetMouseEvent& aMouseOrPointerEvent,
+    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
+  MOZ_ASSERT(!aMouseOrPointerEvent.AsDragEvent());
   if (mCoalesceMouseMoveEvents && mCoalescedMouseEventFlusher &&
-      aEvent.mMessage != eMouseMove) {
+      aMouseOrPointerEvent.mMessage != eMouseMove) {
     // When receiving a mouse event other than mousemove, we have to dispatch
     // all coalesced events before it. However, we can't dispatch all pending
     // coalesced events directly because we may reentry the event loop while
@@ -1692,32 +1703,35 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseButtonEvent(
     // handling aEvent if and only if there is a `pointerrawupdate` event
     // listener.  Therefore, let's assert the allowing flag to convert it to
     // eMouseRawUpdate here.
-    MOZ_ASSERT(aEvent.convertToPointerRawUpdate);
-    dispatchData->Coalesce(aEvent, aGuid, aInputBlockId);
+    MOZ_ASSERT(aMouseOrPointerEvent.convertToPointerRawUpdate);
+    dispatchData->Coalesce(aMouseOrPointerEvent, aGuid, aInputBlockId);
 
     mToBeDispatchedMouseData.Push(dispatchData.release());
     ProcessPendingCoalescedMouseDataAndDispatchEvents();
     return IPC_OK();
   }
-  HandleRealMouseButtonEvent(aEvent, aGuid, aInputBlockId);
+  HandleRealMouseButtonEvent(aMouseOrPointerEvent, aGuid, aInputBlockId);
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealPointerButtonEvent(
-    const WidgetPointerEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetPointerEvent& aPointerEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aEvent, aGuid, aInputBlockId);
+  return RecvRealMouseButtonEvent(aPointerEvent, aGuid, aInputBlockId);
 }
 
-void BrowserChild::HandleRealMouseButtonEvent(const WidgetMouseEvent& aEvent,
-                                              const ScrollableLayerGuid& aGuid,
-                                              const uint64_t& aInputBlockId) {
+void BrowserChild::HandleRealMouseButtonEvent(
+    const WidgetMouseEvent& aMouseOrPointerEvent,
+    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
   Maybe<WidgetPointerEvent> pointerEvent;
   Maybe<WidgetMouseEvent> mouseEvent;
-  if (aEvent.mClass == ePointerEventClass) {
-    pointerEvent.emplace(aEvent);
+  if (aMouseOrPointerEvent.mClass == ePointerEventClass) {
+    pointerEvent.emplace(
+        WidgetPointerEvent::MakeCopyFromMouseEvent(aMouseOrPointerEvent));
   } else {
-    mouseEvent.emplace(aEvent);
+    MOZ_DIAGNOSTIC_ASSERT(!aMouseOrPointerEvent.AsPointerEvent());
+    MOZ_DIAGNOSTIC_ASSERT(!aMouseOrPointerEvent.AsDragEvent());
+    mouseEvent.emplace(aMouseOrPointerEvent);
   }
   WidgetMouseEvent& localEvent =
       pointerEvent.isSome() ? pointerEvent.ref() : mouseEvent.ref();
@@ -1763,28 +1777,29 @@ void BrowserChild::HandleRealMouseButtonEvent(const WidgetMouseEvent& aEvent,
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvNormalPriorityRealMouseButtonEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-    const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aEvent, aGuid, aInputBlockId);
+    const WidgetMouseEvent& aMouseOrPointerEvent,
+    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
+  return RecvRealMouseButtonEvent(aMouseOrPointerEvent, aGuid, aInputBlockId);
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvNormalPriorityRealPointerButtonEvent(
-    const WidgetPointerEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetPointerEvent& aPointerEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvNormalPriorityRealMouseButtonEvent(aEvent, aGuid, aInputBlockId);
+  return RecvNormalPriorityRealMouseButtonEvent(aPointerEvent, aGuid,
+                                                aInputBlockId);
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseEnterExitWidgetEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aEvent, aGuid, aInputBlockId);
+  return RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId);
 }
 
 mozilla::ipc::IPCResult
 BrowserChild::RecvNormalPriorityRealMouseEnterExitWidgetEvent(
-    const WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
+    const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aEvent, aGuid, aInputBlockId);
+  return RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId);
 }
 
 nsEventStatus BrowserChild::DispatchWidgetEventViaAPZ(WidgetGUIEvent& aEvent) {

@@ -496,17 +496,18 @@ class EventStateManager : public nsSupportsWeakReference, public nsIObserver {
    *
    * @param aPresShell              The PresShell for the ESM.  This lifetime
    *                                should be guaranteed by the caller.
-   * @param aMouseEvent             The ePointerClick event which caused the
-   *                                paste.
-   * @param aStatus                 The event status of aMouseEvent.
+   * @param aMouseOrPointerEvent    The eAuxPointerClick event which caused the
+   *                                paste or eMouseUp event which causes an
+   *                                ePointerAuxClick event.
+   * @param aStatus                 The event status of aMouseOrPointerEvent.
    * @param aEditorBase             EditorBase which may be pasted the
    *                                clipboard text by the middle click.
-   *                                If there is no editor for aMouseEvent,
-   *                                set nullptr.
+   *                                If there is no editor for
+   *                                aMouseOrPointerEvent, set nullptr.
    */
   MOZ_CAN_RUN_SCRIPT
   nsresult HandleMiddleClickPaste(PresShell* aPresShell,
-                                  WidgetMouseEvent* aMouseEvent,
+                                  WidgetMouseEvent* aMouseOrPointerEvent,
                                   nsEventStatus* aStatus,
                                   EditorBase* aEditorBase);
 

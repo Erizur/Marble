@@ -30,7 +30,6 @@
 #include "api/fec_controller.h"
 #include "api/field_trials_view.h"
 #include "api/media_types.h"
-#include "api/rtc_error.h"
 #include "api/rtc_event_log/rtc_event_log.h"
 #include "api/rtp_headers.h"
 #include "api/scoped_refptr.h"
@@ -69,7 +68,6 @@
 #include "logging/rtc_event_log/events/rtc_event_video_receive_stream_config.h"
 #include "logging/rtc_event_log/events/rtc_event_video_send_stream_config.h"
 #include "logging/rtc_event_log/rtc_stream_config.h"
-#include "media/base/codec.h"
 #include "modules/congestion_controller/include/receive_side_congestion_controller.h"
 #include "modules/rtp_rtcp/include/flexfec_receiver.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
@@ -272,9 +270,6 @@ class Call final : public webrtc::Call,
   void AddAdaptationResource(rtc::scoped_refptr<Resource> resource) override;
 
   RtpTransportControllerSendInterface* GetTransportControllerSend() override;
-
-  PayloadTypeSuggester* GetPayloadTypeSuggester() override;
-  void SetPayloadTypeSuggester(PayloadTypeSuggester* suggester) override;
 
   Stats GetStats() const override;
 
@@ -498,10 +493,6 @@ class Call final : public webrtc::Call,
       RTC_GUARDED_BY(send_transport_sequence_checker_);
 
   bool is_started_ RTC_GUARDED_BY(worker_thread_) = false;
-
-  // Mechanism for proposing payload types in RTP mappings.
-  PayloadTypeSuggester* pt_suggester_ = nullptr;
-  std::unique_ptr<PayloadTypeSuggesterForTests> owned_pt_suggester_;
 
   // Sequence checker for outgoing network traffic. Could be the network thread.
   // Could also be a pacer owned thread or TQ such as the TaskQueueSender.
@@ -1117,24 +1108,6 @@ void Call::AddAdaptationResource(rtc::scoped_refptr<Resource> resource) {
 
 RtpTransportControllerSendInterface* Call::GetTransportControllerSend() {
   return transport_send_.get();
-}
-
-PayloadTypeSuggester* Call::GetPayloadTypeSuggester() {
-  // TODO: https://issues.webrtc.org/360058654 - make mandatory at
-  // initialization. Currently, only some channels use it.
-  RTC_DCHECK_RUN_ON(worker_thread_);
-  if (!pt_suggester_) {
-    // Make something that will work most of the time for testing.
-    owned_pt_suggester_ = std::make_unique<PayloadTypeSuggesterForTests>();
-    SetPayloadTypeSuggester(owned_pt_suggester_.get());
-  }
-  return pt_suggester_;
-}
-
-void Call::SetPayloadTypeSuggester(PayloadTypeSuggester* suggester) {
-  RTC_CHECK(!pt_suggester_)
-      << "SetPayloadTypeSuggester can be called only once";
-  pt_suggester_ = suggester;
 }
 
 Call::Stats Call::GetStats() const {

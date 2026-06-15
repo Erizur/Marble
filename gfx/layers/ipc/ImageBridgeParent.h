@@ -42,7 +42,7 @@ class ImageBridgeParent final : public PImageBridgeParent,
  protected:
   ImageBridgeParent(nsISerialEventTarget* aThread,
                     ipc::EndpointProcInfo aChildProcessInfo,
-                    dom::ContentParentId aContentId);
+                    dom::ContentParentId aContentId, uint32_t aNamespace);
 
  public:
   NS_IMETHOD_(MozExternalRefCountType) AddRef() override {
@@ -57,10 +57,12 @@ class ImageBridgeParent final : public PImageBridgeParent,
    */
   static void Setup();
 
-  static ImageBridgeParent* CreateSameProcess();
-  static bool CreateForGPUProcess(Endpoint<PImageBridgeParent>&& aEndpoint);
+  static ImageBridgeParent* CreateSameProcess(uint32_t aNamespace);
+  static bool CreateForGPUProcess(Endpoint<PImageBridgeParent>&& aEndpoint,
+                                  uint32_t aNamespace);
   static bool CreateForContent(Endpoint<PImageBridgeParent>&& aEndpoint,
-                               dom::ContentParentId aContentId);
+                               dom::ContentParentId aContentId,
+                               uint32_t aNamespace);
   static void Shutdown();
 
   IShmemAllocator* AsShmemAllocator() override { return this; }
@@ -131,9 +133,13 @@ class ImageBridgeParent final : public PImageBridgeParent,
   static void ShutdownInternal();
 
   void DeferredDestroy();
+
+  bool OwnsExternalImageId(const wr::ExternalImageId& aId) const;
+
   nsCOMPtr<nsISerialEventTarget> mThread;
 
   dom::ContentParentId mContentId;
+  uint32_t mNamespace;
 
   bool mClosed;
 

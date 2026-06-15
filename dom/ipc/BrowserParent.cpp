@@ -1466,7 +1466,7 @@ void BrowserParent::MouseEnterIntoWidget() {
   mIsMouseEnterIntoWidgetEventSuppressed = true;
 }
 
-void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aEvent) {
+void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aMouseOrPointerEvent) {
   if (mIsDestroyed) {
     return;
   }
@@ -1475,8 +1475,8 @@ void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aEvent) {
   // process directly (see
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1549355), we probably don't
   // need to check mReason then.
-  if (aEvent.mReason == WidgetMouseEvent::eReal) {
-    if (aEvent.mMessage == eMouseExitFromWidget) {
+  if (aMouseOrPointerEvent.mReason == WidgetMouseEvent::eReal) {
+    if (aMouseOrPointerEvent.mMessage == eMouseExitFromWidget) {
       // Since we are leaving this remote target, so don't need to update
       // sLastMouseRemoteTarget, and if we are sLastMouseRemoteTarget, reset it
       // to null.
@@ -1488,25 +1488,25 @@ void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aEvent) {
     }
   }
 
-  aEvent.mRefPoint = TransformParentToChild(aEvent);
+  aMouseOrPointerEvent.mRefPoint = TransformParentToChild(aMouseOrPointerEvent);
 
   if (nsCOMPtr<nsIWidget> widget = GetWidget()) {
     // When we mouseenter the remote target, the remote target's cursor should
     // become the current cursor.  When we mouseexit, we stop.
-    if (eMouseEnterIntoWidget == aEvent.mMessage) {
+    if (eMouseEnterIntoWidget == aMouseOrPointerEvent.mMessage) {
       mRemoteTargetSetsCursor = true;
       if (!EventStateManager::CursorSettingManagerHasLockedCursor()) {
         widget->SetCursor(mCursor);
         EventStateManager::ClearCursorSettingManager();
       }
-    } else if (eMouseExitFromWidget == aEvent.mMessage) {
+    } else if (eMouseExitFromWidget == aMouseOrPointerEvent.mMessage) {
       mRemoteTargetSetsCursor = false;
     }
   }
   if (!mIsReadyToHandleInputEvents) {
-    if (eMouseEnterIntoWidget == aEvent.mMessage) {
+    if (eMouseEnterIntoWidget == aMouseOrPointerEvent.mMessage) {
       mIsMouseEnterIntoWidgetEventSuppressed = true;
-    } else if (eMouseExitFromWidget == aEvent.mMessage) {
+    } else if (eMouseExitFromWidget == aMouseOrPointerEvent.mMessage) {
       mIsMouseEnterIntoWidgetEventSuppressed = false;
     }
     return;
@@ -1523,72 +1523,77 @@ void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aEvent) {
     // due to its corresponding BrowserChild wasn't ready to handle it, we have
     // to resend it when the BrowserChild is ready.
     mIsMouseEnterIntoWidgetEventSuppressed = false;
-    WidgetMouseEvent localEvent(aEvent);
-    localEvent.mMessage = eMouseEnterIntoWidget;
-    DebugOnly<bool> ret =
-        isInputPriorityEventEnabled
-            ? SendRealMouseEnterExitWidgetEvent(localEvent, guid, blockId)
-            : SendNormalPriorityRealMouseEnterExitWidgetEvent(localEvent, guid,
-                                                              blockId);
+    WidgetMouseEvent mouseEnterIntoWidgetEvent =
+        WidgetMouseEvent::MakeLossyCopy(aMouseOrPointerEvent,
+                                        eMouseEnterIntoWidget);
+    DebugOnly<bool> ret = isInputPriorityEventEnabled
+                              ? SendRealMouseEnterExitWidgetEvent(
+                                    mouseEnterIntoWidgetEvent, guid, blockId)
+                              : SendNormalPriorityRealMouseEnterExitWidgetEvent(
+                                    mouseEnterIntoWidgetEvent, guid, blockId);
     NS_WARNING_ASSERTION(ret, "SendRealMouseEnterExitWidgetEvent() failed");
-    MOZ_ASSERT(!ret || localEvent.HasBeenPostedToRemoteProcess());
+    MOZ_ASSERT(!ret ||
+               mouseEnterIntoWidgetEvent.HasBeenPostedToRemoteProcess());
   }
 
-  if (eMouseMove == aEvent.mMessage) {
-    if (aEvent.mReason == WidgetMouseEvent::eSynthesized) {
+  if (eMouseMove == aMouseOrPointerEvent.mMessage) {
+    if (aMouseOrPointerEvent.mReason == WidgetMouseEvent::eSynthesized) {
       DebugOnly<bool> ret =
           isInputPriorityEventEnabled
-              ? SendSynthMouseMoveEvent(aEvent, guid, blockId)
-              : SendNormalPrioritySynthMouseMoveEvent(aEvent, guid, blockId);
+              ? SendSynthMouseMoveEvent(aMouseOrPointerEvent, guid, blockId)
+              : SendNormalPrioritySynthMouseMoveEvent(aMouseOrPointerEvent,
+                                                      guid, blockId);
       NS_WARNING_ASSERTION(ret, "SendSynthMouseMoveEvent() failed");
-      MOZ_ASSERT(!ret || aEvent.HasBeenPostedToRemoteProcess());
+      MOZ_ASSERT(!ret || aMouseOrPointerEvent.HasBeenPostedToRemoteProcess());
       return;
     }
 
-    if (!aEvent.mFlags.mIsSynthesizedForTests) {
+    if (!aMouseOrPointerEvent.mFlags.mIsSynthesizedForTests) {
       DebugOnly<bool> ret =
           isInputPriorityEventEnabled
-              ? SendRealMouseMoveEvent(aEvent, guid, blockId)
-              : SendNormalPriorityRealMouseMoveEvent(aEvent, guid, blockId);
+              ? SendRealMouseMoveEvent(aMouseOrPointerEvent, guid, blockId)
+              : SendNormalPriorityRealMouseMoveEvent(aMouseOrPointerEvent, guid,
+                                                     blockId);
       NS_WARNING_ASSERTION(ret, "SendRealMouseMoveEvent() failed");
-      MOZ_ASSERT(!ret || aEvent.HasBeenPostedToRemoteProcess());
+      MOZ_ASSERT(!ret || aMouseOrPointerEvent.HasBeenPostedToRemoteProcess());
       return;
     }
 
-    DebugOnly<bool> ret =
-        isInputPriorityEventEnabled
-            ? SendRealMouseMoveEventForTests(aEvent, guid, blockId)
-            : SendNormalPriorityRealMouseMoveEventForTests(aEvent, guid,
-                                                           blockId);
+    DebugOnly<bool> ret = isInputPriorityEventEnabled
+                              ? SendRealMouseMoveEventForTests(
+                                    aMouseOrPointerEvent, guid, blockId)
+                              : SendNormalPriorityRealMouseMoveEventForTests(
+                                    aMouseOrPointerEvent, guid, blockId);
     NS_WARNING_ASSERTION(ret, "SendRealMouseMoveEventForTests() failed");
-    MOZ_ASSERT(!ret || aEvent.HasBeenPostedToRemoteProcess());
+    MOZ_ASSERT(!ret || aMouseOrPointerEvent.HasBeenPostedToRemoteProcess());
     return;
   }
 
-  if (eMouseEnterIntoWidget == aEvent.mMessage ||
-      eMouseExitFromWidget == aEvent.mMessage) {
-    DebugOnly<bool> ret =
-        isInputPriorityEventEnabled
-            ? SendRealMouseEnterExitWidgetEvent(aEvent, guid, blockId)
-            : SendNormalPriorityRealMouseEnterExitWidgetEvent(aEvent, guid,
-                                                              blockId);
+  if (eMouseEnterIntoWidget == aMouseOrPointerEvent.mMessage ||
+      eMouseExitFromWidget == aMouseOrPointerEvent.mMessage) {
+    DebugOnly<bool> ret = isInputPriorityEventEnabled
+                              ? SendRealMouseEnterExitWidgetEvent(
+                                    aMouseOrPointerEvent, guid, blockId)
+                              : SendNormalPriorityRealMouseEnterExitWidgetEvent(
+                                    aMouseOrPointerEvent, guid, blockId);
     NS_WARNING_ASSERTION(ret, "SendRealMouseEnterExitWidgetEvent() failed");
-    MOZ_ASSERT(!ret || aEvent.HasBeenPostedToRemoteProcess());
+    MOZ_ASSERT(!ret || aMouseOrPointerEvent.HasBeenPostedToRemoteProcess());
     return;
   }
 
   DebugOnly<bool> ret =
       isInputPriorityEventEnabled
-          ? aEvent.mClass == ePointerEventClass
-                ? SendRealPointerButtonEvent(*aEvent.AsPointerEvent(), guid,
-                                             blockId)
-                : SendRealMouseButtonEvent(aEvent, guid, blockId)
-      : aEvent.mClass == ePointerEventClass
-          ? SendNormalPriorityRealPointerButtonEvent(*aEvent.AsPointerEvent(),
-                                                     guid, blockId)
-          : SendNormalPriorityRealMouseButtonEvent(aEvent, guid, blockId);
+          ? aMouseOrPointerEvent.mClass == ePointerEventClass
+                ? SendRealPointerButtonEvent(
+                      *aMouseOrPointerEvent.AsPointerEvent(), guid, blockId)
+                : SendRealMouseButtonEvent(aMouseOrPointerEvent, guid, blockId)
+      : aMouseOrPointerEvent.mClass == ePointerEventClass
+          ? SendNormalPriorityRealPointerButtonEvent(
+                *aMouseOrPointerEvent.AsPointerEvent(), guid, blockId)
+          : SendNormalPriorityRealMouseButtonEvent(aMouseOrPointerEvent, guid,
+                                                   blockId);
   NS_WARNING_ASSERTION(ret, "SendRealMouseButtonEvent() failed");
-  MOZ_ASSERT(!ret || aEvent.HasBeenPostedToRemoteProcess());
+  MOZ_ASSERT(!ret || aMouseOrPointerEvent.HasBeenPostedToRemoteProcess());
 }
 
 LayoutDeviceToCSSScale BrowserParent::GetLayoutDeviceToCSSScale() {

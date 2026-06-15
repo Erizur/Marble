@@ -4875,6 +4875,21 @@ void Element::SetCustomElementData(UniquePtr<CustomElementData> aData) {
   slots->mCustomElementData = std::move(aData);
 }
 
+void Element::ClearCustomElementData() {
+  MOZ_ASSERT(HasCustomElementData());
+
+  ClearHasCustomElementData();
+
+  // This is correct for something like <div is="custom-div">, because
+  // after "removing" the custom elements data, this is again a known
+  // built-in and thus defined element.
+  SetDefined(!nsContentUtils::IsCustomElementName(NodeInfo()->NameAtom(),
+                                                  NodeInfo()->NamespaceID()));
+
+  nsExtendedDOMSlots* slots = ExtendedDOMSlots();
+  slots->mCustomElementData = nullptr;
+}
+
 nsTArray<RefPtr<nsAtom>>& Element::EnsureCustomStates() {
   MOZ_ASSERT(IsHTMLElement());
   nsExtendedDOMSlots* slots = ExtendedDOMSlots();

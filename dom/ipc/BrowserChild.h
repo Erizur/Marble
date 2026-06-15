@@ -291,45 +291,45 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
   mozilla::ipc::IPCResult RecvDeactivate(uint64_t aActionId);
 
   mozilla::ipc::IPCResult RecvRealMouseMoveEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvNormalPriorityRealMouseMoveEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvRealMouseMoveEventForTests(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvNormalPriorityRealMouseMoveEventForTests(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
 
   mozilla::ipc::IPCResult RecvSynthMouseMoveEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvNormalPrioritySynthMouseMoveEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
 
   mozilla::ipc::IPCResult RecvRealMouseButtonEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseOrPointerEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvNormalPriorityRealMouseButtonEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseOrPointerEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
 
   mozilla::ipc::IPCResult RecvRealPointerButtonEvent(
-      const mozilla::WidgetPointerEvent& aEvent,
+      const mozilla::WidgetPointerEvent& aPointerEvent,
       const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvNormalPriorityRealPointerButtonEvent(
-      const mozilla::WidgetPointerEvent& aEvent,
+      const mozilla::WidgetPointerEvent& aPointerEvent,
       const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
 
   mozilla::ipc::IPCResult RecvRealMouseEnterExitWidgetEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
   mozilla::ipc::IPCResult RecvNormalPriorityRealMouseEnterExitWidgetEvent(
-      const mozilla::WidgetMouseEvent& aEvent, const ScrollableLayerGuid& aGuid,
-      const uint64_t& aInputBlockId);
+      const mozilla::WidgetMouseEvent& aMouseEvent,
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
 
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
   mozilla::ipc::IPCResult RecvRealDragEvent(const WidgetDragEvent& aEvent,
@@ -656,7 +656,7 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
                                  const ScrollableLayerGuid& aGuid,
                                  const uint64_t& aInputBlockId);
 
-  void HandleRealMouseButtonEvent(const WidgetMouseEvent& aEvent,
+  void HandleRealMouseButtonEvent(const WidgetMouseEvent& aMouseOrPointerEvent,
                                   const ScrollableLayerGuid& aGuid,
                                   const uint64_t& aInputBlockId);
 

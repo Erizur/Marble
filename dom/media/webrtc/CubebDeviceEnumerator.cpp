@@ -26,7 +26,7 @@ static StaticRefPtr<CubebDeviceEnumerator> sInstance;
 static StaticMutex sInstanceMutex MOZ_UNANNOTATED;
 
 /* static */
-CubebDeviceEnumerator* CubebDeviceEnumerator::GetInstance() {
+already_AddRefed<CubebDeviceEnumerator> CubebDeviceEnumerator::GetInstance() {
   StaticMutexAutoLock lock(sInstanceMutex);
   if (!sInstance) {
     sInstance = new CubebDeviceEnumerator();
@@ -45,7 +45,7 @@ CubebDeviceEnumerator* CubebDeviceEnumerator::GetInstance() {
     }();
     Unused << clearOnShutdownSetup;
   }
-  return sInstance.get();
+  return do_AddRef(sInstance);
 }
 
 CubebDeviceEnumerator::CubebDeviceEnumerator()

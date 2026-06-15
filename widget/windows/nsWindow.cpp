@@ -4294,14 +4294,6 @@ nsresult nsWindow::DispatchEvent(WidgetGUIEvent* event,
   return NS_OK;
 }
 
-bool nsWindow::DispatchStandardEvent(EventMessage aMsg) {
-  WidgetGUIEvent event(true, aMsg, this);
-  InitEvent(event);
-
-  bool result = DispatchWindowEvent(event);
-  return result;
-}
-
 bool nsWindow::DispatchKeyboardEvent(WidgetKeyboardEvent* event) {
   nsEventStatus status = DispatchInputEvent(event).mContentStatus;
   return ConvertStatus(status);

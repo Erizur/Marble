@@ -15,6 +15,7 @@
 #include <string>
 
 #include "api/rtc_error.h"
+#include "api/rtp_parameters.h"
 #include "media/base/codec.h"
 #include "rtc_base/strong_alias.h"
 
@@ -60,6 +61,20 @@ class PayloadTypeSuggester {
   virtual RTCError AddLocalMapping(const std::string& mid,
                                    PayloadType payload_type,
                                    const cricket::Codec& codec) = 0;
+
+  // Suggest an ID for a given RTP header extension on a given media section.
+  // The function will either return an ID already in use on the connection
+  // or a newly suggested one.
+  virtual RTCErrorOr<int> SuggestRtpHeaderExtensionId(
+      absl::string_view mid,
+      const RtpExtension& extension,
+      RtpTransceiverIdDomain id_domain) = 0;
+  // Register an RTP header extension ID as mapped to a specific extension
+  // for this MID at this time.
+  [[nodiscard]] virtual RTCError AddRtpHeaderExtensionMapping(
+      absl::string_view mid,
+      const RtpExtension& extension,
+      bool local) = 0;
 };
 
 }  // namespace webrtc

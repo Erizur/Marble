@@ -915,8 +915,9 @@ void nsJSChannel::EvaluateScript() {
 }
 
 void nsJSChannel::NotifyListener() {
-  mListener->OnStartRequest(this);
-  mListener->OnStopRequest(this, mStatus);
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  listener->OnStartRequest(this);
+  listener->OnStopRequest(this, mStatus);
 
   CleanupStrongRefs();
 }
@@ -1124,7 +1125,8 @@ NS_IMETHODIMP
 nsJSChannel::OnStartRequest(nsIRequest* aRequest) {
   NS_ENSURE_TRUE(aRequest == mStreamChannel, NS_ERROR_UNEXPECTED);
 
-  return mListener->OnStartRequest(this);
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  return listener->OnStartRequest(this);
 }
 
 NS_IMETHODIMP
@@ -1132,7 +1134,8 @@ nsJSChannel::OnDataAvailable(nsIRequest* aRequest, nsIInputStream* aInputStream,
                              uint64_t aOffset, uint32_t aCount) {
   NS_ENSURE_TRUE(aRequest == mStreamChannel, NS_ERROR_UNEXPECTED);
 
-  return mListener->OnDataAvailable(this, aInputStream, aOffset, aCount);
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  return listener->OnDataAvailable(this, aInputStream, aOffset, aCount);
 }
 
 NS_IMETHODIMP

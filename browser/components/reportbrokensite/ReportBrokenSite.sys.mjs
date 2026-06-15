@@ -425,11 +425,10 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
         } else {
           const tabbrowser = e.target.ownerGlobal.gBrowser;
           state.resetURLToCurrentTab();
-          state.currentTabWebcompatDetailsPromise = this.#queryActor(
-            "GetWebCompatInfo",
-            undefined,
-            tabbrowser.selectedBrowser
-          );
+
+          const actor = this.#getActor(tabbrowser.selectedBrowser);
+          state.currentTabWebcompatDetailsPromise = actor.getWebCompatInfo();
+
           this.#openWebCompatTab(tabbrowser)
             .catch(err => {
               console.error("Report Broken Site: unexpected error", err);
@@ -585,21 +584,20 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
     this.#recordGleanEvent("opened", { source });
 
     if (didReset || !state.currentTabWebcompatDetailsPromise) {
-      state.currentTabWebcompatDetailsPromise = this.#queryActor(
-        "GetWebCompatInfo",
-        undefined,
-        selectedBrowser
-      ).catch(err => {
-        console.error("Report Broken Site: unexpected error", err);
-        state.currentTabWebcompatDetailsPromise = undefined;
-      });
+      const actor = this.#getActor(selectedBrowser);
+      state.currentTabWebcompatDetailsPromise = actor
+        .getWebCompatInfo()
+        .catch(err => {
+          console.error("Report Broken Site: unexpected error", err);
+          state.currentTabWebcompatDetailsPromise = undefined;
+        });
     }
   }
 
-  async #queryActor(msg, params, browser) {
-    const actor =
-      browser.browsingContext.currentWindowGlobal.getActor("ReportBrokenSite");
-    return actor.sendQuery(msg, params);
+  #getActor(browser) {
+    return browser.browsingContext.currentWindowGlobal.getActor(
+      "ReportBrokenSite"
+    );
   }
 
   async #loadTab(tabbrowser, url, triggeringPrincipal) {
@@ -626,27 +624,35 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
   }
 
   async #openWebCompatTab(tabbrowser) {
-    const endpointUrl = this.sendMoreInfoEndpoint;
-    const principal = Services.scriptSecurityManager.createNullPrincipal({});
-    const tab = await this.#loadTab(tabbrowser, endpointUrl, principal);
     const { document } = tabbrowser.selectedBrowser.ownerGlobal;
     const { description, reason, url, currentTabWebcompatDetailsPromise } =
       ViewState.get(document);
+    const webcompatInfo = await currentTabWebcompatDetailsPromise;
 
-    return this.#queryActor(
-      "SendDataToWebcompatCom",
-      {
-        reason,
-        description,
-        endpointUrl,
-        reportUrl: url,
-        reporterConfig: ReportBrokenSite.WEBCOMPAT_REPORTER_CONFIG,
-        webcompatInfo: await currentTabWebcompatDetailsPromise,
-      },
-      tab.linkedBrowser
-    ).catch(err => {
-      console.error("Report Broken Site: unexpected error", err);
-    });
+    const endpointUrl = this.sendMoreInfoEndpoint;
+    const principal = Services.scriptSecurityManager.createNullPrincipal({});
+    const tab = await this.#loadTab(tabbrowser, endpointUrl, principal);
+
+    const actor = this.#getActor(tabbrowser.selectedBrowser);
+    return actor
+      .sendQuery(
+        "SendDataToWebcompatCom",
+        {
+          reason,
+          description,
+          endpointUrl,
+          reportUrl: url,
+          reporterConfig: ReportBrokenSite.WEBCOMPAT_REPORTER_CONFIG,
+          webcompatInfo,
+        },
+        tab.linkedBrowser
+      )
+      .catch(err => {
+        console.error(
+          "Report Broken Site: error opening tab to webcompat.com",
+          err
+        );
+      });
   }
 
   async #sendReportAsGleanPing({

@@ -8406,6 +8406,8 @@ fail-if = [
   "win11_2009",
   "os == 'win' && os_version == '11.26100' && processor == 'x86'",
   "os == 'win' && os_version == '11.26100' && processor == 'x86_64'",
+  "os == 'win' && os_version == '11.26200' && processor == 'x86'",
+  "os == 'win' && os_version == '11.26200' && processor == 'x86_64'",
 ]
 
 ["generated/test_2_conformance2__textures__misc__tex-3d-size-limit.html"]
@@ -8458,7 +8460,9 @@ fail-if = [
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'",
   "win11_2009",
   "os == 'win' && os_version == '11.26100' && processor == 'x86'",
+  "os == 'win' && os_version == '11.26200' && processor == 'x86'",
   "os == 'win' && os_version == '11.26100' && processor == 'x86_64'",
+  "os == 'win' && os_version == '11.26200' && processor == 'x86_64'",
 ]
 
 ["generated/test_2_conformance2__textures__misc__tex-new-formats.html"]

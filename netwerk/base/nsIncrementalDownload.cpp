@@ -194,7 +194,8 @@ nsresult nsIncrementalDownload::CallOnStartRequest() {
   if (!mObserver || mDidOnStartRequest) return NS_OK;
 
   mDidOnStartRequest = true;
-  return mObserver->OnStartRequest(this);
+  nsCOMPtr<nsIRequestObserver> observer = mObserver;
+  return observer->OnStartRequest(this);
 }
 
 void nsIncrementalDownload::CallOnStopRequest() {
@@ -206,7 +207,8 @@ void nsIncrementalDownload::CallOnStopRequest() {
 
   mIsPending = false;
 
-  mObserver->OnStopRequest(this, mStatus);
+  nsCOMPtr<nsIRequestObserver> observer = mObserver;
+  observer->OnStopRequest(this, mStatus);
   mObserver = nullptr;
 }
 

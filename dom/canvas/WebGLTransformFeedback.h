@@ -47,6 +47,7 @@ class WebGLTransformFeedback final : public WebGLContextBoundObject {
 
  private:
   ~WebGLTransformFeedback() override;
+  bool PrepareTransformFeedback();
 
  public:
   bool IsActiveAndNotPaused() const { return mIsActive && !mIsPaused; }

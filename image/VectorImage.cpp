@@ -1455,7 +1455,8 @@ VectorImage::OnStartRequest(nsIRequest* aRequest) {
              "Repeated call to OnStartRequest -- can this happen?");
 
   mSVGDocumentWrapper = new SVGDocumentWrapper();
-  nsresult rv = mSVGDocumentWrapper->OnStartRequest(aRequest);
+  RefPtr<SVGDocumentWrapper> wrapper = mSVGDocumentWrapper;
+  nsresult rv = wrapper->OnStartRequest(aRequest);
   if (NS_FAILED(rv)) {
     mSVGDocumentWrapper = nullptr;
     mError = true;
@@ -1487,7 +1488,8 @@ VectorImage::OnStopRequest(nsIRequest* aRequest, nsresult aStatus) {
     return NS_ERROR_FAILURE;
   }
 
-  return mSVGDocumentWrapper->OnStopRequest(aRequest, aStatus);
+  RefPtr<SVGDocumentWrapper> wrapper = mSVGDocumentWrapper;
+  return wrapper->OnStopRequest(aRequest, aStatus);
 }
 
 void VectorImage::OnSVGDocumentParsed() {
@@ -1632,8 +1634,8 @@ VectorImage::OnDataAvailable(nsIRequest* aRequest, nsIInputStream* aInStr,
     return NS_ERROR_FAILURE;
   }
 
-  return mSVGDocumentWrapper->OnDataAvailable(aRequest, aInStr, aSourceOffset,
-                                              aCount);
+  RefPtr<SVGDocumentWrapper> wrapper = mSVGDocumentWrapper;
+  return wrapper->OnDataAvailable(aRequest, aInStr, aSourceOffset, aCount);
 }
 
 // --------------------------

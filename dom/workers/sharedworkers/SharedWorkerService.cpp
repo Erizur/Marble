@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "SharedWorkerService.h"
+#include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/MessagePort.h"
 #include "mozilla/dom/RemoteWorkerManager.h"  // RemoteWorkerManager::GetRemoteType
 #include "mozilla/dom/RemoteWorkerTypes.h"
@@ -32,14 +33,15 @@ StaticRefPtr<SharedWorkerService> sSharedWorkerService;
 
 class GetOrCreateWorkerManagerRunnable final : public Runnable {
  public:
-  GetOrCreateWorkerManagerRunnable(SharedWorkerService* aService,
-                                   SharedWorkerParent* aActor,
-                                   const RemoteWorkerData& aData,
-                                   uint64_t aWindowID,
-                                   const MessagePortIdentifier& aPortIdentifier)
+  GetOrCreateWorkerManagerRunnable(
+      SharedWorkerService* aService,
+      ThreadsafeContentParentHandle* aContentParentHandle,
+      SharedWorkerParent* aActor, const RemoteWorkerData& aData,
+      uint64_t aWindowID, const MessagePortIdentifier& aPortIdentifier)
       : Runnable("GetOrCreateWorkerManagerRunnable"),
         mBackgroundEventTarget(GetCurrentSerialEventTarget()),
         mService(aService),
+        mContentParentHandle(aContentParentHandle),
         mActor(aActor),
         mData(aData),
         mWindowID(aWindowID),
@@ -48,7 +50,8 @@ class GetOrCreateWorkerManagerRunnable final : public Runnable {
   NS_IMETHOD
   Run() {
     mService->GetOrCreateWorkerManagerOnMainThread(
-        mBackgroundEventTarget, mActor, mData, mWindowID, mPortIdentifier);
+        mBackgroundEventTarget, mContentParentHandle, mActor, mData, mWindowID,
+        mPortIdentifier);
 
     return NS_OK;
   }
@@ -56,6 +59,7 @@ class GetOrCreateWorkerManagerRunnable final : public Runnable {
  private:
   nsCOMPtr<nsIEventTarget> mBackgroundEventTarget;
   RefPtr<SharedWorkerService> mService;
+  RefPtr<ThreadsafeContentParentHandle> mContentParentHandle;
   RefPtr<SharedWorkerParent> mActor;
   RemoteWorkerData mData;
   uint64_t mWindowID;
@@ -155,19 +159,23 @@ void SharedWorkerService::GetOrCreateWorkerManager(
     uint64_t aWindowID, const MessagePortIdentifier& aPortIdentifier) {
   AssertIsOnBackgroundThread();
 
+  RefPtr<ThreadsafeContentParentHandle> contentParentHandle =
+      BackgroundParent::GetContentParentHandle(aActor->Manager());
+
   // The real check happens on main-thread.
   RefPtr<GetOrCreateWorkerManagerRunnable> r =
-      new GetOrCreateWorkerManagerRunnable(this, aActor, aData, aWindowID,
-                                           aPortIdentifier);
+      new GetOrCreateWorkerManagerRunnable(this, contentParentHandle, aActor,
+                                           aData, aWindowID, aPortIdentifier);
 
   nsresult rv = SchedulerGroup::Dispatch(r.forget());
   Unused << NS_WARN_IF(NS_FAILED(rv));
 }
 
 void SharedWorkerService::GetOrCreateWorkerManagerOnMainThread(
-    nsIEventTarget* aBackgroundEventTarget, SharedWorkerParent* aActor,
-    const RemoteWorkerData& aData, uint64_t aWindowID,
-    UniqueMessagePortId& aPortIdentifier) {
+    nsIEventTarget* aBackgroundEventTarget,
+    ThreadsafeContentParentHandle* aContentParentHandle,
+    SharedWorkerParent* aActor, const RemoteWorkerData& aData,
+    uint64_t aWindowID, UniqueMessagePortId& aPortIdentifier) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aBackgroundEventTarget);
   MOZ_ASSERT(aActor);
@@ -181,17 +189,19 @@ void SharedWorkerService::GetOrCreateWorkerManagerOnMainThread(
   }
 
   nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
+
+  nsCString currentRemoteType = aContentParentHandle
+                                    ? aContentParentHandle->GetRemoteType()
+                                    : NOT_REMOTE_TYPE;
   auto remoteType = RemoteWorkerManager::GetRemoteType(
-      principal, WorkerKind::WorkerKindShared);
+      principal, WorkerKind::WorkerKindShared, currentRemoteType);
   if (NS_WARN_IF(remoteType.isErr())) {
     ErrorPropagationOnMainThread(aBackgroundEventTarget, aActor,
                                  remoteType.unwrapErr());
     return;
   }
 
-  if (!remoteType.unwrap().Equals(copyData.remoteType())) {
-    copyData.remoteType() = remoteType.unwrap();
-  }
+  copyData.remoteType() = remoteType.unwrap();
 
   auto partitionedPrincipalOrErr =
       PrincipalInfoToPrincipal(copyData.partitionedPrincipalInfo());

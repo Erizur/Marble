@@ -535,7 +535,6 @@ class nsWindow final : public nsBaseWidget,
    */
   HWND GetTopLevelForFocus(HWND aCurWnd);
   void DispatchFocusToTopLevelWindow(bool aIsActivate);
-  bool DispatchStandardEvent(mozilla::EventMessage aMsg);
   void RelayMouseEvent(UINT aMsg, WPARAM wParam, LPARAM lParam);
   bool ProcessMessage(UINT msg, WPARAM& wParam, LPARAM& lParam,
                       LRESULT* aRetValue);

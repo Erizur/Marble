@@ -201,6 +201,18 @@ class TestScript(unittest.TestCase):
         self.assertEqual(os.path.join(cwd, "test_logs"), os.getcwd(), msg="chdir error")
         self.s.chdir(cwd)
 
+    def test_chdir_relative(self):
+        subdir = os.path.join(self.tmpdir, "subdir")
+        os.mkdir(subdir)
+        self.s = script.BaseScript(initial_config_file="test/test.json")
+        cwd = os.getcwd()
+        os.chdir(self.tmpdir)
+        try:
+            self.s.chdir("subdir")
+            self.assertEqual(subdir, os.getcwd(), msg="chdir relative error")
+        finally:
+            os.chdir(cwd)
+
     def _test_log_helper(self, obj):
         obj.debug("Testing DEBUG")
         obj.warning("Testing WARNING")

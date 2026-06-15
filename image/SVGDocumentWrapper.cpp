@@ -195,7 +195,8 @@ void SVGDocumentWrapper::TickRefreshDriver() {
 NS_IMETHODIMP
 SVGDocumentWrapper::OnDataAvailable(nsIRequest* aRequest, nsIInputStream* inStr,
                                     uint64_t sourceOffset, uint32_t count) {
-  return mListener->OnDataAvailable(aRequest, inStr, sourceOffset, count);
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  return listener->OnDataAvailable(aRequest, inStr, sourceOffset, count);
 }
 
 /** nsIRequestObserver methods **/
@@ -205,7 +206,8 @@ SVGDocumentWrapper::OnStartRequest(nsIRequest* aRequest) {
   nsresult rv = SetupViewer(aRequest, getter_AddRefs(mViewer),
                             getter_AddRefs(mLoadGroup));
 
-  if (NS_SUCCEEDED(rv) && NS_SUCCEEDED(mListener->OnStartRequest(aRequest))) {
+  nsCOMPtr<nsIStreamListener> listener = mListener;
+  if (NS_SUCCEEDED(rv) && NS_SUCCEEDED(listener->OnStartRequest(aRequest))) {
     mViewer->GetDocument()->SetIsBeingUsedAsImage();
     StopAnimation();  // otherwise animations start automatically in helper doc
 
@@ -219,8 +221,8 @@ SVGDocumentWrapper::OnStartRequest(nsIRequest* aRequest) {
 
 NS_IMETHODIMP
 SVGDocumentWrapper::OnStopRequest(nsIRequest* aRequest, nsresult status) {
-  if (mListener) {
-    mListener->OnStopRequest(aRequest, status);
+  if (nsCOMPtr<nsIStreamListener> listener = mListener) {
+    listener->OnStopRequest(aRequest, status);
     mListener = nullptr;
   }
 

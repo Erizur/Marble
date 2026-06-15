@@ -230,6 +230,10 @@ web-platform-tests-reftest:
         by-test-platform:
             windows.*64.*/.*: virtual-with-gpu
             default: virtual
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     chunks:
         by-test-platform:
             .*-ccov.*: 8
@@ -346,6 +350,7 @@ web-platform-tests-webgpu:
             - --timeout-multiplier=5.0
     worker-type:
         by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-webgpu
             .*-wayland.*: t-linux-wayland-vm
             default: default
 
@@ -371,6 +376,10 @@ web-platform-tests-webgpu-long:
             - --skip-implementation-status=backlog
             - --skip-implementation-status=not-implementing
             - --timeout-multiplier=10.0
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-webgpu
+            default: default
 
 web-platform-tests-webgpu-backlog:
     description: "Web platform WebGPU test run (backlog)"
@@ -414,6 +423,7 @@ web-platform-tests-webgpu-backlog:
             - --timeout-multiplier=5.0
     worker-type:
         by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-webgpu
             .*-wayland.*: t-linux-wayland-vm
             default: default
 
@@ -444,12 +454,20 @@ web-platform-tests-webgpu-backlog-long:
             - --skip-implementation-status=not-implementing
             - --backlog
             - --timeout-multiplier=10.0
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-webgpu
+            default: default
 
 web-platform-tests-canvas:
     description: "Web platform Canvas test run"
     suite: web-platform-tests
     treeherder-symbol: W(canvas)
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     tier:
         by-variant:
             no-fission:

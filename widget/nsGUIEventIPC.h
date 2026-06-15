@@ -20,6 +20,7 @@
 #include "mozilla/TouchEvents.h"
 #include "mozilla/WheelHandlingHelper.h"  // for WheelDeltaAdjustmentStrategy
 #include "mozilla/dom/Selection.h"
+#include "nsPrintfCString.h"
 #include "InputData.h"
 
 namespace IPC {
@@ -34,7 +35,7 @@ template <>
 struct ParamTraits<mozilla::EventClassID>
     : public ContiguousEnumSerializer<
           mozilla::EventClassID, mozilla::EventClassID(0),
-          mozilla::EventClassID::eEventClassID_MaxValue> {};
+          mozilla::EventClassID::eEventClassUninitialized> {};
 
 template <>
 struct ParamTraits<mozilla::BaseEventFlags> {
@@ -53,7 +54,8 @@ template <>
 struct ParamTraits<mozilla::WidgetEvent> {
   using paramType = mozilla::WidgetEvent;
 
-  static void Write(MessageWriter* aWriter, const paramType& aParam) {
+  static void WriteForDerivedClass(MessageWriter* aWriter,
+                                   const paramType& aParam) {
     // Mark the event as posted to another process.
     const_cast<mozilla::WidgetEvent&>(aParam).MarkAsPostedToRemoteProcess();
 
@@ -66,6 +68,34 @@ struct ParamTraits<mozilla::WidgetEvent> {
     WriteParam(aWriter, aParam.mLayersId);
   }
 
+  static bool ReadForDerivedClass(MessageReader* aReader,
+                                  mozilla::EventClassID aExpectedEventClassID,
+                                  paramType* aResult) {
+    MOZ_ASSERT(aExpectedEventClassID != mozilla::eEventClassUninitialized);
+    if (MOZ_UNLIKELY(!Read(aReader, aResult))) {
+      return false;
+    }
+    NS_WARNING_ASSERTION(
+        aResult->mClass == aExpectedEventClassID,
+        nsPrintfCString(
+            "Wrong event class ID: expected %s, but got %s (message: %s)",
+            mozilla::ToChar(aExpectedEventClassID),
+            mozilla::ToChar(aResult->mClass),
+            mozilla::ToChar(aResult->mMessage))
+            .get());
+    if (MOZ_LIKELY(aResult->mClass == aExpectedEventClassID &&
+                   mozilla::IsValidMessageForIPC(aResult->mMessage,
+                                                 aExpectedEventClassID))) {
+      return true;
+    }
+    // Clear mClass value to avoid the assertion failure in the destructor in
+    // the debug build because it's not a fault in this process.
+    aResult->mClass = mozilla::eEventClassUninitialized;
+    // Don't allow illegal mClass/mMessage combination.
+    return false;
+  }
+
+ private:
   static bool Read(MessageReader* aReader, paramType* aResult) {
     const bool ret = ReadParam(aReader, &aResult->mClass) &&
                      ReadParam(aReader, &aResult->mMessage) &&
@@ -88,27 +118,37 @@ struct ParamTraits<mozilla::WidgetEvent> {
 template <>
 struct ParamTraits<mozilla::WidgetGUIEvent> {
   using paramType = mozilla::WidgetGUIEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetEvent>;
 
-  static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetEvent&>(aParam));
+  static void WriteForDerivedClass(MessageWriter* aWriter,
+                                   const paramType& aParam) {
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
   }
 
-  static bool Read(MessageReader* aReader, paramType* aResult) {
-    return ReadParam(aReader, static_cast<mozilla::WidgetEvent*>(aResult));
+  static bool ReadForDerivedClass(MessageReader* aReader,
+                                  mozilla::EventClassID aExpectedEventClassID,
+                                  paramType* aResult) {
+    return baseParamTraits::ReadForDerivedClass(aReader, aExpectedEventClassID,
+                                                aResult);
   }
 };
 
 template <>
 struct ParamTraits<mozilla::WidgetInputEvent> {
   using paramType = mozilla::WidgetInputEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetGUIEvent>;
 
-  static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetGUIEvent&>(aParam));
+  static void WriteForDerivedClass(MessageWriter* aWriter,
+                                   const paramType& aParam) {
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mModifiers);
   }
 
-  static bool Read(MessageReader* aReader, paramType* aResult) {
-    return ReadParam(aReader, static_cast<mozilla::WidgetGUIEvent*>(aResult)) &&
+  static bool ReadForDerivedClass(MessageReader* aReader,
+                                  mozilla::EventClassID aExpectedEventClassID,
+                                  paramType* aResult) {
+    return baseParamTraits::ReadForDerivedClass(aReader, aExpectedEventClassID,
+                                                aResult) &&
            ReadParam(aReader, &aResult->mModifiers);
   }
 };
@@ -116,18 +156,22 @@ struct ParamTraits<mozilla::WidgetInputEvent> {
 template <>
 struct ParamTraits<mozilla::WidgetMouseEventBase> {
   using paramType = mozilla::WidgetMouseEventBase;
+  using baseParamTraits = ParamTraits<mozilla::WidgetInputEvent>;
 
-  static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetInputEvent&>(aParam));
+  static void WriteForDerivedClass(MessageWriter* aWriter,
+                                   const paramType& aParam) {
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mButton);
     WriteParam(aWriter, aParam.mButtons);
     WriteParam(aWriter, aParam.mPressure);
     WriteParam(aWriter, aParam.mInputSource);
   }
 
-  static bool Read(MessageReader* aReader, paramType* aResult) {
-    return ReadParam(aReader,
-                     static_cast<mozilla::WidgetInputEvent*>(aResult)) &&
+  static bool ReadForDerivedClass(MessageReader* aReader,
+                                  mozilla::EventClassID aExpectedEventClassID,
+                                  paramType* aResult) {
+    return baseParamTraits::ReadForDerivedClass(aReader, aExpectedEventClassID,
+                                                aResult) &&
            ReadParam(aReader, &aResult->mButton) &&
            ReadParam(aReader, &aResult->mButtons) &&
            ReadParam(aReader, &aResult->mPressure) &&
@@ -145,10 +189,16 @@ struct ParamTraits<mozilla::WidgetWheelEvent::ScrollType>
 template <>
 struct ParamTraits<mozilla::WidgetWheelEvent> {
   using paramType = mozilla::WidgetWheelEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetMouseEventBase>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter,
-               static_cast<const mozilla::WidgetMouseEventBase&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eWheelEventClass,
+        nsPrintfCString("got %s, but expected eWheelEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eWheelEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mDeltaX);
     WriteParam(aWriter, aParam.mDeltaY);
     WriteParam(aWriter, aParam.mDeltaZ);
@@ -171,8 +221,8 @@ struct ParamTraits<mozilla::WidgetWheelEvent> {
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
-    return ReadParam(aReader,
-                     static_cast<mozilla::WidgetMouseEventBase*>(aResult)) &&
+    return baseParamTraits::ReadForDerivedClass(
+               aReader, mozilla::eWheelEventClass, aResult) &&
            ReadParam(aReader, &aResult->mDeltaX) &&
            ReadParam(aReader, &aResult->mDeltaY) &&
            ReadParam(aReader, &aResult->mDeltaZ) &&
@@ -244,6 +294,7 @@ struct ParamTraits<mozilla::WidgetMouseEvent::ExitFrom>
 template <>
 struct ParamTraits<mozilla::WidgetMouseEvent> {
   using paramType = mozilla::WidgetMouseEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetMouseEventBase>;
 
   // We don't need to copy the following members:
   // - mIgnoreCapturingContent: When this is `true`, the remote process should
@@ -256,8 +307,18 @@ struct ParamTraits<mozilla::WidgetMouseEvent> {
   //   path to do that.  Therefore, this flag is not required for now.
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter,
-               static_cast<const mozilla::WidgetMouseEventBase&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eMouseEventClass,
+        nsPrintfCString("got %s, but expected eMouseEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eMouseEventClass);
+    WriteForDerivedClass(aWriter, aParam);
+  }
+
+  static void WriteForDerivedClass(MessageWriter* aWriter,
+                                   const paramType& aParam) {
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter,
                static_cast<const mozilla::WidgetPointerHelper&>(aParam));
     WriteParam(aWriter, aParam.mIgnoreRootScrollFrame);
@@ -269,8 +330,14 @@ struct ParamTraits<mozilla::WidgetMouseEvent> {
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
-    return ReadParam(aReader,
-                     static_cast<mozilla::WidgetMouseEventBase*>(aResult)) &&
+    return ReadForDerivedClass(aReader, mozilla::eMouseEventClass, aResult);
+  }
+
+  static bool ReadForDerivedClass(MessageReader* aReader,
+                                  mozilla::EventClassID aExpectedEventClassID,
+                                  paramType* aResult) {
+    return baseParamTraits::ReadForDerivedClass(aReader, aExpectedEventClassID,
+                                                aResult) &&
            ReadParam(aReader,
                      static_cast<mozilla::WidgetPointerHelper*>(aResult)) &&
            ReadParam(aReader, &aResult->mIgnoreRootScrollFrame) &&
@@ -285,30 +352,42 @@ struct ParamTraits<mozilla::WidgetMouseEvent> {
 template <>
 struct ParamTraits<mozilla::WidgetDragEvent> {
   using paramType = mozilla::WidgetDragEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetMouseEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetMouseEvent&>(aParam));
+    NS_WARNING_ASSERTION(aParam.mClass == mozilla::eDragEventClass,
+                         nsPrintfCString("got %s, but expected eDragEventClass",
+                                         mozilla::ToChar(aParam.mClass))
+                             .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eDragEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mUserCancelled);
     WriteParam(aWriter, aParam.mDefaultPreventedOnContent);
     WriteParam(aWriter, aParam.mInHTMLEditorEventListener);
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
-    bool rv =
-        ReadParam(aReader, static_cast<mozilla::WidgetMouseEvent*>(aResult)) &&
-        ReadParam(aReader, &aResult->mUserCancelled) &&
-        ReadParam(aReader, &aResult->mDefaultPreventedOnContent) &&
-        ReadParam(aReader, &aResult->mInHTMLEditorEventListener);
-    return rv;
+    return baseParamTraits::ReadForDerivedClass(
+               aReader, mozilla::eDragEventClass, aResult) &&
+           ReadParam(aReader, &aResult->mUserCancelled) &&
+           ReadParam(aReader, &aResult->mDefaultPreventedOnContent) &&
+           ReadParam(aReader, &aResult->mInHTMLEditorEventListener);
   }
 };
 
 template <>
 struct ParamTraits<mozilla::WidgetPointerEvent> {
   using paramType = mozilla::WidgetPointerEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetMouseEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetMouseEvent&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::ePointerEventClass,
+        nsPrintfCString("got %s, but expected ePointerEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::ePointerEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mWidth);
     WriteParam(aWriter, aParam.mHeight);
     WriteParam(aWriter, aParam.mIsPrimary);
@@ -316,22 +395,28 @@ struct ParamTraits<mozilla::WidgetPointerEvent> {
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
-    bool rv =
-        ReadParam(aReader, static_cast<mozilla::WidgetMouseEvent*>(aResult)) &&
-        ReadParam(aReader, &aResult->mWidth) &&
-        ReadParam(aReader, &aResult->mHeight) &&
-        ReadParam(aReader, &aResult->mIsPrimary) &&
-        ReadParam(aReader, &aResult->mFromTouchEvent);
-    return rv;
+    return baseParamTraits::ReadForDerivedClass(
+               aReader, mozilla::ePointerEventClass, aResult) &&
+           ReadParam(aReader, &aResult->mWidth) &&
+           ReadParam(aReader, &aResult->mHeight) &&
+           ReadParam(aReader, &aResult->mIsPrimary) &&
+           ReadParam(aReader, &aResult->mFromTouchEvent);
   }
 };
 
 template <>
 struct ParamTraits<mozilla::WidgetTouchEvent> {
   using paramType = mozilla::WidgetTouchEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetInputEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetInputEvent&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eTouchEventClass,
+        nsPrintfCString("got %s, but expected eTouchEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eTouchEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mInputSource);
     WriteParam(aWriter, aParam.mButton);
     WriteParam(aWriter, aParam.mButtons);
@@ -354,7 +439,8 @@ struct ParamTraits<mozilla::WidgetTouchEvent> {
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
     paramType::TouchArray::size_type numTouches;
-    if (!ReadParam(aReader, static_cast<mozilla::WidgetInputEvent*>(aResult)) ||
+    if (!baseParamTraits::ReadForDerivedClass(
+            aReader, mozilla::eTouchEventClass, aResult) ||
         !ReadParam(aReader, &aResult->mInputSource) ||
         !ReadParam(aReader, &aResult->mButton) ||
         !ReadParam(aReader, &aResult->mButtons) ||
@@ -448,9 +534,16 @@ struct ParamTraits<mozilla::CodeNameIndex>
 template <>
 struct ParamTraits<mozilla::WidgetKeyboardEvent> {
   using paramType = mozilla::WidgetKeyboardEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetInputEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetInputEvent&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eKeyboardEventClass,
+        nsPrintfCString("got %s, but expected eKeyboardEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eKeyboardEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mKeyNameIndex);
     WriteParam(aWriter, aParam.mCodeNameIndex);
     WriteParam(aWriter, aParam.mKeyValue);
@@ -477,7 +570,8 @@ struct ParamTraits<mozilla::WidgetKeyboardEvent> {
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
-    if (ReadParam(aReader, static_cast<mozilla::WidgetInputEvent*>(aResult)) &&
+    if (baseParamTraits::ReadForDerivedClass(
+            aReader, mozilla::eKeyboardEventClass, aResult) &&
         ReadParam(aReader, &aResult->mKeyNameIndex) &&
         ReadParam(aReader, &aResult->mCodeNameIndex) &&
         ReadParam(aReader, &aResult->mKeyValue) &&
@@ -593,9 +687,16 @@ struct ParamTraits<mozilla::TextRangeArray> {
 template <>
 struct ParamTraits<mozilla::WidgetCompositionEvent> {
   using paramType = mozilla::WidgetCompositionEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetGUIEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetGUIEvent&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eCompositionEventClass,
+        nsPrintfCString("got %s, but expected eCompositionEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eCompositionEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mData);
     WriteParam(aWriter, aParam.mNativeIMEContext);
     WriteParam(aWriter, aParam.mCompositionId);
@@ -608,7 +709,8 @@ struct ParamTraits<mozilla::WidgetCompositionEvent> {
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
     bool hasRanges;
-    if (!ReadParam(aReader, static_cast<mozilla::WidgetGUIEvent*>(aResult)) ||
+    if (!baseParamTraits::ReadForDerivedClass(
+            aReader, mozilla::eCompositionEventClass, aResult) ||
         !ReadParam(aReader, &aResult->mData) ||
         !ReadParam(aReader, &aResult->mNativeIMEContext) ||
         !ReadParam(aReader, &aResult->mCompositionId) ||
@@ -648,9 +750,16 @@ struct ParamTraits<mozilla::FontRange> {
 template <>
 struct ParamTraits<mozilla::WidgetSelectionEvent> {
   using paramType = mozilla::WidgetSelectionEvent;
+  using baseParamTraits = ParamTraits<mozilla::WidgetGUIEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    WriteParam(aWriter, static_cast<const mozilla::WidgetGUIEvent&>(aParam));
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eSelectionEventClass,
+        nsPrintfCString("got %s, but expected eSelectionEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
+    MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eSelectionEventClass);
+    baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mOffset);
     WriteParam(aWriter, aParam.mLength);
     WriteParam(aWriter, aParam.mReversed);
@@ -660,7 +769,8 @@ struct ParamTraits<mozilla::WidgetSelectionEvent> {
   }
 
   static bool Read(MessageReader* aReader, paramType* aResult) {
-    return ReadParam(aReader, static_cast<mozilla::WidgetGUIEvent*>(aResult)) &&
+    return baseParamTraits::ReadForDerivedClass(
+               aReader, mozilla::eSelectionEventClass, aResult) &&
            ReadParam(aReader, &aResult->mOffset) &&
            ReadParam(aReader, &aResult->mLength) &&
            ReadParam(aReader, &aResult->mReversed) &&

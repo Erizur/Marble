@@ -3433,6 +3433,17 @@ nsresult nsStandardURL::ReadPrivate(nsIObjectInputStream* stream) {
     mExtension.Merge(mSpec, ';', old_param);
   }
 
+  NS_ENSURE_TRUE(mScheme.mPos == 0, NS_ERROR_MALFORMED_URI);
+  NS_ENSURE_TRUE(mScheme.mLen > 0, NS_ERROR_MALFORMED_URI);
+  // Make sure scheme is followed by :// (3 characters)
+  NS_ENSURE_TRUE(mScheme.mLen < INT32_MAX - 3,
+                 NS_ERROR_MALFORMED_URI);  // avoid overflow
+  NS_ENSURE_TRUE(mSpec.Length() >= (uint32_t)mScheme.mLen + 3,
+                 NS_ERROR_MALFORMED_URI);
+  NS_ENSURE_TRUE(
+      nsDependentCSubstring(mSpec, mScheme.mLen, 3).EqualsLiteral("://"),
+      NS_ERROR_MALFORMED_URI);
+
   rv = CheckIfHostIsAscii();
   if (NS_FAILED(rv)) {
     return rv;
@@ -3705,6 +3716,12 @@ bool nsStandardURL::Deserialize(const URIParams& aParams) {
   NS_ENSURE_TRUE(isSubSegment(mHost, mAuthority), false);
   NS_ENSURE_TRUE(isSubSegment(mUsername, mAuthority), false);
   NS_ENSURE_TRUE(isSubSegment(mPassword, mAuthority), false);
+  NS_ENSURE_TRUE(isSubSegment(mQuery, mPath), false);
+  NS_ENSURE_TRUE(isSubSegment(mRef, mPath), false);
+
+  if (mAuthority.mLen >= 0 && mPath.mLen >= 0) {
+    NS_ENSURE_TRUE(mPath.mPos == mAuthority.mPos + mAuthority.mLen, false);
+  }
 
   if (!IsValid()) {
     return false;

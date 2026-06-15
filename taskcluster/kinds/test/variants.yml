@@ -344,7 +344,7 @@ wmf-media-engine:
 eme-wmf:
     description: "{description} with Windows Media Foundation based CDM enabled for EME wpt"
     component: "Core::Audio/Video: Playback"
-    expiration: "2025-06-30"
+    expiration: "never"
     when:
         $eval: '"windows1" in task["test-platform"]'
     suffix: "emewmf"
@@ -356,6 +356,10 @@ eme-wmf:
             env:
                 MOZ_DISABLE_NONLOCAL_CONNECTIONS:
                     '0'
+        worker-type:
+            by-test-platform:
+                windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+                default: default
         virtualization: virtual-with-gpu
         mozharness:
             extra-options:

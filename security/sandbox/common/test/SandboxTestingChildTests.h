@@ -595,6 +595,12 @@ void RunTestsContent(SandboxTestingChild* child) {
     return send(0, &c, 1, MSG_CONFIRM);
   });
 
+  child->ErrnoValueTest("symlink"_ns, EPERM,
+                        [] { return symlink("something", "/tmp/testlink"); });
+  child->ErrnoValueTest("symlinkat"_ns, EPERM, [] {
+    return symlinkat("something", AT_FDCWD, "/tmp/testlink");
+  });
+
 #  endif  // XP_LINUX
 
 #  ifdef XP_MACOSX

@@ -557,11 +557,11 @@ class BrowserParent final : public PBrowserParent,
   mozilla::ipc::IPCResult RecvUnlockNativePointer();
 
   /**
-   * The following Send*Event() marks aEvent as posted to remote process if
-   * it succeeded.  So, you can check the result with
-   * aEvent.HasBeenPostedToRemoteProcess().
+   * The following Send*Event() marks aMouseOrPointerEvent as posted to remote
+   * process if it succeeded.  So, you can check the result with
+   * aMouseOrPointerEvent.HasBeenPostedToRemoteProcess().
    */
-  void SendRealMouseEvent(WidgetMouseEvent& aEvent);
+  void SendRealMouseEvent(WidgetMouseEvent& aMouseOrPointerEvent);
 
   void SendRealDragEvent(WidgetDragEvent& aEvent, uint32_t aDragAction,
                          uint32_t aDropEffect, nsIPrincipal* aPrincipal,

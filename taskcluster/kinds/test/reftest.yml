@@ -192,6 +192,10 @@ reftest:
     description: "Reftest run"
     treeherder-symbol: R(R)
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     chunks:
         by-test-platform:
             android-em-7.*: 6

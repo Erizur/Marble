@@ -74,6 +74,8 @@ class VideoBridgeParent final : public PVideoBridgeParent,
 
   void DoUnregisterExternalImages();
 
+  void UnregisterSingleton();
+
   struct TextureHolder {
     RefPtr<TextureHost> mTextureHost;
     dom::ContentParentId mContentId;

@@ -92,7 +92,7 @@ async function reformatExpectedWebCompatInfo(tab, overrides) {
         applicationName,
         blockList,
         buildId: snapshot.application.buildID,
-        devicePixelRatio: parseInt(devicePixelRatio),
+        devicePixelRatio: parseFloat(devicePixelRatio),
         experiments,
         finalUserAgent: useragentString,
         fissionEnabled,
@@ -279,14 +279,14 @@ async function checkWebcompatComPayload(
   ok(details.defaultUserAgent?.length, "Got a default UA string");
   ok(additionalData.finalUserAgent?.length, "Got a final UA string");
 
-  // If we're sending any tab-specific data (which includes console logs),
-  // check that there is also a valid screenshot.
-  if ("consoleLog" in details) {
+  // Check that if there is also a screenshot, that it is valid.
+  const { screenshot } = receivedData;
+  if (screenshot) {
     const isScreenshotValid = await new Promise(done => {
       var image = new Image();
       image.onload = () => done(image.width > 0);
       image.onerror = () => done(false);
-      image.src = receivedData.screenshot;
+      image.src = screenshot;
     });
     ok(isScreenshotValid, "Got a valid screenshot");
   }

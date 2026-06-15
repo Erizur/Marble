@@ -501,9 +501,9 @@ bool GPUProcessManager::EnsureImageBridgeChild() {
     return true;
   }
 
-  mGPUChild->SendInitImageBridge(std::move(parentPipe));
-  ImageBridgeChild::InitWithGPUProcess(std::move(childPipe),
-                                       AllocateNamespace());
+  uint32_t ibNamespace = AllocateNamespace();
+  mGPUChild->SendInitImageBridge(std::move(parentPipe), ibNamespace);
+  ImageBridgeChild::InitWithGPUProcess(std::move(childPipe), ibNamespace);
   return true;
 }
 
@@ -518,7 +518,7 @@ bool GPUProcessManager::EnsureVRManager() {
   }
 
   if (NS_FAILED(rv)) {
-    VRManagerChild::InitSameProcess();
+    VRManagerChild::InitSameProcess(AllocateNamespace());
     return true;
   }
 
@@ -532,8 +532,9 @@ bool GPUProcessManager::EnsureVRManager() {
     return true;
   }
 
-  mGPUChild->SendInitVRManager(std::move(parentPipe));
-  VRManagerChild::InitWithGPUProcess(std::move(childPipe));
+  uint32_t vrNamespace = AllocateNamespace();
+  mGPUChild->SendInitVRManager(std::move(parentPipe), vrNamespace);
+  VRManagerChild::InitWithGPUProcess(std::move(childPipe), vrNamespace);
   return true;
 }
 
@@ -1324,21 +1325,29 @@ bool GPUProcessManager::CreateContentBridges(
     ipc::Endpoint<PVRManagerChild>* aOutVRBridge,
     ipc::Endpoint<PRemoteDecoderManagerChild>* aOutVideoManager,
     dom::ContentParentId aChildId, nsTArray<uint32_t>* aNamespaces) {
-  const uint32_t cmNamespace = AllocateNamespace();
-  if (!CreateContentCompositorManager(aOtherProcess, aChildId, cmNamespace,
+  const uint32_t compositorManagerNamespace = AllocateNamespace();
+  const uint32_t compositorBridgeNamespace = AllocateNamespace();
+  const uint32_t imageBridgeNamespace = AllocateNamespace();
+  const uint32_t vrManagerNamespace = AllocateNamespace();
+  if (!CreateContentCompositorManager(aOtherProcess, aChildId,
+                                      compositorManagerNamespace,
                                       aOutCompositor) ||
-      !CreateContentImageBridge(aOtherProcess, aChildId, aOutImageBridge) ||
-      !CreateContentVRManager(aOtherProcess, aChildId, aOutVRBridge)) {
+      !CreateContentImageBridge(aOtherProcess, aChildId, imageBridgeNamespace,
+                                aOutImageBridge) ||
+      !CreateContentVRManager(aOtherProcess, aChildId, vrManagerNamespace,
+                              aOutVRBridge)) {
     return false;
   }
   // VideoDeocderManager is only supported in the GPU process, so we allow this
   // to be fallible.
   CreateContentRemoteDecoderManager(aOtherProcess, aChildId, aOutVideoManager);
-  // Allocates 3 namespaces(for CompositorManagerChild, CompositorBridgeChild
-  // and ImageBridgeChild)
-  aNamespaces->AppendElement(cmNamespace);
-  aNamespaces->AppendElement(AllocateNamespace());
-  aNamespaces->AppendElement(AllocateNamespace());
+
+  // The order of the outparam namespaces must be kept in sync with
+  // ContentChild::RecvInitRendering and ContentChild::RecvReinitRendering.
+  aNamespaces->AppendElement(compositorManagerNamespace);
+  aNamespaces->AppendElement(compositorBridgeNamespace);
+  aNamespaces->AppendElement(imageBridgeNamespace);
+  aNamespaces->AppendElement(vrManagerNamespace);
   return true;
 }
 
@@ -1380,7 +1389,7 @@ bool GPUProcessManager::CreateContentCompositorManager(
 
 bool GPUProcessManager::CreateContentImageBridge(
     ipc::EndpointProcInfo aOtherProcess, dom::ContentParentId aChildId,
-    ipc::Endpoint<PImageBridgeChild>* aOutEndpoint) {
+    uint32_t aNamespace, ipc::Endpoint<PImageBridgeChild>* aOutEndpoint) {
   if (!EnsureImageBridgeChild()) {
     return false;
   }
@@ -1405,9 +1414,11 @@ bool GPUProcessManager::CreateContentImageBridge(
   }
 
   if (mGPUChild) {
-    mGPUChild->SendNewContentImageBridge(std::move(parentPipe), aChildId);
+    mGPUChild->SendNewContentImageBridge(std::move(parentPipe), aChildId,
+                                         aNamespace);
   } else {
-    if (!ImageBridgeParent::CreateForContent(std::move(parentPipe), aChildId)) {
+    if (!ImageBridgeParent::CreateForContent(std::move(parentPipe), aChildId,
+                                             aNamespace)) {
       return false;
     }
   }
@@ -1429,7 +1440,7 @@ ipc::EndpointProcInfo GPUProcessManager::GPUEndpointProcInfo() {
 
 bool GPUProcessManager::CreateContentVRManager(
     ipc::EndpointProcInfo aOtherProcess, dom::ContentParentId aChildId,
-    ipc::Endpoint<PVRManagerChild>* aOutEndpoint) {
+    uint32_t aNamespace, ipc::Endpoint<PVRManagerChild>* aOutEndpoint) {
   if (NS_WARN_IF(!EnsureVRManager())) {
     return false;
   }
@@ -1454,9 +1465,11 @@ bool GPUProcessManager::CreateContentVRManager(
   }
 
   if (mGPUChild) {
-    mGPUChild->SendNewContentVRManager(std::move(parentPipe), aChildId);
+    mGPUChild->SendNewContentVRManager(std::move(parentPipe), aChildId,
+                                       aNamespace);
   } else {
-    if (!VRManagerParent::CreateForContent(std::move(parentPipe), aChildId)) {
+    if (!VRManagerParent::CreateForContent(std::move(parentPipe), aChildId,
+                                           aNamespace)) {
       return false;
     }
   }

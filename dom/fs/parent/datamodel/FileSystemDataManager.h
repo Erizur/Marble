@@ -9,6 +9,7 @@
 
 #include "FileSystemParentTypes.h"
 #include "ResultConnection.h"
+#include "mozilla/Atomics.h"
 #include "mozilla/NotNull.h"
 #include "mozilla/TaskQueue.h"
 #include "mozilla/ThreadBound.h"
@@ -184,7 +185,7 @@ class FileSystemDataManager
   MozPromiseHolder<BoolPromise> mOpenPromiseHolder;
   MozPromiseHolder<BoolPromise> mClosePromiseHolder;
   int64_t mDirectoryLockId;
-  uint32_t mRegCount;
+  Atomic<uint32_t, Relaxed> mRegCount;
   DatabaseVersion mVersion;
   State mState;
 };

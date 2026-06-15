@@ -383,7 +383,8 @@ void PointerEventHandler::ProcessPointerCaptureForMouse(
   if (!info || info->mPendingElement == info->mOverrideElement) {
     return;
   }
-  WidgetPointerEvent localEvent(*aEvent);
+  WidgetPointerEvent localEvent =
+      WidgetPointerEvent::MakeCopyFromMouseEvent(*aEvent);
   InitPointerEventFromMouse(&localEvent, aEvent, eVoidEvent);
   CheckPointerCaptureState(&localEvent);
 }
@@ -955,7 +956,8 @@ void PointerEventHandler::DispatchPointerFromMouseOrTouch(
       }
     }
 #endif  // #ifdef DEBUG
-    WidgetPointerEvent event(*mouseEvent);
+    WidgetPointerEvent event =
+        WidgetPointerEvent::MakeCopyFromMouseEvent(*mouseEvent);
     InitPointerEventFromMouse(&event, mouseEvent, pointerMessage);
     event.convertToPointer = mouseEvent->convertToPointer = false;
     RefPtr<PresShell> shell(aShell);

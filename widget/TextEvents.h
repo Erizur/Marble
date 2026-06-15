@@ -191,7 +191,7 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
         mEditCommandsForRichTextEditorInitialized(false) {}
 
  public:
-  WidgetKeyboardEvent* AsKeyboardEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, KeyboardEvent);
 
   WidgetKeyboardEvent(bool aIsTrusted, EventMessage aMessage,
                       nsIWidget* aWidget,
@@ -214,6 +214,10 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
         mEditCommandsForSingleLineEditorInitialized(false),
         mEditCommandsForMultiLineEditorInitialized(false),
         mEditCommandsForRichTextEditorInitialized(false) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetKeyboardEvent,
+                                                    eKeyboardEventClass,
+                                                    eInputEventClass)
 
   // IsInputtingText() and IsInputtingLineBreak() are used to check if
   // it should cause eKeyPress events even on web content.
@@ -911,7 +915,7 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
  * mozilla::WidgetCompositionEvent
  ******************************************************************************/
 
-class WidgetCompositionEvent : public WidgetGUIEvent {
+class WidgetCompositionEvent final : public WidgetGUIEvent {
  private:
   friend class mozilla::dom::PBrowserParent;
   friend class mozilla::dom::PBrowserChild;
@@ -920,7 +924,7 @@ class WidgetCompositionEvent : public WidgetGUIEvent {
   WidgetCompositionEvent() : mOriginalMessage(eVoidEvent) {}
 
  public:
-  virtual WidgetCompositionEvent* AsCompositionEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, CompositionEvent);
 
   WidgetCompositionEvent(bool aIsTrusted, EventMessage aMessage,
                          nsIWidget* aWidget,
@@ -929,6 +933,10 @@ class WidgetCompositionEvent : public WidgetGUIEvent {
                        aTime),
         mNativeIMEContext(aWidget),
         mOriginalMessage(eVoidEvent) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetCompositionEvent,
+                                                    eCompositionEventClass,
+                                                    eGUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eCompositionEventClass,
@@ -1013,7 +1021,7 @@ class WidgetCompositionEvent : public WidgetGUIEvent {
  * mozilla::WidgetQueryContentEvent
  ******************************************************************************/
 
-class WidgetQueryContentEvent : public WidgetGUIEvent {
+class WidgetQueryContentEvent final : public WidgetGUIEvent {
  private:
   friend class dom::PBrowserParent;
   friend class dom::PBrowserChild;
@@ -1027,9 +1035,7 @@ class WidgetQueryContentEvent : public WidgetGUIEvent {
   }
 
  public:
-  virtual WidgetQueryContentEvent* AsQueryContentEvent() override {
-    return this;
-  }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, QueryContentEvent);
 
   WidgetQueryContentEvent(bool aIsTrusted, EventMessage aMessage,
                           nsIWidget* aWidget)
@@ -1046,6 +1052,10 @@ class WidgetQueryContentEvent : public WidgetGUIEvent {
         mUseNativeLineBreak(aOtherEvent.mUseNativeLineBreak),
         mWithFontRanges(false),
         mNeedsToFlushLayout(aOtherEvent.mNeedsToFlushLayout) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetQueryContentEvent,
+                                                    eQueryContentEventClass,
+                                                    eGUIEventClass)
 
   WidgetEvent* Duplicate() const override {
     // This event isn't an internal event of any DOM event.
@@ -1402,7 +1412,7 @@ class WidgetQueryContentEvent : public WidgetGUIEvent {
  * mozilla::WidgetSelectionEvent
  ******************************************************************************/
 
-class WidgetSelectionEvent : public WidgetGUIEvent {
+class WidgetSelectionEvent final : public WidgetGUIEvent {
  private:
   friend class mozilla::dom::PBrowserParent;
   friend class mozilla::dom::PBrowserChild;
@@ -1418,7 +1428,7 @@ class WidgetSelectionEvent : public WidgetGUIEvent {
         mReason(nsISelectionListener::NO_REASON) {}
 
  public:
-  virtual WidgetSelectionEvent* AsSelectionEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, SelectionEvent);
 
   WidgetSelectionEvent(bool aIsTrusted, EventMessage aMessage,
                        nsIWidget* aWidget)
@@ -1430,6 +1440,10 @@ class WidgetSelectionEvent : public WidgetGUIEvent {
         mSucceeded(false),
         mUseNativeLineBreak(true),
         mReason(nsISelectionListener::NO_REASON) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetSelectionEvent,
+                                                    eSelectionEventClass,
+                                                    eGUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     // This event isn't an internal event of any DOM event.
@@ -1460,18 +1474,20 @@ class WidgetSelectionEvent : public WidgetGUIEvent {
  * mozilla::InternalEditorInputEvent
  ******************************************************************************/
 
-class InternalEditorInputEvent : public InternalUIEvent {
+class InternalEditorInputEvent final : public InternalUIEvent {
  public:
   InternalEditorInputEvent() = delete;
-  virtual InternalEditorInputEvent* AsEditorInputEvent() override {
-    return this;
-  }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Internal, EditorInputEvent);
 
   InternalEditorInputEvent(bool aIsTrusted, EventMessage aMessage,
                            nsIWidget* aWidget = nullptr,
                            const WidgetEventTime* aTime = nullptr)
       : InternalUIEvent(aIsTrusted, aMessage, aWidget, eEditorInputEventClass,
                         aTime) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(InternalEditorInputEvent,
+                                                    eEditorInputEventClass,
+                                                    eUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eEditorInputEventClass,
@@ -1522,17 +1538,21 @@ class InternalEditorInputEvent : public InternalUIEvent {
  * mozilla::InternalLegacyTextEvent
  ******************************************************************************/
 
-class InternalLegacyTextEvent : public InternalUIEvent {
+class InternalLegacyTextEvent final : public InternalUIEvent {
  public:
   InternalLegacyTextEvent() = delete;
 
-  virtual InternalLegacyTextEvent* AsLegacyTextEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Internal, LegacyTextEvent);
 
   InternalLegacyTextEvent(bool aIsTrusted, EventMessage aMessage,
                           nsIWidget* aWidget = nullptr,
                           const WidgetEventTime* aTime = nullptr)
       : InternalUIEvent(aIsTrusted, aMessage, aWidget, eLegacyTextEventClass,
                         aTime) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(InternalLegacyTextEvent,
+                                                    eLegacyTextEventClass,
+                                                    eUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eLegacyTextEventClass,

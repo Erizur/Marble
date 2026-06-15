@@ -85,7 +85,8 @@ ParentChannelListener::OnStartRequest(nsIRequest* aRequest) {
   }
 
   LOG(("ParentChannelListener::OnStartRequest [this=%p]\n", this));
-  return mNextListener->OnStartRequest(aRequest);
+  nsCOMPtr<nsIStreamListener> nextListener = mNextListener;
+  return nextListener->OnStartRequest(aRequest);
 }
 
 NS_IMETHODIMP
@@ -95,7 +96,8 @@ ParentChannelListener::OnStopRequest(nsIRequest* aRequest,
 
   LOG(("ParentChannelListener::OnStopRequest: [this=%p status=%" PRIu32 "]\n",
        this, static_cast<uint32_t>(aStatusCode)));
-  nsresult rv = mNextListener->OnStopRequest(aRequest, aStatusCode);
+  nsCOMPtr<nsIStreamListener> nextListener = mNextListener;
+  nsresult rv = nextListener->OnStopRequest(aRequest, aStatusCode);
 
   if (!mIsMultiPart) {
     mNextListener = nullptr;
@@ -114,8 +116,8 @@ ParentChannelListener::OnDataAvailable(nsIRequest* aRequest,
   if (!mNextListener) return NS_ERROR_UNEXPECTED;
 
   LOG(("ParentChannelListener::OnDataAvailable [this=%p]\n", this));
-  return mNextListener->OnDataAvailable(aRequest, aInputStream, aOffset,
-                                        aCount);
+  nsCOMPtr<nsIStreamListener> nextListener = mNextListener;
+  return nextListener->OnDataAvailable(aRequest, aInputStream, aOffset, aCount);
 }
 
 NS_IMETHODIMP

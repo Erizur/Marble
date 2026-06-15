@@ -701,6 +701,10 @@ mochitest-plain-gpu:
     treeherder-symbol: M(gpu)
     schedules-component: mochitest-plain
     loopback-video: true
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     variants:
         - no-fission
         - webrender-sw+no-fission
@@ -765,6 +769,10 @@ mochitest-chrome-gpu:
     treeherder-symbol: M(gpu-c)
     loopback-video: true
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     run-without-variant: false
     variants:
         - 1proc
@@ -985,6 +993,10 @@ mochitest-webgl1-core:
     treeherder-symbol: M(gl1c)
     schedules-component: mochitest-plain
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     test-manifest-loader: null  # don't load tests in the taskgraph
     loopback-video: true
     max-run-time: 1800
@@ -1029,6 +1041,10 @@ mochitest-webgl1-ext:
     treeherder-symbol: M(gl1e)
     schedules-component: mochitest-plain
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     test-manifest-loader: null  # don't load tests in the taskgraph
     loopback-video: true
     max-run-time: 2700
@@ -1073,6 +1089,10 @@ mochitest-webgl2-core:
     treeherder-symbol: M(gl2c)
     schedules-component: mochitest-plain
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     chunks:
         by-test-platform:
             android.*: 2
@@ -1123,6 +1143,10 @@ mochitest-webgl2-ext:
     treeherder-symbol: M(gl2e)
     schedules-component: mochitest-plain
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     variants:
         - no-fission
         - webrender-sw+no-fission
@@ -1165,6 +1189,10 @@ mochitest-webgl2-deqp:
     treeherder-symbol: M(gl2d)
     schedules-component: mochitest-plain
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     variants:
         - webrender-sw
     run-on-projects: []  # Don't run this for now.
@@ -1182,6 +1210,10 @@ mochitest-webgpu:
     treeherder-symbol: M(webgpu)
     schedules-component: mochitest-plain
     virtualization: virtual-with-gpu
+    worker-type:
+        by-test-platform:
+            windows11-(32|64)-24h2.*/.*: win11-64-25h2-gpu
+            default: default
     loopback-video: true
     variants:
         - no-fission
