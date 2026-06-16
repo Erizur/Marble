@@ -5674,6 +5674,7 @@ static SingleCanvasBackground ComputeSingleCanvasBackground(nsIFrame* aCanvas) {
   const nsStyleDisplay* disp = bgFrame->StyleDisplay();
   StyleAppearance appearance = disp->EffectiveAppearance();
   if (bgFrame->IsThemed(disp) &&
+      appearance != StyleAppearance::MozWinGlass &&
       appearance != StyleAppearance::MozWinBorderlessGlass) {
     // Ignore the CSS background-color if -moz-appearance is used and it is
     // not one of the glass values. (Windows 7 Glass has traditionally not

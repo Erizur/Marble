@@ -115,7 +115,8 @@ bool CompositorWidgetParent::HasGlass() const {
   MOZ_ASSERT(layers::CompositorThreadHolder::IsInCompositorThread() ||
              wr::RenderThread::IsInRenderThread());
 
-  return mTransparencyMode == uint32_t(TransparencyMode::BorderlessGlass);
+  return mTransparencyMode == uint32_t(TransparencyMode::Glass) ||
+         mTransparencyMode == uint32_t(TransparencyMode::BorderlessGlass);
 }
 
 bool CompositorWidgetParent::IsHidden() const { return ::IsIconic(mWnd); }
