@@ -210,6 +210,21 @@ XPCOMUtils.defineLazyPreferenceGetter(
   false
 );
 
+// Marble: when false, the Firefox 109+ unified extensions UI is disabled and
+// extension widgets default to / overflow into the classic toolbar chevron
+// panel instead of the unified extensions add-ons area. Toggling the pref
+// re-homes existing extension widgets so the change takes effect without a
+// restart.
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "gUnifiedExtensionsEnabled",
+  "extensions.unifiedExtensions.enabled",
+  false,
+  (pref, oldVal, newVal) => {
+    CustomizableUIInternal.onUnifiedExtensionsPrefChanged(newVal);
+  }
+);
+
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "sidebarRevampEnabled",
@@ -327,7 +342,6 @@ var CustomizableUIInternal = {
     );
 
     let navbarPlacements = [
-      
       "back-button",
       "forward-button",
       "stop-reload-button",
@@ -335,7 +349,7 @@ var CustomizableUIInternal = {
       "spring",
       "vertical-spacer",
       "urlbar-container",
-      "spring",
+      "search-container",
       "save-to-pocket-button",
       "downloads-button",
       "library-button",
@@ -778,7 +792,9 @@ var CustomizableUIInternal = {
 
     // Unified Extensions addon button migration, which puts any browser action
     // buttons in the overflow menu into the addons panel instead.
-    if (currentVersion < 19) {
+    // Marble: skip this when the unified extensions UI is disabled so extension
+    // widgets stay in the classic toolbar chevron overflow panel.
+    if (currentVersion < 19 && lazy.gUnifiedExtensionsEnabled) {
       let overflowPlacements =
         gSavedState.placements[CustomizableUI.AREA_FIXED_OVERFLOW_PANEL] || [];
       // The most likely case is that there are no AREA_ADDONS placements, in which case the
@@ -1573,6 +1589,7 @@ var CustomizableUIInternal = {
     let contextMenuForPlace;
 
     if (
+      lazy.gUnifiedExtensionsEnabled &&
       CustomizableUI.isWebExtensionWidget(aNode.id) &&
       (aAreaNode?.id == CustomizableUI.AREA_ADDONS ||
         aNode.getAttribute("overflowedItem") == "true")
@@ -4066,12 +4083,18 @@ var CustomizableUIInternal = {
 
         // Extension widgets cannot enter the customization palette, so if
         // at this point, we haven't found an area for them, move them into
-        // AREA_ADDONS.
+        // AREA_ADDONS (or the classic chevron overflow panel when the unified
+        // extensions UI is disabled).
         if (
           !widget.currentArea &&
           CustomizableUI.isWebExtensionWidget(widget.id)
         ) {
-          this.addWidgetToArea(widget.id, CustomizableUI.AREA_ADDONS);
+          this.addWidgetToArea(
+            widget.id,
+            lazy.gUnifiedExtensionsEnabled
+              ? CustomizableUI.AREA_ADDONS
+              : CustomizableUI.AREA_FIXED_OVERFLOW_PANEL
+          );
         }
       }
     } finally {
@@ -4531,23 +4554,76 @@ var CustomizableUIInternal = {
     for (let [areaId] of gAreas) {
       // If the Unified Extensions UI is enabled, we'll be adding any
       // extension buttons that aren't already in AREA_ADDONS there,
-      // so we can skip restoring the state for it.
-      if (areaId != CustomizableUI.AREA_ADDONS) {
-        this.restoreStateForArea(areaId);
+      // so we can skip restoring the (empty) state for it. When the unified
+      // UI is disabled, extension buttons go to the classic chevron overflow
+      // panel, which has built-in default placements that must be restored.
+      if (
+        lazy.gUnifiedExtensionsEnabled &&
+        areaId == CustomizableUI.AREA_ADDONS
+      ) {
+        continue;
       }
+      this.restoreStateForArea(areaId);
     }
 
     // restoreStateForArea will have normally set an array for the placements
     // for each area, but since we skip AREA_ADDONS intentionally, that array
     // doesn't get set, so we do that manually here.
-    gPlacements.set(CustomizableUI.AREA_ADDONS, []);
+    if (lazy.gUnifiedExtensionsEnabled) {
+      gPlacements.set(CustomizableUI.AREA_ADDONS, []);
+    }
 
+    // Marble: route area-less extension buttons to the unified add-ons area or,
+    // when the unified UI is disabled, to the classic chevron overflow panel.
+    let webExtArea = lazy.gUnifiedExtensionsEnabled
+      ? CustomizableUI.AREA_ADDONS
+      : CustomizableUI.AREA_FIXED_OVERFLOW_PANEL;
     for (let [widgetId] of gPalette) {
       if (
         CustomizableUI.isWebExtensionWidget(widgetId) &&
         !oldAddonPlacements.includes(widgetId)
       ) {
-        this.addWidgetToArea(widgetId, CustomizableUI.AREA_ADDONS);
+        this.addWidgetToArea(widgetId, webExtArea);
+      }
+    }
+  },
+
+  /**
+   * Marble: react to the extensions.unifiedExtensions.enabled pref being
+   * toggled at runtime by re-homing every extension (browser action) widget so
+   * the change takes effect without a restart. When the unified extensions UI
+   * is enabled, gather the widgets into the unified add-ons area (the panel);
+   * when it is disabled, move them to the navbar where they appear on the
+   * toolbar and overflow into the classic chevron panel when there isn't room.
+   *
+   * @param {boolean} enabled
+   *   The new value of the pref.
+   */
+  onUnifiedExtensionsPrefChanged(enabled) {
+    let targetArea = enabled
+      ? CustomizableUI.AREA_ADDONS
+      : CustomizableUI.AREA_NAVBAR;
+
+    // Collect every known extension widget, whether currently placed or in the
+    // palette.
+    let widgetIds = new Set();
+    for (let placements of gPlacements.values()) {
+      for (let id of placements) {
+        if (CustomizableUI.isWebExtensionWidget(id)) {
+          widgetIds.add(id);
+        }
+      }
+    }
+    for (let [id] of gPalette) {
+      if (CustomizableUI.isWebExtensionWidget(id)) {
+        widgetIds.add(id);
+      }
+    }
+
+    for (let id of widgetIds) {
+      let placement = CustomizableUI.getPlacementOfWidget(id);
+      if (!placement || placement.area != targetArea) {
+        this.addWidgetToArea(id, targetArea);
       }
     }
   },
@@ -4742,10 +4818,15 @@ var CustomizableUIInternal = {
       }
 
       // Extension widgets cannot move to panels, with the exception of the
-      // AREA_ADDONS area.
+      // AREA_ADDONS area (or, when the unified extensions UI is disabled, the
+      // classic chevron overflow panel).
       if (
         gAreas.get(aArea).get("type") == CustomizableUI.TYPE_PANEL &&
-        aArea != CustomizableUI.AREA_ADDONS
+        aArea != CustomizableUI.AREA_ADDONS &&
+        !(
+          !lazy.gUnifiedExtensionsEnabled &&
+          aArea == CustomizableUI.AREA_FIXED_OVERFLOW_PANEL
+        )
       ) {
         return false;
       }
@@ -7820,7 +7901,11 @@ class OverflowableToolbar {
           this.#target
         );
 
-        if (webExtList && CustomizableUI.isWebExtensionWidget(child.id)) {
+        if (
+          lazy.gUnifiedExtensionsEnabled &&
+          webExtList &&
+          CustomizableUI.isWebExtensionWidget(child.id)
+        ) {
           child.setAttribute("cui-anchorid", webExtButtonID);
           webExtList.insertBefore(child, webExtList.firstElementChild);
         } else {
