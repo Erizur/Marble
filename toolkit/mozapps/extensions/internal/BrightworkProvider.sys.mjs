@@ -579,6 +579,12 @@ export const BrightworkProvider = {
           anchor = win.gUnifiedExtensions?.getPopupAnchorID(browser, win);
         } catch (e) {}
 
+        if (win.gUnifiedExtensions?.isEnabled) {
+          win.gUnifiedExtensions.ensureButtonShownBeforeAttachingPanel?.(
+            win.PopupNotifications.panel
+          );
+        }
+
         win.PopupNotifications.show(
           browser,
           "brightwork-web-install",

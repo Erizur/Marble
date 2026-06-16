@@ -656,3 +656,20 @@ if (PrivateBrowsingUtils.enabled) {
     },
   });
 }
+
+// When the unified extensions UI is disabled, restore the classic
+// "Add-ons and themes" toolbar button.
+// TODO: perhaps remove this on reload?
+if (
+  !Services.prefs.getBoolPref("extensions.unifiedExtensions.enabled", false)
+) {
+  CustomizableWidgets.push({
+    id: "add-ons-button",
+    shortcutId: "key_openAddons",
+    l10nId: "toolbar-addons-themes-button",
+    onCommand(aEvent) {
+      let win = aEvent.target.ownerGlobal;
+      win.BrowserAddonUI.openAddonsMgr();
+    },
+  });
+}

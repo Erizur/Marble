@@ -926,6 +926,11 @@ toolbar-overflow-customize-button =
   .label = Customize toolbar…
   .accesskey = C
 
+# "Add-ons and themes" toolbar button when the unified extensions UI is disabled.
+toolbar-addons-themes-button =
+  .label = Add-ons and themes
+  .tooltiptext = Manage your add-ons and themes ({ $shortcut })
+
 toolbar-button-email-link =
   .label = Email link
   .tooltiptext = Email a link to this page

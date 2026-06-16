@@ -2003,6 +2003,13 @@ var gUnifiedExtensions = {
     // Button is hidden by default, declared in navigator-toolbox.inc.xhtml.
     this._button = document.getElementById("unified-extensions-button");
     this._navbar = document.getElementById("nav-bar");
+    // Flag classic mode on the root so CSS can render extension
+    // buttons overflowed into the chevron panel as plain toolbar buttons
+    // instead of unified extensions panel items.
+    document.documentElement.toggleAttribute(
+      "unifiedextensionsdisabled",
+      !this.isEnabled
+    );
     this.updateButtonVisibility();
     this._buttonAttrObs = new MutationObserver(() => this.onButtonOpenChange());
     this._buttonAttrObs.observe(this._button, { attributeFilter: ["open"] });
@@ -2075,10 +2082,14 @@ var gUnifiedExtensions = {
   },
 
   onAppMenuShowing() {
+    // Marble: in classic mode always offer the "Extensions and themes"
+    // (about:addons) entry and hide the unified extensions panel entry, since
+    // the unified panel is disabled.
+    let showUnified = this.isEnabled && this.buttonAlwaysVisible;
     document.getElementById("appMenu-extensions-themes-button").hidden =
-      !this.buttonAlwaysVisible;
+      showUnified;
     document.getElementById("appMenu-unified-extensions-button").hidden =
-      this.buttonAlwaysVisible;
+      !showUnified;
   },
 
   onLocationChange(browser, webProgress, _request, _uri, flags) {
@@ -2093,6 +2104,15 @@ var gUnifiedExtensions = {
   },
 
   updateButtonVisibility() {
+    // Marble: keep the unified extensions button hidden entirely when the
+    // feature is disabled, even while customizing, so it never appears in the
+    // navbar in classic overflow mode.
+    if (!this.isEnabled) {
+      this._button.hidden = true;
+      this._navbar.removeAttribute("unifiedextensionsbuttonshown");
+      return;
+    }
+
     // TODO: Bug 1778684 - Auto-hide button when there is no active extension.
     let shouldShowButton =
       this.buttonAlwaysVisible ||
@@ -2201,6 +2221,12 @@ var gUnifiedExtensions = {
   // If the new ID is not added in NOTIFICATION_IDS, consider handling the case
   // in the "PopupNotificationsBeforeAnchor" handler elsewhere in this file.
   getPopupAnchorID(aBrowser, aWindow) {
+    // Marble: in classic mode the unified extensions button is hidden, so fall
+    // back to the classic add-ons notification anchor.
+    if (!this.isEnabled) {
+      return "addons-notification-icon";
+    }
+
     const anchorID = "unified-extensions-button";
     const attr = anchorID + "popupnotificationanchor";
 
@@ -3112,6 +3138,25 @@ XPCOMUtils.defineLazyPreferenceGetter(
       gUnifiedExtensions._updateButtonBarListeners();
       gUnifiedExtensions.updateButtonVisibility();
       Glean.extensionsButton.prefersHiddenButton.set(!newValue);
+    }
+  }
+);
+// Marble: whether the unified extensions UI is enabled. When toggled at
+// runtime, update the classic-mode root flag (for CSS) and the button
+// visibility per window. Widget placement re-homing is handled globally by
+// CustomizableUI's observer on the same pref.
+XPCOMUtils.defineLazyPreferenceGetter(
+  gUnifiedExtensions,
+  "isEnabled",
+  "extensions.unifiedExtensions.enabled",
+  false,
+  () => {
+    if (gUnifiedExtensions._initialized) {
+      document.documentElement.toggleAttribute(
+        "unifiedextensionsdisabled",
+        !gUnifiedExtensions.isEnabled
+      );
+      gUnifiedExtensions.updateButtonVisibility();
     }
   }
 );

@@ -492,23 +492,28 @@ export var ToolbarContextMenu = {
     for (let element of [removeExtension, manageExtension, separator]) {
       element.hidden = !addon;
     }
+    
+    const unifiedEnabled = popup.ownerGlobal.gUnifiedExtensions.isEnabled;
 
     if (pinToToolbar) {
-      pinToToolbar.hidden = !addon;
+      pinToToolbar.hidden = !addon || !unifiedEnabled;
     }
 
     reportExtension.hidden = !addon || !lazy.gAddonAbuseReportEnabled;
 
     if (addon) {
-      popup.querySelector(".customize-context-moveToPanel").hidden = true;
-      popup.querySelector(".customize-context-removeFromToolbar").hidden = true;
+      if (unifiedEnabled) {
+        popup.querySelector(".customize-context-moveToPanel").hidden = true;
+        popup.querySelector(".customize-context-removeFromToolbar").hidden =
+          true;
 
-      if (pinToToolbar) {
-        let widgetId = this._getWidgetId(popup);
-        if (widgetId) {
-          let area = lazy.CustomizableUI.getPlacementOfWidget(widgetId).area;
-          let inToolbar = area != lazy.CustomizableUI.AREA_ADDONS;
-          pinToToolbar.setAttribute("checked", inToolbar);
+        if (pinToToolbar) {
+          let widgetId = this._getWidgetId(popup);
+          if (widgetId) {
+            let area = lazy.CustomizableUI.getPlacementOfWidget(widgetId).area;
+            let inToolbar = area != lazy.CustomizableUI.AREA_ADDONS;
+            pinToToolbar.setAttribute("checked", inToolbar);
+          }
         }
       }
 

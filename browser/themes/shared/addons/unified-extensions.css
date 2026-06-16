@@ -242,6 +242,22 @@ unified-extensions-item.unified-extensions-item {
   align-items: normal;
 }
 
+/* DE-UNIFIED extensions */
+
+:root[unifiedextensionsdisabled] {
+  & toolbaritem[overflowedItem="true"].unified-extensions-item {
+    --uei-icon-size: 16px;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  & toolbaritem[overflowedItem="true"].unified-extensions-item .unified-extensions-item-menu-button,
+  & toolbaritem[overflowedItem="true"].unified-extensions-item .unified-extensions-item-message-deck,
+  & toolbaritem[overflowedItem="true"].unified-extensions-item .unified-extensions-item-messagebar {
+    display: none !important;
+  }
+}
+
 /* --- browser action CUI widget styles in the extensions panel --- */
 
 @media (prefers-contrast) {

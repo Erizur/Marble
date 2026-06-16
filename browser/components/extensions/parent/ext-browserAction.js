@@ -32,14 +32,20 @@ const POPUP_PRELOAD_TIMEOUT_MS = 200;
 // WeakMap[Extension -> BrowserAction]
 const browserActionMap = new WeakMap();
 
-ChromeUtils.defineLazyGetter(this, "browserAreas", () => {
+function browserAreas() {
+  let menupanel = Services.prefs.getBoolPref(
+    "extensions.unifiedExtensions.enabled",
+    false
+  )
+    ? CustomizableUI.AREA_ADDONS
+    : CustomizableUI.AREA_FIXED_OVERFLOW_PANEL;
   return {
     navbar: CustomizableUI.AREA_NAVBAR,
-    menupanel: CustomizableUI.AREA_ADDONS,
+    menupanel,
     tabstrip: CustomizableUI.AREA_TABSTRIP,
     personaltoolbar: CustomizableUI.AREA_BOOKMARKS,
   };
-});
+}
 
 function actionWidgetId(widgetId) {
   return `${widgetId}-browser-action`;
@@ -182,7 +188,7 @@ this.browserAction = class extends ExtensionAPIPersistent {
       removable: true,
       label: this.action.getProperty(null, "title"),
       tooltiptext: this.action.getProperty(null, "title"),
-      defaultArea: browserAreas[this.action.getDefaultArea()],
+      defaultArea: browserAreas()[this.action.getDefaultArea()],
       showInPrivateBrowsing: extension.privateBrowsingAllowed,
       disallowSubView: true,
 
@@ -498,10 +504,16 @@ this.browserAction = class extends ExtensionAPIPersistent {
     }
 
     if (this.widget.areaType == CustomizableUI.TYPE_PANEL) {
-      await window.gUnifiedExtensions.openPanel(
-        null,
-        "extension_browser_action_popup"
-      );
+      if (window.gUnifiedExtensions.isEnabled) {
+        await window.gUnifiedExtensions.openPanel(
+          null,
+          "extension_browser_action_popup"
+        );
+      } else {
+        // In classic mode the button lives in the toolbar chevron
+        // overflow panel, so open that instead of the unified panel.
+        await window.document.getElementById("nav-bar").overflowable.show();
+      }
     }
 
     // This should already have been checked by callers, but acts as an

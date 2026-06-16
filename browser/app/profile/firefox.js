@@ -74,6 +74,9 @@ pref("xpinstall.signatures.required", true);
 // Enable data collection permissions.
 pref("extensions.dataCollectionPermissions.enabled", true);
 
+// Un-unify unified extensions for less unified unification.
+pref("extensions.unifiedExtensions.enabled", false);
+
 // Dictionary download preference
 pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/firefox/language-tools/");
 

@@ -510,10 +510,16 @@ export class BrowserActionBase extends PanelActionBase {
       extension.manifest.browser_action || extension.manifest.action;
     super(options, tabContext, extension);
 
+    let fallbackArea = Services.prefs.getBoolPref(
+      "extensions.unifiedExtensions.enabled",
+      false
+    )
+      ? "menupanel"
+      : "navbar";
     let default_area =
       Services.policies?.getExtensionSettings(extension.id)?.default_area ||
       options.default_area ||
-      "menupanel";
+      fallbackArea;
 
     // When the personal toolbar (bookmarks) is never visible OR vertical tabs
     // are enabled, we want to place the extension action (widget) in the panel
