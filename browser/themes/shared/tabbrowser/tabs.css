@@ -2397,6 +2397,34 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
     display: none !important;
   }
 
+  /* Add dark mode tab background (never existed in Windows 7/8 Photon but its a cool thing */
+  @media (-moz-platform: windows) {
+    @media not (-moz-windows-modern) {
+      @media (-moz-windows-default-theme) {
+        @media (prefers-color-scheme: light) {
+          :root:not([lwtheme]) .tabbrowser-tab {
+            background-color: hsl(235,33%,19%) !important;
+            background-clip: padding-box;
+          }
+
+          :root:not([lwtheme]) .tabbrowser-tab:not([visuallyselected]) {
+            color: white !important;
+          }
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+       /* Show border on tabs with background colors and
+        * show the tabs toolbar background color inside tabs. */
+        :root:not([lwtheme]) .tabbrowser-tab {
+          background-color: var(--lwt-accent-color) !important;
+          color: var(--lwt-text-color) !important;
+          border-top: 1px solid var(--tabs-border-color);
+          background-clip: padding-box;
+        }
+      }
+    }
+  }
+
   .tab-background {
     &::before {
       display: block;
@@ -2406,6 +2434,11 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
       background: var(--lwt-tab-line-color, var(--lwt-tabs-border-color, #0a84ff));
       width: 100%;
       margin: auto;
+      
+      @media (-moz-platform: windows) {
+        /* NEW! hacky method to get the tab lines properly positioned */
+        margin-top: -1px; 
+      }
     }
     &:not([selected],
     [multiselected="true"])::before {
@@ -2429,6 +2462,10 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
       &[multiselected="true"]::before {
         filter: grayscale(0%);
       }
+    }
+
+    & {
+      border-radius: none !important;
     }
   }
 

@@ -514,15 +514,24 @@ body {
 
 .browser-toolbox-background {
   position: relative;
-  background-color: var(--toolbox-non-lwt-bgcolor);
   color: var(--toolbox-non-lwt-textcolor);
 
-  will-change: background-color;
-  transition: background-color var(--inactive-window-transition);
-
   &:-moz-window-inactive {
-    background-color: var(--toolbox-non-lwt-bgcolor-inactive);
     color: var(--toolbox-non-lwt-textcolor-inactive);
+  }
+
+  /* On Windows Aero Glass, keep the toolbox transparent so the glass and the
+   * window backdrop show through behind background tabs (the Photon look).
+   * Everywhere else (incl. non-glass Windows) paint the headerbar background. */
+  @media not (-moz-windows-glass) {
+    background-color: var(--toolbox-non-lwt-bgcolor);
+
+    will-change: background-color;
+    transition: background-color var(--inactive-window-transition);
+
+    &:-moz-window-inactive {
+      background-color: var(--toolbox-non-lwt-bgcolor-inactive);
+    }
   }
 
   :root[customizing] & {
