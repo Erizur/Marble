@@ -59,11 +59,22 @@
         return;
       }
 
-      let fragment = this.constructor.fragment;
+      let fragment = this.isArrowPanel
+        ? MozXULElement.parseXULToFragment(
+            `<vbox class="panel-arrowcontainer" flex="1">
+               <box class="panel-arrowbox" part="arrowbox">
+                 <html:div class="panel-arrow" part="arrow"/>
+               </box>
+               <html:slot part="content"/>
+             </vbox>`
+          )
+        : this.constructor.fragment;
+
+      let slot = fragment.querySelector("[part=content]");
       if (!this.hasAttribute("neverhidden")) {
-        let slot = fragment.querySelector("[part=content]");
         slot.style.setProperty("display", "none", "important");
       }
+
       this.shadowRoot.appendChild(fragment);
     }
 
@@ -123,9 +134,55 @@
         }
       }
 
-      // This method isn't implemented by panel.js, but it can be added to
-      // individual instances that need to show an arrow.
       this.setArrowPosition?.(event);
+    }
+
+    setArrowPosition(event) {
+      let container = this.shadowRoot.querySelector(".panel-arrowcontainer");
+      let arrowbox = this.shadowRoot.querySelector(".panel-arrowbox");
+      if (!container || !arrowbox) {
+        return;
+      }
+
+      let position = event.alignmentPosition;
+      let offset = event.alignmentOffset;
+
+      arrowbox.style.removeProperty("transform");
+
+      if (position.indexOf("start_") == 0 || position.indexOf("end_") == 0) {
+        arrowbox.setAttribute("orient", "vertical");
+        arrowbox.setAttribute(
+          "pack",
+          position.indexOf("_after") > 0 ? "end" : "start"
+        );
+        arrowbox.style.transform = "translate(0, " + -offset + "px)";
+
+        // [orient] rules in xul.css are !important, so the reversed direction
+        // must also be set !important to win.
+        container.style.setProperty(
+          "flex-direction",
+          position.indexOf("start_") == 0 ? "row-reverse" : "row",
+          "important"
+        );
+      } else if (
+        position.indexOf("before_") == 0 ||
+        position.indexOf("after_") == 0
+      ) {
+        // Panel sits above/below the anchor: arrow points vertically and slides
+        // along the horizontal axis.
+        arrowbox.removeAttribute("orient");
+        arrowbox.setAttribute(
+          "pack",
+          position.indexOf("_end") > 0 ? "end" : "start"
+        );
+        arrowbox.style.transform = "translate(" + -offset + "px, 0)";
+
+        container.style.setProperty(
+          "flex-direction",
+          position.indexOf("before_") == 0 ? "column-reverse" : "column",
+          "important"
+        );
+      }
     }
 
     on_popupshowing(event) {
@@ -138,6 +195,16 @@
             this.anchorNode.closest("toolbarbutton, .anchor-root") ||
             this.anchorNode;
           anchorRoot.setAttribute("open", "true");
+        }
+
+        // Only show the arrow when anchored, and clear any leftover
+        // sliding offset from a previous opening.
+        let arrow = this.shadowRoot.querySelector(".panel-arrow");
+        if (arrow) {
+          arrow.style.display = this.anchorNode ? "" : "none";
+          this.shadowRoot
+            .querySelector(".panel-arrowbox")
+            .style.removeProperty("transform");
         }
 
         if (this.getAttribute("animate") != "false") {

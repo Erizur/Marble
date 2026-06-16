@@ -422,6 +422,10 @@ menupopup[emptyplacesresult] > .hide-if-empty-places-result {
     align-items: center;
   }
 
+  &[hidearrow]::part(arrow) {
+    display: none;
+  }
+
   /* Don't show the checkmark if there is a description */
   &.with-description #confirmation-hint-checkmark-animation-container {
     display: none;

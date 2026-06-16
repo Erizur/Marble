@@ -131,6 +131,65 @@
   --panel-padding: var(--arrowpanel-padding);
 }
 
+/* Marble: restore the Photon-era arrow on anchored arrow panels (bug 1734835
+   removed it). panel.js wraps the content slot of [type="arrow"] panels in an
+   arrowcontainer/arrowbox so the arrow is in-flow (the popup reserves space for
+   it; an absolutely-positioned arrow would be clipped outside the popup bounds),
+   and setArrowPosition() slides it along the facing edge. These rules live in
+   global-shared.css (not popup-photon.css) because that file is imported by
+   global.css and is the sheet that actually styles chrome panel ::parts;
+   popup.css is not in browser.xhtml's cascade. Scoped to panel[type="arrow"]
+   only, so menupopups, places (bookmark folder) popups and the autoscroller
+   never get an arrow. The arrow is drawn with a background-image because a XUL
+   <image> no longer paints list-style-image under modern display:inline-flex. */
+@media not (-moz-proton) {
+  panel[type="arrow"]::part(arrow) {
+    -moz-context-properties: fill, stroke;
+    fill: var(--panel-background);
+    stroke: var(--panel-border-color);
+    background-repeat: no-repeat;
+    background-position: center;
+    position: relative;
+    pointer-events: none;
+  }
+
+  panel[type="arrow"][side="top"]::part(arrow),
+  panel[type="arrow"][side="bottom"]::part(arrow) {
+    background-image: url("chrome://global/skin/arrow/panelarrow-vertical.svg");
+    width: 20px;
+    height: 10px;
+    margin-inline: 10px;
+  }
+
+  panel[type="arrow"][side="left"]::part(arrow),
+  panel[type="arrow"][side="right"]::part(arrow) {
+    background-image: url("chrome://global/skin/arrow/panelarrow-horizontal.svg");
+    width: 10px;
+    height: 20px;
+    margin-block: 10px;
+  }
+
+  /* The SVGs point up / left by default; flip for the opposite sides. Negative
+     margins let the arrow tip overlap the panel border seamlessly. */
+  panel[type="arrow"][side="top"]::part(arrow) {
+    margin-bottom: -5px;
+  }
+
+  panel[type="arrow"][side="bottom"]::part(arrow) {
+    transform: scaleY(-1);
+    margin-top: -5px;
+  }
+
+  panel[type="arrow"][side="left"]::part(arrow) {
+    margin-right: -5px;
+  }
+
+  panel[type="arrow"][side="right"]::part(arrow) {
+    transform: scaleX(-1);
+    margin-left: -5px;
+  }
+}
+
 /* Lightweight theme roots */
 
 :root[lwtheme] {

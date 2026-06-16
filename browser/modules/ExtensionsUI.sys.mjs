@@ -466,7 +466,7 @@ export var ExtensionsUI = {
         eventCallback,
         removeOnDismissal: true,
         popupOptions: {
-          position: "bottomright topright",
+          position: browser.ownerGlobal.gUnifiedExtensions.getPopupPosition(),
         },
         // Pass additional options used internally by the
         // addon-webext-permissions-notification custom element

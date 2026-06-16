@@ -1064,7 +1064,7 @@ var gXPInstallObserver = {
       persistent: true,
       hideClose: true,
       popupOptions: {
-        position: "bottomright topright",
+        position: gUnifiedExtensions.getPopupPosition(),
       },
     };
 
@@ -1273,7 +1273,7 @@ var gXPInstallObserver = {
       hideClose: true,
       timeout: Date.now() + 30000,
       popupOptions: {
-        position: "bottomright topright",
+        position: gUnifiedExtensions.getPopupPosition(),
       },
     };
 
@@ -2242,6 +2242,10 @@ var gUnifiedExtensions = {
     }
 
     return anchorID;
+  },
+
+  getPopupPosition() {
+    return this.isEnabled ? "bottomright topright" : "bottomleft topleft";
   },
 
   get button() {
