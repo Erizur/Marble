@@ -2465,7 +2465,7 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
     }
 
     & {
-      border-radius: none !important;
+      border-radius: 0 !important;
     }
   }
 
