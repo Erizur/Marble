@@ -41,22 +41,17 @@ export const BuiltInThemeConfig = new Map([
     },
   ],
   [
-
-
     "marble-canica@mozilla.org",
-
-
     {
-
-
-      version: "1.0",
-
-
+      version: "1.1",
       path: "resource://builtin-themes/canica/",
-
-
     },
-
-
+  ],
+  [
+    "marble-olounge@mozilla.org",
+    {
+      version: "1.0",
+      path: "resource://builtin-themes/lounge/"
+    },
   ]
 ]);

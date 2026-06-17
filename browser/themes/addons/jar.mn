@@ -19,3 +19,7 @@ browser.jar:
   content/builtin-themes/canica					           (canica/*.png)
   content/builtin-themes/canica					           (canica/*.svg)
   content/builtin-themes/canica/manifest.json	     (canica/manifest.json)
+
+  content/builtin-themes/lounge                    (lounge/*.png)
+  content/builtin-themes/lounge                    (lounge/*.svg)
+  content/builtin-themes/lounge/manifest.json      (lounge/manifest.json)
