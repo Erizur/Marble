@@ -3767,7 +3767,6 @@ def brightwork_extract(command_context, output=None):
             output,
             summary["source_files"],
             summary["source_bytes"] / (1024 * 1024),
-            output,
         )
     )
     return 0
