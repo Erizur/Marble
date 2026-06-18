@@ -896,7 +896,7 @@
     box-shadow: 0 1px 0 hsla(210, 4%, 10%, 0.05) inset !important;
   }
 
-  .identity-popup-security-connection {
+  .identity-popup-security-connection-icon {
     margin: 0 !important;
     padding-block: 2px 3px !important;
     padding-inline: calc(2em + 22px) 1em !important;
@@ -907,42 +907,42 @@
     background-image: url(chrome://global/skin/icons/security-broken.svg);
   }
   
-  #identity-popup[connection=chrome] .identity-popup-security-connection {
+  #identity-popup[connection=chrome] .identity-popup-security-connection-icon {
     background-image: url(chrome://branding/content/icon48.png);
   }
   
-  #identity-popup[connection=file] .identity-popup-security-connection {
+  #identity-popup[connection=file] .identity-popup-security-connection-icon {
     background-image: url(chrome://global/skin/icons/page-portrait.svg);
   }
   
-  #identity-popup[connection=associated] .identity-popup-security-connection {
+  #identity-popup[connection=associated] .identity-popup-security-connection-icon {
     background-image: url(chrome://global/skin/icons/info.svg);
   }
   
-  #identity-popup[connection^=secure] .identity-popup-security-connection {
+  #identity-popup[connection^=secure] .identity-popup-security-connection-icon {
     background-image: url(chrome://global/skin/icons/security.svg);
   }
   
   /* Use [isbroken] to make sure we don't show a warning lock on an http page. See Bug 1192162. */
-  #identity-popup[ciphers=weak] .identity-popup-security-connection,
-  #identity-popup[mixedcontent~=passive-loaded][isbroken] .identity-popup-security-connection {
+  #identity-popup[ciphers=weak] .identity-popup-security-connection-icon,
+  #identity-popup[mixedcontent~=passive-loaded][isbroken] .identity-popup-security-connection-icon {
     background-image: url(chrome://global/skin/icons/security-warning.svg);
   }
   
-  #identity-popup[connection=secure-cert-user-overridden] .identity-popup-security-connection,
-  #identity-popup[connection=cert-error-page] .identity-popup-security-connection {
+  #identity-popup[connection=secure-cert-user-overridden] .identity-popup-security-connection-icon,
+  #identity-popup[connection=cert-error-page] .identity-popup-security-connection-icon {
     background-image: url(chrome://global/skin/icons/security-warning.svg);
   }
   
-  #identity-popup[connection=net-error-page] .identity-popup-security-connection {
+  #identity-popup[connection=net-error-page] .identity-popup-security-connection-icon {
     background-image: url(chrome://global/skin/icons/info.svg);
   }
   
-  #identity-popup[mixedcontent~=active-loaded][isbroken] .identity-popup-security-connection {
+  #identity-popup[mixedcontent~=active-loaded][isbroken] .identity-popup-security-connection-icon {
     background-image: url(chrome://browser/skin/controlcenter/mcb-disabled.svg);
   }
   
-  #identity-popup[connection=extension] .identity-popup-security-connection {
+  #identity-popup[connection=extension] .identity-popup-security-connection-icon {
     background-image: url(chrome://mozapps/skin/extensions/extension.svg);
   }
 
@@ -981,10 +981,6 @@
 
   .permission-popup-permission-icon {
     fill-opacity: 0.6 !important;
-  }
-
-  .identity-popup-security-connection-icon {
-    display: none !important;
   }
 
   #permission-popup-mainView toolbarseparator {

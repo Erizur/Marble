@@ -1014,6 +1014,9 @@ pref("security.allow_eval_in_parent_process", false);
 
 pref("security.allow_parent_unrestricted_js_loads", false);
 
+// HEHEHEHE
+pref("security.secure-connection.green", true);
+
 // Unload tabs when available memory is running low
 #if defined(XP_MACOSX) || defined(XP_WIN)
     pref("browser.tabs.unloadOnLowMemory", true);
