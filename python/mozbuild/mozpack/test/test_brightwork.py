@@ -17,6 +17,8 @@ from mozpack.brightwork.build import (
 )
 from mozpack.brightwork.recipe import (
     BrightworkRecipe,
+    _bundle_generated,
+    _source_stageable_dests,
     is_resource_dest,
     rebase_source,
     stage_from_recipe,
@@ -273,6 +275,123 @@ class TestBrightworkBuild(unittest.TestCase):
         self.assertEqual(
             skipped, [("chrome/global/built.js", "/objdir/gen/built.js")]
         )
+
+    def test_preprocessed_with_generated_include_uses_bundled_output(self):
+        src = self._tmp()
+        adk = self._tmp()
+        dest = self._tmp()
+        os.makedirs(os.path.join(src, "toolkit/modules"))
+        with open(os.path.join(src, "rootchrome.manifest"), "w") as f:
+            f.write("content global chrome/global/\n")
+        # The raw source references an objdir header that does NOT exist here.
+        with open(
+            os.path.join(src, "toolkit/modules/AppConstants.sys.mjs"), "w"
+        ) as f:
+            f.write("#include @TOPOBJDIR@/brightwork-abi.h\nexport const A = 1;\n")
+
+        m = InstallManifest()
+        m.add_copy(os.path.join(src, "rootchrome.manifest"), "chrome.manifest")
+        m.add_preprocess(
+            os.path.join(src, "toolkit/modules/AppConstants.sys.mjs"),
+            "modules/AppConstants.sys.mjs",
+            "deps",
+            defines={"TOPOBJDIR": "/nonexistent/objdir"},
+        )
+        os.makedirs(os.path.join(adk, "manifests"))
+        m.write(path=os.path.join(adk, "manifests", "dist_bin"))
+        BrightworkRecipe(topsrcdir=src, manifests=["manifests/dist_bin"]).save(adk)
+
+        # Simulate what export's _bundle_generated captures from dist/bin: the
+        # fully-preprocessed output.
+        gen = os.path.join(adk, "generated", "modules")
+        os.makedirs(gen)
+        with open(os.path.join(gen, "AppConstants.sys.mjs"), "w") as f:
+            f.write("export const A = 1;\nexport const ABI = 1;\n")
+
+        out, skipped = build_from_recipe(adk, src, dest, BrightworkToken())
+        jr = JarReader(out)
+        body = jr["modules/AppConstants.sys.mjs"].read().decode()
+        # Came from the bundled processed output, not the raw #include source.
+        self.assertIn("export const ABI = 1;", body)
+        self.assertNotIn("#include", body)
+        self.assertEqual(skipped, [])
+
+    def test_bundle_generated_captures_preprocess_under_pattern_dir(self):
+        src = self._tmp()
+        adk = self._tmp()
+        os.makedirs(os.path.join(src, "toolkit/modules"))
+        os.makedirs(os.path.join(src, "toolkit/policies"))
+        # a real module the pattern legitimately reproduces from src
+        with open(os.path.join(src, "toolkit/modules/Real.sys.mjs"), "w") as f:
+            f.write("export const r = 1;")
+        # the preprocessed schema stub (output is assembled at build time)
+        with open(os.path.join(src, "toolkit/policies/schema.sys.mjs"), "w") as f:
+            f.write("#include @TOPOBJDIR@/gen.inc\n")
+
+        m = InstallManifest()
+        # pattern that covers modules/* (its dest_base is a prefix of the schema)
+        m.add_pattern_copy(os.path.join(src, "toolkit/modules"), "**", "modules")
+        # preprocessed file whose dest lands under modules/
+        m.add_preprocess(
+            os.path.join(src, "toolkit/policies/schema.sys.mjs"),
+            "modules/policies/schema.sys.mjs",
+            "deps",
+            defines={"TOPOBJDIR": "/objdir"},
+        )
+        os.makedirs(os.path.join(adk, "manifests"))
+        m.write(path=os.path.join(adk, "manifests", "dist_bin"))
+        recipe = BrightworkRecipe(topsrcdir=src, manifests=["manifests/dist_bin"])
+        recipe.save(adk)
+
+        repro = _source_stageable_dests(adk, recipe)
+        self.assertIn("modules/Real.sys.mjs", repro)  # pattern reproduces this
+        self.assertNotIn("modules/policies/schema.sys.mjs", repro)  # it does not
+
+        # Fake dist/bin holding the *built* outputs the export reads from.
+        objdir = self._tmp()
+        db = os.path.join(objdir, "dist", "bin")
+        os.makedirs(os.path.join(db, "modules", "policies"))
+        with open(os.path.join(db, "modules", "Real.sys.mjs"), "w") as f:
+            f.write("export const r = 1;")
+        with open(os.path.join(db, "modules", "policies", "schema.sys.mjs"), "w") as f:
+            f.write("export const schema = {};// assembled output")
+
+        class BC:
+            topobjdir = objdir
+
+        _bundle_generated(BC(), adk, recipe)
+        gen = os.path.join(adk, "generated")
+        self.assertTrue(
+            os.path.isfile(os.path.join(gen, "modules", "policies", "schema.sys.mjs"))
+        )
+        self.assertFalse(os.path.isfile(os.path.join(gen, "modules", "Real.sys.mjs")))
+
+    def test_missing_canary_is_refused(self):
+        src = self._tmp()
+        adk = self._tmp()
+        dest = self._tmp()
+        os.makedirs(os.path.join(src, "toolkit/modules"))
+        with open(os.path.join(src, "rootchrome.manifest"), "w") as f:
+            f.write("content global chrome/global/\n")
+        with open(
+            os.path.join(src, "toolkit/modules/AppConstants.sys.mjs"), "w"
+        ) as f:
+            f.write("#include @TOPOBJDIR@/brightwork-abi.h\nexport const A = 1;\n")
+
+        m = InstallManifest()
+        m.add_copy(os.path.join(src, "rootchrome.manifest"), "chrome.manifest")
+        m.add_preprocess(
+            os.path.join(src, "toolkit/modules/AppConstants.sys.mjs"),
+            "modules/AppConstants.sys.mjs",
+            "deps",
+            defines={"TOPOBJDIR": "/nonexistent/objdir"},
+        )
+        os.makedirs(os.path.join(adk, "manifests"))
+        m.write(path=os.path.join(adk, "manifests", "dist_bin"))
+        BrightworkRecipe(topsrcdir=src, manifests=["manifests/dist_bin"]).save(adk)
+
+        with self.assertRaises(ValueError):
+            build_from_recipe(adk, src, dest, BrightworkToken())
 
     def test_icon_copied_beside_json_as_basename(self):
         # Testing that the icon gets copied next to the brightwork.json to resolve its name.

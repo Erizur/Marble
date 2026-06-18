@@ -132,29 +132,48 @@ GENERATED_DIRNAME = "generated"
 
 
 def _source_stageable_dests(adk_dir, recipe):
-    exact = set()
-    pattern_bases = []
+    """Return the set of dests the consumer can reproduce from the shipped src.
+
+    Used by _bundle_generated to decide which dist/bin resources must be captured
+    into generated/ (i.e. everything the consumer CANNOT reproduce). Correctness
+    hinges on this set being precise:
+
+    - LINK/COPY whose source lives under topsrcdir -> reproducible (in src).
+    - CONTENT -> reproduced inline from the manifest itself.
+    - PATTERN_* -> reproducible only for the *actual files the pattern matches*
+      under its source base. We expand the pattern with the same FileFinder the
+      consumer uses (_replay_manifest) rather than treating the whole dest_base
+      as a prefix -- a coarse prefix would wrongly mark unrelated files under
+      that dir (e.g. a preprocessed modules/policies/schema.sys.mjs sitting under
+      a browser/modules/ pattern) as reproducible and skip bundling them.
+    - PREPROCESS -> intentionally excluded. A preprocessed file routinely
+      #includes generated objdir headers (e.g. AppConstants.sys.mjs pulls in
+      @TOPOBJDIR@/brightwork-abi.h) absent from src, so it is never reproducible
+      on the consumer; its built output must be bundled from dist/bin.
+    """
+    from mozpack.files import FileFinder
+
+    reproducible = set()
     for rel in recipe.manifests:
         manifest = InstallManifest(path=os.path.join(adk_dir, rel))
         for dest, entry in manifest._dests.items():
             itype = entry[0]
-            if itype in (
-                InstallManifest.LINK,
-                InstallManifest.COPY,
-                InstallManifest.PREPROCESS,
-            ):
+            if itype in (InstallManifest.LINK, InstallManifest.COPY):
                 under = rebase_source(entry[1], recipe.topsrcdir, "/__p__")
                 if under is not None and os.path.isfile(entry[1]):
-                    exact.add(mozpath.normsep(dest))
+                    reproducible.add(mozpath.normsep(dest))
             elif itype in (InstallManifest.PATTERN_LINK, InstallManifest.PATTERN_COPY):
-                _, base, _pattern, dest_base = entry
+                _, base, pattern, dest_base = entry
                 under = rebase_source(base, recipe.topsrcdir, "/__p__")
                 if under is not None and os.path.isdir(base):
-                    pattern_bases.append(mozpath.normsep(dest_base))
+                    for found, _ in FileFinder(base).find(pattern):
+                        reproducible.add(
+                            mozpath.normsep(mozpath.join(dest_base, found))
+                        )
             elif itype == InstallManifest.CONTENT:
                 # Inline content is reproduced from the manifest itself
-                exact.add(mozpath.normsep(dest))
-    return exact, pattern_bases
+                reproducible.add(mozpath.normsep(dest))
+    return reproducible
 
 
 def _added_dir_map(adk_dir, recipe):
@@ -332,8 +351,7 @@ def _bundle_generated(buildconfig, adk_dir, recipe):
 
     distbin = os.path.join(buildconfig.topobjdir, "dist", "bin")
     gen_root = os.path.join(adk_dir, GENERATED_DIRNAME)
-    exact, pattern_bases = _source_stageable_dests(adk_dir, recipe)
-    pattern_prefixes = tuple(b.rstrip("/") + "/" for b in pattern_bases)
+    reproducible = _source_stageable_dests(adk_dir, recipe)
 
     count = 0
     finder = FileFinder(distbin, ignore_broken_symlinks=True)
@@ -341,8 +359,8 @@ def _bundle_generated(buildconfig, adk_dir, recipe):
         dest = mozpath.normsep(dest)
         if not is_resource_dest(dest):
             continue
-        if dest in exact or dest.startswith(pattern_prefixes):
-            continue  # the source tree can produce this
+        if dest in reproducible:
+            continue  # the consumer's source tree can produce this exactly
         src = os.path.join(distbin, *mozpath.split(dest))
         if not os.path.isfile(src):
             continue
@@ -403,7 +421,7 @@ def _generated_fallback(generated_root, dest):
 
 def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
                      skipped, resources_only):
-    from mozpack.files import File, FileFinder, GeneratedFile, PreprocessedFile
+    from mozpack.files import File, FileFinder, GeneratedFile
 
     for dest in sorted(manifest._dests):
         if resources_only and not is_resource_dest(dest):
@@ -422,27 +440,20 @@ def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
                 continue
             registry.add(dest, File(rebased))
         elif install_type == InstallManifest.PREPROCESS:
-            rebased = rebase_source(entry[1], recipe.topsrcdir, src_root)
-            if rebased is None or not os.path.exists(rebased):
-                # se the already-preprocessed copy bundled into the adk verbatim
-                gen = _generated_fallback(generated_root, dest)
-                if gen:
-                    registry.add(dest, File(gen))
-                else:
-                    skipped.append((dest, entry[1]))
-                continue
-            defines = dict(recipe.defines)
-            defines.update(manifest._decode_field_entry(entry[4]))
-            registry.add(
-                dest,
-                PreprocessedFile(
-                    rebased,
-                    depfile_path=None,
-                    marker=entry[3],
-                    defines=defines,
-                    silence_missing_directive_warnings=bool(int(entry[5])),
-                ),
-            )
+            # Preprocessed files are served only from the already-preprocessed
+            # copy captured into the ADK's generated/ dir at export time. We
+            # deliberately do NOT re-run the preprocessor on the consumer: these
+            # files routinely #include headers generated into the build's objdir
+            # (e.g. AppConstants.sys.mjs -> @TOPOBJDIR@/brightwork-abi.h) which
+            # the consumer does not have, so re-preprocessing is not
+            # reproducible and would either error out or silently drop the file.
+            # If no prebuilt output was bundled, treat it as skipped; the caller
+            # guards the startup-critical ones (see build_from_recipe).
+            gen = _generated_fallback(generated_root, dest)
+            if gen:
+                registry.add(dest, File(gen))
+            else:
+                skipped.append((dest, entry[1]))
         elif install_type == InstallManifest.CONTENT:
             content = manifest._decode_field_entry(entry[1]).encode("utf-8")
             registry.add(dest, GeneratedFile(content))

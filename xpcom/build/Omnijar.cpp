@@ -190,7 +190,18 @@ static already_AddRefed<nsIFile> ResolveBrightworkCandidate(
   return file.forget();
 }
 
+static const char kBrightworkCanary[] = "modules/AppConstants.sys.mjs";
+static bool sBrightworkGreAccepted = false;
+
 static already_AddRefed<nsIFile> TryBrightwork(mozilla::Omnijar::Type aType) {
+  // A brightwork always ships both jars. Never honour a custom APP jar
+  // without a matching accepted GRE jar. Recompute the flag on each GRE attempt
+  // so a re-init that newly rejects GRE can't leave it stale-true for APP.
+  if (aType == mozilla::Omnijar::GRE) {
+    sBrightworkGreAccepted = false;
+  } else if (!sBrightworkGreAccepted) {
+    return nullptr;
+  }
   nsCOMPtr<nsIFile> file = ResolveBrightworkCandidate(aType, nullptr);
   if (!file) {
     return nullptr;
@@ -211,6 +222,16 @@ static already_AddRefed<nsIFile> TryBrightwork(mozilla::Omnijar::Type aType) {
         aType == mozilla::Omnijar::GRE ? "GRE" : "APP", abi,
         static_cast<unsigned>(MOZ_BRIGHTWORK_ABI));
     return nullptr;
+  }
+  if (aType == mozilla::Omnijar::GRE) {
+    if (!reader->GetItem(nsDependentCString(kBrightworkCanary))) {
+      printf_stderr(
+          "brightwork: rejecting custom GRE omni.ja (missing startup canary "
+          "%s); using bundled\n",
+          kBrightworkCanary);
+      return nullptr;
+    }
+    sBrightworkGreAccepted = true;
   }
   printf_stderr("brightwork: using custom %s omni.ja (abi %u)\n",
                 aType == mozilla::Omnijar::GRE ? "GRE" : "APP", abi);

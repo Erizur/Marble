@@ -89,6 +89,15 @@ def build_from_recipe(adk_dir, src_root, dest_dir, token, omnijar_name=None,
     staging = tempfile.mkdtemp(prefix="brightwork-stage-")
     try:
         _, skipped = stage_from_recipe(adk_dir, src_root, staging)
+        canary = mozpath.normsep(os.path.join("modules", "AppConstants.sys.mjs"))
+        if any(mozpath.normsep(dest) == canary for dest, _ in skipped):
+            raise ValueError(
+                "Refusing to build: the startup canary modules/"
+                "AppConstants.sys.mjs could not be staged. This ADK was "
+                "exported without its preprocessed output. Please re-run "
+                "`mach brightwork-extract` on the build machine so the "
+                "generated/ dir captures it."
+            )
         # register any new resources/routes that might have been added and update the dirs.
         ns = apply_namespaces(adk_dir, src_root, staging)
         if ns:
