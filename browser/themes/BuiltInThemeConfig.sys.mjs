@@ -51,7 +51,7 @@ export const BuiltInThemeConfig = new Map([
     "marble-olounge@mozilla.org",
     {
       version: "1.0",
-      path: "resource://builtin-themes/lounge/"
+      path: "resource://builtin-themes/lounge/",
     },
   ]
 ]);
