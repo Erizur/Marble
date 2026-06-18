@@ -75,7 +75,8 @@ def package_omnijar(
 
 
 def build_from_recipe(adk_dir, src_root, dest_dir, token, omnijar_name=None,
-                      compress=True, jarlog=None, icon_source_dir=None):
+                      compress=True, jarlog=None, icon_source_dir=None,
+                      write_metadata=True):
     import tempfile
 
     from mozpack.brightwork.recipe import (
@@ -129,8 +130,13 @@ def build_from_recipe(adk_dir, src_root, dest_dir, token, omnijar_name=None,
 
         shutil.rmtree(staging, ignore_errors=True)
 
-    # metadata + the icon copy
-    bwtoken.write_metadata_into_dir(dest_dir, token, icon_source_dir=icon_source_dir)
+    # metadata + the icon copy. skipped for multi-platform builds, where the
+    # driver writes a single brightwork.json at the package root (above the
+    # per-platform jar subdirs) instead.
+    if write_metadata:
+        bwtoken.write_metadata_into_dir(
+            dest_dir, token, icon_source_dir=icon_source_dir
+        )
     return gre, skipped
 
 

@@ -33,6 +33,15 @@ RESOURCE_TOPLEVEL = frozenset(
 )
 
 
+# Marble ships for Windows and Linux only; anything else is out of scope.
+def platform_from_defines(defines):
+    d = defines or {}
+    if d.get("XP_WIN") or str(d.get("OS_TARGET", "")).upper() in ("WINNT", "WIN64"):
+        return "win"
+    # Marble's only other target.
+    return "linux"
+
+
 @dataclass
 class BrightworkRecipe:
     topsrcdir: str
@@ -40,6 +49,8 @@ class BrightworkRecipe:
     manifests: list = field(default_factory=list)
     non_resources: list = field(default_factory=list)
     defines: dict = field(default_factory=dict)
+    # Which platform this ADK was exported for ("win" / "linux").
+    platform: str = ""
     recipe_version: int = RECIPE_VERSION
 
     def to_json(self):
@@ -122,6 +133,7 @@ def export_recipe(buildconfig, output_dir, manifest_paths):
         omnijar_name=substs.get("OMNIJAR_NAME", "omni.ja"),
         manifests=bundled,
         defines=dict(buildconfig.defines),
+        platform=platform_from_defines(buildconfig.defines),
     )
     recipe.save(output_dir)
     _bundle_generated(buildconfig, output_dir, recipe)

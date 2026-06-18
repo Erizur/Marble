@@ -168,26 +168,47 @@ static already_AddRefed<nsIFile> ResolveBrightworkPackageDir(
   return nullptr;
 }
 
+#if defined(XP_WIN)
+static constexpr char kBrightworkPlatform[] = "win";
+#else
+static constexpr char kBrightworkPlatform[] = "linux";
+#endif
+
+static already_AddRefed<nsIFile> BrightworkJarPath(nsIFile* aDir,
+                                                   mozilla::Omnijar::Type aType,
+                                                   const char* aSubdir) {
+  constexpr auto kOmnijarName = nsLiteralCString{MOZ_STRINGIFY(OMNIJAR_NAME)};
+  nsCOMPtr<nsIFile> file;
+  aDir->Clone(getter_AddRefs(file));
+  if (!file) {
+    return nullptr;
+  }
+  if (aSubdir && *aSubdir) {
+    file->AppendNative(nsDependentCString(aSubdir));
+  }
+  if (aType == mozilla::Omnijar::APP) {
+    file->AppendNative("browser"_ns);
+  }
+  file->AppendNative(kOmnijarName);
+  return file.forget();
+}
+
 static already_AddRefed<nsIFile> ResolveBrightworkCandidate(
     mozilla::Omnijar::Type aType, nsIFile* aProfileOverride) {
   nsCOMPtr<nsIFile> dir = ResolveBrightworkPackageDir(aProfileOverride);
   if (!dir) {
     return nullptr;
   }
-  constexpr auto kOmnijarName = nsLiteralCString{MOZ_STRINGIFY(OMNIJAR_NAME)};
-  nsCOMPtr<nsIFile> file;
-  dir->Clone(getter_AddRefs(file));
-  if (!file) {
-    return nullptr;
+
+  nsCOMPtr<nsIFile> platformFile =
+      BrightworkJarPath(dir, aType, kBrightworkPlatform);
+  if (platformFile) {
+    bool isFile = false;
+    if (NS_SUCCEEDED(platformFile->IsFile(&isFile)) && isFile) {
+      return platformFile.forget();
+    }
   }
-  // GRE jar at <dir>/omni.ja and the browser jar at <dir>/browser/omni.ja.
-  // this is a hardcoded lock but i find it consistent with how the layout gets produced
-  // under normal circumstances, so lets keep it like that here lol.
-  if (aType == mozilla::Omnijar::APP) {
-    file->AppendNative("browser"_ns);
-  }
-  file->AppendNative(kOmnijarName);
-  return file.forget();
+  return BrightworkJarPath(dir, aType, nullptr);
 }
 
 static const char kBrightworkCanary[] = "modules/AppConstants.sys.mjs";
@@ -259,6 +280,17 @@ void Omnijar::ComputeBrightworkFingerprint(nsIFile* aProfileDir,
   nsAutoCString leaf;
   if (NS_SUCCEEDED(dir->GetNativeLeafName(leaf))) {
     aResult.Assign(leaf);
+  }
+  // Fold in the resolved GRE jar's mtime so rebuilding a package in place (a
+  // symlinked dev dist keeps the same id) still invalidates the startup cache
+  // and the freshly built chrome is actually used. If the jar
+  // cannot be resolved/stat'd we fall back to the id alone.
+  nsCOMPtr<nsIFile> gre =
+      ResolveBrightworkCandidate(mozilla::Omnijar::GRE, aProfileDir);
+  PRTime mtime = 0;
+  if (gre && NS_SUCCEEDED(gre->GetLastModifiedTime(&mtime))) {
+    aResult.Append(':');
+    aResult.AppendInt(static_cast<int64_t>(mtime));
   }
 }
 

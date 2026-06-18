@@ -3760,13 +3760,20 @@ def brightwork_extract(command_context, output=None):
 
     summary = extract_standalone(config, manifests, output)
     print(
-        "Wrote standalone work dir to %s\n"
+        "Captured the %s ADK (adk-%s) into %s\n"
         "  source files: %d (%.1f MiB)\n"
-        "  to build, use python on the root folder and build.py"
+        "  platforms now in this SDK: %s\n"
+        "  Multi-target: re-run this on the other platform's build (same"
+        " --output) to add its ADK; src/ is shared.\n"
+        "  To build, run python build.py in the root folder (packs all"
+        " available platforms; --platform to pick one)."
         % (
+            summary["platform"],
+            summary["platform"],
             output,
             summary["source_files"],
             summary["source_bytes"] / (1024 * 1024),
+            ", ".join(summary["platforms"]),
         )
     )
     return 0

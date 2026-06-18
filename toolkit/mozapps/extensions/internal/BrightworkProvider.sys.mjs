@@ -235,11 +235,16 @@ class BrightworkWrapper {
       Number(this._meta.brightworkAbi) === lazy.AppConstants.MOZ_BRIGHTWORK_ABI
     );
   }
+
   get isPlatformCompatible() {
-    return true;
+    let platforms = this._meta.platforms;
+    if (!Array.isArray(platforms) || !platforms.length) {
+      return true;
+    }
+    return platforms.includes(lazy.AppConstants.platform);
   }
   get appDisabled() {
-    return !this.isCompatible;
+    return !this.isCompatible || !this.isPlatformCompatible;
   }
 
   // userDisabled reflects the active pref, but the toggle flips
@@ -316,6 +321,11 @@ class BrightworkWrapper {
     let bits = [];
     if (!this.isCompatible) {
       bits.push(lazy.l10n.formatValueSync("brightwork-incompatible-description"));
+    }
+    if (!this.isPlatformCompatible) {
+      bits.push(
+        lazy.l10n.formatValueSync("brightwork-platform-incompatible-description")
+      );
     }
     p.textContent = [this.description, ...bits].filter(Boolean).join("  ");
     frag.appendChild(p);
@@ -672,10 +682,15 @@ export const BrightworkProvider = {
         staging = await this._flattenSingleChild(staging);
       }
 
-      let hasOmni = await IOUtils.exists(PathUtils.join(staging, "omni.ja"));
       let meta = await IOUtils.readJSON(
         PathUtils.join(staging, METADATA_FILE)
       ).catch(() => null);
+
+      if (meta) {
+        await this._applyPlatformLayout(staging, meta);
+      }
+
+      let hasOmni = await IOUtils.exists(PathUtils.join(staging, "omni.ja"));
       if (!meta) {
         if (hasOmni) {
           throw new Error(
@@ -730,6 +745,43 @@ export const BrightworkProvider = {
           ignoreAbsent: true,
         }).catch(() => {});
       }
+    }
+  },
+
+  /**
+   * Apply the multi-target layout for the running platform.
+   */
+  async _applyPlatformLayout(staging, meta) {
+    let platform = lazy.AppConstants.platform; // "win" | "linux" | ...
+    let platforms = Array.isArray(meta.platforms) ? meta.platforms : [];
+    if (platforms.length && !platforms.includes(platform)) {
+      throw new Error(
+        lazy.l10n.formatValueSync("brightwork-install-error-platform", {
+          platform,
+          supported: platforms.join(", "),
+        })
+      );
+    }
+
+    let sub = PathUtils.join(staging, platform);
+    if (!(await IOUtils.exists(PathUtils.join(sub, "omni.ja")))) {
+      return; // already flat, or nothing to promote
+    }
+    await IOUtils.move(
+      PathUtils.join(sub, "omni.ja"),
+      PathUtils.join(staging, "omni.ja")
+    );
+    let subBrowser = PathUtils.join(sub, "browser");
+    if (await IOUtils.exists(subBrowser)) {
+      await IOUtils.move(subBrowser, PathUtils.join(staging, "browser"));
+    }
+    // Drop every per-platform subdir (incl. our now-emptied one); the installed
+    // package only needs this machine's jars.
+    for (let p of ["win", "linux", "macosx"]) {
+      await IOUtils.remove(PathUtils.join(staging, p), {
+        recursive: true,
+        ignoreAbsent: true,
+      });
     }
   },
 

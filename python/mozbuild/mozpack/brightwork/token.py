@@ -22,6 +22,8 @@ class BrightworkToken:
     description: str = ""
     homepage: str = ""
     icon: str = ""
+    # Platforms the package ships jars for, e.g. ["win", "linux"]. Used for the install-time soft platform restriction.
+    platforms: list = field(default_factory=list)
     # Free-form extra fields preserved through round-trips.
     extra: dict = field(default_factory=dict)
 
@@ -37,6 +39,7 @@ class BrightworkToken:
             "description": self.description,
             "homepage": self.homepage,
             "icon": self.icon,
+            "platforms": list(self.platforms),
             "brightworkAbi": self.abi,
         }
         data.update(self.extra)
@@ -45,6 +48,8 @@ class BrightworkToken:
     @classmethod
     def from_metadata_bytes(cls, data):
         obj = json.loads(data)
+        # "platforms" is set by the packager (from which adk-<platform> dirs were
+        # built), never authored, so it is swallowed here rather than honoured.
         known = {
             "name",
             "version",
@@ -52,6 +57,7 @@ class BrightworkToken:
             "description",
             "homepage",
             "icon",
+            "platforms",
             "brightworkAbi",
         }
         return cls(
@@ -75,8 +81,12 @@ class BrightworkToken:
             "description",
             "homepage",
             "icon",
+            "platforms",
             "brightworkAbi",
         }
+        platforms = obj.get("platforms", [])
+        if not isinstance(platforms, list):
+            platforms = []
         return cls(
             abi=int(obj.get("brightworkAbi", BRIGHTWORK_ABI)),
             name=obj.get("name", "") or "Untitled brightwork package",
@@ -85,6 +95,7 @@ class BrightworkToken:
             description=obj.get("description", ""),
             homepage=obj.get("homepage", ""),
             icon=obj.get("icon", ""),
+            platforms=[str(p) for p in platforms],
             extra={k: v for k, v in obj.items() if k not in known},
         )
 

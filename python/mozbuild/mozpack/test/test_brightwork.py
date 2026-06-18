@@ -20,6 +20,7 @@ from mozpack.brightwork.recipe import (
     _bundle_generated,
     _source_stageable_dests,
     is_resource_dest,
+    platform_from_defines,
     rebase_source,
     stage_from_recipe,
 )
@@ -69,6 +70,20 @@ class TestBrightworkToken(unittest.TestCase):
         self.assertTrue(is_compatible(1, 1))
         self.assertFalse(is_compatible(2, 1))
 
+    def test_platforms_roundtrip_in_json_not_metadata(self):
+        from dataclasses import replace
+
+        t = replace(BrightworkToken(name="P"), platforms=["win", "linux"])
+        import json
+
+        data = json.loads(t.to_json_bytes())
+        self.assertEqual(data["platforms"], ["win", "linux"])
+        t2 = BrightworkToken.from_json_bytes(t.to_json_bytes())
+        self.assertEqual(t2.platforms, ["win", "linux"])
+        # platforms is set by the packager, never honoured from authored input
+        authored = b'{"name": "P", "platforms": ["win"]}'
+        self.assertEqual(BrightworkToken.from_metadata_bytes(authored).platforms, [])
+
     def test_abi_in_jar_json_beside_it(self):
         fd, tmp = tempfile.mkstemp(suffix=".ja")
         os.close(fd)
@@ -84,6 +99,63 @@ class TestBrightworkToken(unittest.TestCase):
         finally:
             if os.path.exists(tmp):
                 os.remove(tmp)
+
+
+class TestBrightworkCompare(unittest.TestCase):
+    def _jar(self, entries):
+        fd, tmp = tempfile.mkstemp(suffix=".ja")
+        os.close(fd)
+        jw = JarWriter(file=tmp, compress=True)
+        for name, data in entries.items():
+            jw.add(name, data)
+        jw.finish()
+        return tmp
+
+    def test_diff_detects_missing_extra_and_changed(self):
+        from mozpack.brightwork.compare import diff_entries, omnijar_entries
+
+        ref = self._jar(
+            {
+                "chrome/browser/skin/browser-aero.css": b"aero{}",
+                "modules/Shared.sys.mjs": b"export const a = 1;",
+                "modules/WindowsJumpLists.sys.mjs": b"win-only",
+            }
+        )
+        cand = self._jar(
+            {
+                # browser-aero.css missing -> a real gap (titlebar/glitches)
+                "modules/Shared.sys.mjs": b"export const a = 222;",  # changed
+                "modules/LinuxOnly.sys.mjs": b"extra",  # extra
+            }
+        )
+        try:
+            d = diff_entries(omnijar_entries(ref), omnijar_entries(cand))
+            self.assertIn("chrome/browser/skin/browser-aero.css", d["missing"])
+            self.assertIn("modules/WindowsJumpLists.sys.mjs", d["missing"])
+            self.assertIn("modules/LinuxOnly.sys.mjs", d["extra"])
+            self.assertIn("modules/Shared.sys.mjs", d["changed"])
+            self.assertEqual(d["ref_count"], 3)
+            self.assertEqual(d["cand_count"], 2)
+        finally:
+            for p in (ref, cand):
+                if os.path.exists(p):
+                    os.remove(p)
+
+    def test_identical_jars_have_no_diff(self):
+        from mozpack.brightwork.compare import diff_entries, omnijar_entries
+
+        ent = {"modules/A.sys.mjs": b"x", "chrome.manifest": b"content a a/"}
+        a = self._jar(ent)
+        b = self._jar(ent)
+        try:
+            d = diff_entries(omnijar_entries(a), omnijar_entries(b))
+            self.assertEqual(d["missing"], [])
+            self.assertEqual(d["extra"], [])
+            self.assertEqual(d["changed"], [])
+        finally:
+            for p in (a, b):
+                if os.path.exists(p):
+                    os.remove(p)
 
 
 class TestBrightworkRecipe(unittest.TestCase):
@@ -109,10 +181,20 @@ class TestBrightworkRecipe(unittest.TestCase):
             topsrcdir="/old/src",
             manifests=["manifests/dist_bin"],
             defines={"MOZ_X": "1"},
+            platform="win",
         )
         r2 = BrightworkRecipe.from_json(r.to_json())
         self.assertEqual(r2.topsrcdir, "/old/src")
         self.assertEqual(r2.defines, {"MOZ_X": "1"})
+        self.assertEqual(r2.platform, "win")
+
+    def test_platform_from_defines(self):
+        self.assertEqual(platform_from_defines({"XP_WIN": "1"}), "win")
+        self.assertEqual(platform_from_defines({"OS_TARGET": "WINNT"}), "win")
+        self.assertEqual(
+            platform_from_defines({"XP_UNIX": "1", "XP_LINUX": "1"}), "linux"
+        )
+        self.assertEqual(platform_from_defines({}), "linux")
 
 
 class TestBrightworkBuild(unittest.TestCase):
@@ -392,6 +474,58 @@ class TestBrightworkBuild(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             build_from_recipe(adk, src, dest, BrightworkToken())
+
+    def test_multiplatform_fat_package_layout(self):
+        # Mirror the build.py driver: build two platforms into <out>/<plat>/ with
+        # write_metadata=False, then write one root brightwork.json listing the
+        # platforms. Produces the fat layout the installer flattens per-OS.
+        from dataclasses import replace
+
+        from mozpack.brightwork.token import write_metadata_into_dir
+
+        def make_adk(tag):
+            src = self._tmp()
+            adk = self._tmp()
+            os.makedirs(os.path.join(src, "a"))
+            with open(os.path.join(src, "a/foo.css"), "w") as f:
+                f.write("toolbar{content:'%s'}" % tag)
+            with open(os.path.join(src, "rootchrome.manifest"), "w") as f:
+                f.write("content global chrome/global/\n")
+            m = InstallManifest()
+            m.add_copy(os.path.join(src, "rootchrome.manifest"), "chrome.manifest")
+            m.add_copy(os.path.join(src, "a/foo.css"), "chrome/global/skin/foo.css")
+            os.makedirs(os.path.join(adk, "manifests"))
+            m.write(path=os.path.join(adk, "manifests", "dist_bin"))
+            BrightworkRecipe(
+                topsrcdir=src, manifests=["manifests/dist_bin"], platform=tag
+            ).save(adk)
+            return adk, src
+
+        out = self._tmp()
+        token = BrightworkToken(name="Cross Theme")
+        built = []
+        for tag in ("win", "linux"):
+            adk, src = make_adk(tag)
+            build_from_recipe(
+                adk, src, os.path.join(out, tag), token, write_metadata=False
+            )
+            built.append(tag)
+        write_metadata_into_dir(out, replace(token, platforms=built))
+
+        # fat layout: per-platform jars + one root metadata, no root omni.ja
+        self.assertTrue(os.path.isfile(os.path.join(out, "win", "omni.ja")))
+        self.assertTrue(os.path.isfile(os.path.join(out, "linux", "omni.ja")))
+        self.assertFalse(os.path.exists(os.path.join(out, "omni.ja")))
+
+        import json
+
+        meta = json.load(open(os.path.join(out, "brightwork.json")))
+        self.assertEqual(meta["platforms"], ["win", "linux"])
+        # each platform jar is a real, ABI-stamped omni.ja
+        for tag in ("win", "linux"):
+            self.assertEqual(
+                verify_omnijar(os.path.join(out, tag, "omni.ja")), BRIGHTWORK_ABI
+            )
 
     def test_icon_copied_beside_json_as_basename(self):
         # Testing that the icon gets copied next to the brightwork.json to resolve its name.

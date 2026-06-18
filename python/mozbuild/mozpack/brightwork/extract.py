@@ -27,11 +27,24 @@ MBLIBS = (
 TPLIBS = ("jsmin", "packaging", "python-hglib")
 
 
+def _present_platforms(output_dir):
+    out = []
+    for name in sorted(os.listdir(output_dir)):
+        if name.startswith("adk-") and os.path.isdir(
+            os.path.join(output_dir, name)
+        ):
+            out.append(name[len("adk-") :])
+    return out
+
+
 def extract_standalone(buildconfig, manifest_paths, output_dir):
+    from mozpack.brightwork.recipe import platform_from_defines
+
     output_dir = os.path.abspath(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    adk_dir = os.path.join(output_dir, "adk")
+    platform = platform_from_defines(buildconfig.defines)
+    adk_dir = os.path.join(output_dir, "adk-" + platform)
     if os.path.isdir(adk_dir):
         shutil.rmtree(adk_dir)
     recipe = export_recipe(buildconfig, adk_dir, manifest_paths)
@@ -43,14 +56,14 @@ def extract_standalone(buildconfig, manifest_paths, output_dir):
     _write_driver(output_dir)
 
     return {
+        "platform": platform,
         "source_files": src_files,
         "source_bytes": src_bytes,
+        "platforms": _present_platforms(output_dir),
     }
 
 
 def _copy_source_closure(dadir, recipe, src_out):
-    if os.path.isdir(src_out):
-        shutil.rmtree(src_out)
     top = recipe.topsrcdir
     sources = set()
     for rel in recipe.manifests:
@@ -145,13 +158,20 @@ def _vendor_python(topsrcdir, tools_dir):
 
 _BUILD_PY = '''\
 #!/usr/bin/env python3
-# Build the brightwork omni.ja pair from this directory using this script.
+# Build the brightwork omni.ja pair(s) from this directory using this script.
 # modify all metadata from metadata.json. ONLY USE THIS TOOL TO PACK.
 # Hijacking this thing to make it do something else is not recommended
- 
+#
+# Each adk-<platform>/ holds one platform's layout, and src/ is shared. 
+# By default every available platform is packed, producing
+# dist/<platform>/omni.ja, dist/<platform>/browser/omni.ja
+# plus a single dist/brightwork.json that records which platforms are present.
+# Use --platform to pack just one.
+
 import argparse
 import os
 import sys
+from dataclasses import replace
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(HERE, "tools"))
@@ -161,35 +181,63 @@ for entry in sorted(os.listdir(os.path.join(HERE, "tools"))):
         sys.path.insert(0, p)
 
 from mozpack.brightwork.build import build_from_recipe  # noqa: E402
-from mozpack.brightwork.token import BrightworkToken  # noqa: E402
+from mozpack.brightwork.token import (  # noqa: E402
+    BrightworkToken,
+    write_metadata_into_dir,
+)
+
+
+def _available_platforms():
+    out = []
+    for name in sorted(os.listdir(HERE)):
+        if name.startswith("adk-") and os.path.isdir(os.path.join(HERE, name)):
+            out.append(name[len("adk-"):])
+    return out
 
 
 def main():
+    avail = _available_platforms()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", default=os.path.join(HERE, "dist"),
                     help="output directory (default: ./dist)")
     ap.add_argument("--metadata", default=os.path.join(HERE, "metadata.json"),
                     help="package metadata.json (default: ./metadata.json)")
+    ap.add_argument("--platform", action="append", choices=avail or None,
+                    help="platform(s) to pack; repeatable "
+                         "(default: all available%s)"
+                         % (": " + ", ".join(avail) if avail else ""))
     args = ap.parse_args()
+
+    if not avail:
+        sys.exit("No adk-<platform> directories found next to build.py.")
+    targets = args.platform or avail
 
     with open(args.metadata, "rb") as fh:
         token = BrightworkToken.from_metadata_bytes(fh.read())
 
-    gre, skipped = build_from_recipe(
-        os.path.join(HERE, "adk"),
-        os.path.join(HERE, "src"),
+    src = os.path.join(HERE, "src")
+    built = []
+    for plat in targets:
+        adk = os.path.join(HERE, "adk-" + plat)
+        out = os.path.join(args.out, plat)
+        gre, skipped = build_from_recipe(adk, src, out, token,
+                                         write_metadata=False)
+        built.append(plat)
+        print("Built", gre)
+        print("Built", os.path.join(out, "browser", "omni.ja"))
+        if skipped:
+            print("%d resource(s) not in the source tree for %s (built only by"
+                  " full packaging; usually harmless):" % (len(skipped), plat))
+            for dest, _ in skipped:
+                print("   ", dest)
+
+    write_metadata_into_dir(
         args.out,
-        token,
+        replace(token, platforms=built),
         icon_source_dir=os.path.dirname(os.path.abspath(args.metadata)),
     )
-    print("Built", gre)
-    print("Built", os.path.join(args.out, "browser", "omni.ja"))
-    print("Wrote", os.path.join(args.out, "brightwork.json"))
-    if skipped:
-        print("%d resource(s) not in the source tree (built only by full"
-              " packaging; usually harmless):" % len(skipped))
-        for dest, _ in skipped:
-            print("   ", dest)
+    print("Wrote", os.path.join(args.out, "brightwork.json"),
+          "(platforms: %s)" % ", ".join(built))
 
 
 if __name__ == "__main__":
@@ -207,6 +255,19 @@ Update this if needed!
 - You can do this by using the cog icon on the top and pressing the Brightwork-related options.
 - If nothing failed, activate it and restart your browser!
 - enjoi.
+
+# Building the omni.ja
+You need atleast **Python 3.12** installed on your system.
+To build the addon, run the following command:
+```python
+# Optional values:
+# --out (path) - Define a custom output directory. default is the dist folder that will get created in your repo.
+# --metadata (path/to/metadata.json) - Define a custom metadata builder. useful if you want to write different metadata for specific versions of your package.
+# --platform (win,linux) - Define whether to build for a windows or linux only environment. Rewrites the platform check in metadata.json.
+
+python build.py
+```
+
 """
 
 

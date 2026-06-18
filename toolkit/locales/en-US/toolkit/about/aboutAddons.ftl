@@ -288,6 +288,12 @@ brightwork-restart-prompt-later-button = Later
 # Shown on a package's card when its ABI does not match the running build.
 brightwork-incompatible-description = Version incompatible.
 
+# Shown on a package's card when it does not ship jars for the running platform.
+brightwork-platform-incompatible-description = Not available for your platform.
+
+# Shown when installing a package that has no build for this system.
+brightwork-install-error-platform = This Brightwork package does not support your platform ({ $platform }). It ships builds for: { $supported }.
+
 # Errors shown when installing a folder/zip that is not a valid package.
 # $file is the metadata (brightwork.json).
 brightwork-install-error-has-omni-no-metadata = This folder has omni.ja but no { $file }.
