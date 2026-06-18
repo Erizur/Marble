@@ -61,7 +61,7 @@
 
       let fragment = this.isArrowPanel
         ? MozXULElement.parseXULToFragment(
-            `<vbox class="panel-arrowcontainer" flex="1">
+            `<vbox class="panel-arrowcontainer" part="arrowcontainer" flex="1">
                <box class="panel-arrowbox" part="arrowbox">
                  <html:div class="panel-arrow" part="arrow"/>
                </box>
@@ -71,6 +71,10 @@
         : this.constructor.fragment;
 
       let slot = fragment.querySelector("[part=content]");
+      if (this.isArrowPanel) {
+        slot.style.flex = "1";
+        slot.style.minHeight = "0";
+      }
       if (!this.hasAttribute("neverhidden")) {
         slot.style.setProperty("display", "none", "important");
       }

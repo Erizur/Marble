@@ -131,17 +131,14 @@
   --panel-padding: var(--arrowpanel-padding);
 }
 
-/* Marble: restore the Photon-era arrow on anchored arrow panels (bug 1734835
-   removed it). panel.js wraps the content slot of [type="arrow"] panels in an
-   arrowcontainer/arrowbox so the arrow is in-flow (the popup reserves space for
-   it; an absolutely-positioned arrow would be clipped outside the popup bounds),
-   and setArrowPosition() slides it along the facing edge. These rules live in
-   global-shared.css (not popup-photon.css) because that file is imported by
-   global.css and is the sheet that actually styles chrome panel ::parts;
-   popup.css is not in browser.xhtml's cascade. Scoped to panel[type="arrow"]
-   only, so menupopups, places (bookmark folder) popups and the autoscroller
-   never get an arrow. The arrow is drawn with a background-image because a XUL
-   <image> no longer paints list-style-image under modern display:inline-flex. */
+/* Pre-arrowpanels, apparently this causes the overflowing no scrollbar bug */
+panel[type="arrow"]::part(arrowcontainer) {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Arrowpanel begin */
 @media not (-moz-proton) {
   panel[type="arrow"]::part(arrow) {
     -moz-context-properties: fill, stroke;
