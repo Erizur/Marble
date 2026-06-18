@@ -2547,6 +2547,77 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
     opacity: 1 !important;
   }*/
 
+  /* Photon sound icons */
+  .tab-icon-overlay {
+    -moz-context-properties: fill !important;
+    fill: currentColor !important;
+  }
+  .tab-icon-overlay[soundplaying] {
+    list-style-image: url("./icons/tab-audio-playing.svg") !important;
+  }
+  .tab-icon-overlay[muted] {
+    list-style-image: url("./icons/tab-audio-muted.svg") !important;
+  }
+  .tab-icon-overlay[activemedia-blocked] {
+    list-style-image: url("./icons/tab-audio-blocked.svg") !important;
+  }
+  .tab-icon-overlay[pictureinpicture] {
+    list-style-image: url("./icons/pictureinpicture.svg") !important;
+  }
+  /* titlechanged */
+  .tabbrowser-tab:is([image], [pinned]) > .tab-stack > .tab-content[attention]:not([selected]),
+  .tabbrowser-tab > .tab-stack > .tab-content[pinned][titlechanged]:not([selected]),
+  #tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab > .tab-stack > .tab-content[titlechanged]:not([selected]) {
+    background-image: none !important;
+    &::after {
+      --indicator-size: 12px;
+      content: "";
+      background-image: url("./icons/indicator-tab-attention.svg") !important;
+      background-size: var(--indicator-size) !important;
+      width: var(--indicator-size);
+      height: var(--indicator-size);
+      margin-inline-start: 2px;
+      position: absolute;
+      bottom: -4px;
+    }
+  }
+  /* deal with this now */
+  .tab-audio-button {
+    --icon-size-default: 16px !important;
+    --button-size-icon-small: 16px !important;
+    --button-min-height-small: 16px !important;
+    --button-border-radius: var(--photon-border-radius) !important;
+    --tab-icon-end-margin: 4px !important;
+    --icon-size: 16px !important;
+    --icon-fill: currentColor !important;
+    --button-background-color-ghost-hover: transparent !important;
+    --button-background-color-ghost-active: transparent !important;
+    margin-inline-start: -16px !important;
+    order: 1;
+    height: 16px !important;
+    z-index: 1;
+    &:not(:hover) {
+      opacity: 0.8;
+    }
+    @media not -moz-pref("sidebar.visibility", "expand-on-hover") {
+        :root:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] &:not([pinned]):not([crashed]) &:is([soundplaying], [muted], [activemedia-blocked]) {
+        display: flex !important;
+      }
+    }
+  }
+  .tab-audio-button[soundplaying] {
+    --button-icon: url("./icons/tab-audio-playing.svg") !important;
+  }
+  .tab-audio-button[muted] {
+    --button-icon: url("./icons/tab-audio-muted.svg") !important;
+  }
+  .tab-audio-button[activemedia-blocked] {
+    --button-icon: url("./icons/tab-audio-blocked.svg") !important;
+  }
+  .tab-audio-button[pictureinpicture] {
+    --button-icon: url("./icons/pictureinpicture.svg") !important;
+  }
+
   /* Pushes the sound icon off to the side and makes the website favicon always show to make it
   so that the sound icon doesn't look out of place
   credits to phroton for some of this stuff */

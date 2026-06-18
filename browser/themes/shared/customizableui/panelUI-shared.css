@@ -2365,3 +2365,193 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 #content-analysis-panel-container {
   padding: 8px;
 }
+
+@media not (-moz-proton) {
+  menuitem[disabled="true"] {
+    pointer-events: none !important;
+    opacity: 1 !important;
+    /* This fixes the disabled buttons not showing up on light themes but has a downside of making the button grayscale */
+    /* You can remove this if you're not suffering from this problem */
+    color: GrayText !important;
+  }
+  menuseparator {
+    padding-inline: 0 !important;
+  }
+  #editBookmarkPanel .panel-button {
+    border-color: transparent !important;
+  }
+
+  #appMenu_historyMenu,
+  #panelMenu_bookmarksMenu {
+    padding: 0 !important;
+  }
+  :is(#appMenu_historyMenu,
+  #panelMenu_bookmarksMenu) toolbarbutton {
+    margin: 0 !important;
+    padding-inline: 22px !important;
+  }
+  /* Makes the menu items Photon sized and removes the rounding of the items */
+  .panel-subview-body toolbarbutton,
+  .cui-widget-panel toolbarbutton:not(.subviewbutton-back,
+  .panel-subview-footer-button),
+  .cui-widget-panel toolbaritem,
+  #OtherBookmarksPopup menuitem,
+  [placespopup] :is(menuitem:not(.menuitem-with-favicon)) {
+    border-radius: 0px !important;
+    margin: 0px !important;
+    padding: 0px 11px !important;
+  }
+  :root .menuitem-with-favicon {
+    margin-inline: 0px !important;
+  }
+  panelview toolbarbutton:not(.protections-popup-tp-switch,
+  .panel-info-button,
+  .subviewbutton-back,
+  toolbarbutton.panel-subview-footer-button) {
+    border-radius: 0px !important;
+    margin: 0px !important;
+  }
+
+  /* Padding */
+  .permission-popup-section {
+    padding-block: 4px !important;
+  }
+  .permission-popup-permission-remove-button {
+    margin-inline-end: -4px !important;
+  }
+  #identity-popup-mainView:not([footerVisible]) .panel-subview-body {
+    margin-bottom: 8px !important;
+  }
+  #overflowMenu-customize-button {
+    margin-bottom: 3px !important;
+  }
+  #appMenu-fxa-status2:not([fxastatus]) {
+    padding-inline: 8px 8px !important;
+  }
+  /*
+  #unified-extensions-panel panelview, */
+  #permission-popup panelview {
+    margin-bottom: 3px !important;
+  }
+  #identity-popup[mainviewshowing] panelview {
+    margin-bottom: -5px !important;
+    margin-top: -3px !important;
+  }
+  #identity-popup[mainviewshowing] panelview[footerVisible="false"] {
+    margin-bottom: 4px !important;
+  }
+  #identity-popup-security-button {
+    margin-bottom: 0px !important;
+  }
+  #protections-popup-settings-button {
+    margin-block: -1px !important;
+  }
+  #protections-popup-show-report-stack {
+    margin-top: -1px !important;
+    margin-bottom: -5px !important;
+  }
+  #protections-popup-footer .protections-popup-footer-button,
+  #protections-popup-cookie-banner-switch {
+    padding-block: 0px !important;
+  }
+  #protections-popup-show-report-button {
+    margin-block: 4px !important;
+  }
+  #BMB_bookmarksPopup menu,
+  menu.bookmark-item {
+    margin-inline: 0 !important;
+    padding-inline: 11px !important;
+  }
+  #identity-popup-securityView-extended-info {
+    margin-inline-start: 32px !important;
+  }
+  :root .all-tabs-item {
+    padding-inline: 0 !important;
+  }
+  #PanelUI-developer-tools-view toolbarbutton {
+    margin-inline-start: var(--appmenu-noicon-inline-end) !important;
+  }
+  .panel-info-button,
+  .all-tabs-item {
+    margin: 0 !important;
+  }
+  #allTabsMenu-allTabsView-tabs {
+    margin-block: -4px !important;
+  }
+  .unified-extensions-item-menu-button .toolbarbutton-icon {
+    padding: 10px !important;
+  }
+  #appMenu-addon-banners:has(::after) {
+    margin-bottom: 4px;
+  }
+  .unified-extensions-item > .unified-extensions-item-row-wrapper > .unified-extensions-item-menu-button {
+    padding: 0 !important;
+  }
+  /* fxa menu monitor and relay ad- i mean promotions */
+  .ctaMenuLogo,
+  #cta-menu-header-description {
+    margin-inline-start: 0 !important;
+  }
+  @media (-moz-platform: windows) {
+    menuitem[checked="true"] > :is(.menu-icon, .menu-iconic-left) {
+      list-style-image: url("./icons/check.svg") !important;
+      content: url("./icons/check.svg") !important;
+    }
+  }
+  @media (-moz-platform: linux) {
+    .menupopup-arrowscrollbox {
+      padding-block: 4px !important;
+    }
+    #context-navigation {
+      margin-inline: 4px !important;
+    }
+  }
+  #sidebarMenu-popup > menuitem {
+    margin-inline: 0 !important;
+  }
+
+  /* Big button thing */
+  :is(#protections-popup :not(:first-child) .panel-subview-footer-button,
+  #unified-extensions-manage-extensions,
+  #identity-popup-clear-sitedata-button,
+  #identity-popup-more-info,
+  #overflowMenu-customize-button, .trustpanel-section.panel-subview-footer-button) {
+    height: 46px !important;
+    font-size: 14px !important;
+    background: color-mix(in srgb, currentColor 9%, transparent) !important;
+    margin-top: -4px !important;
+    .toolbarbutton-text {
+      text-align: center !important;
+    }
+    &:hover {
+      background: color-mix(in srgb, currentColor 25%, transparent) !important;
+    }
+    &:hover:active {
+      background: color-mix(in srgb, currentColor 30%, transparent) !important;
+    }
+  }
+  toolbarbutton.panel-subview-footer-button {
+    background: color-mix(in srgb, currentColor 9%, transparent) !important;
+    height: 40px !important;
+    margin-inline: 0 !important;
+    margin-block: -4px 0 !important;
+    padding-inline: 12px !important;
+    &:hover {
+      background: color-mix(in srgb, currentColor 25%, transparent) !important;
+    }
+    &:hover:active {
+      background: color-mix(in srgb, currentColor 30%, transparent) !important;
+    }
+  }
+  .trustpanel-section.panel-subview-footer-button {
+    margin: 0 !important;
+    text-decoration: none !important;
+    color: var(--button-text-color-ghost) !important;
+    align-content: center;
+    text-align: center;
+    padding: 0 !important;
+  }
+  #overflowMenu-customize-button {
+    margin-bottom: 0px !important;
+  }
+}
