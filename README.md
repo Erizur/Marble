@@ -6,7 +6,7 @@ Marble is a browser based on Mozilla Firefox (more specifically, the ESR variant
 
 - [Aubymori](https://github.com/aubymori) and [zapSNH](https://github.com/zapSNH/) for the original Photon fixes for modern Firefox.
 - [Isabella Lulamoon](https://github.com/kawapure) for the original Native Controls Patch.
-- [ImSwordQueen](https://github.com/ImSwordQueen) for miscelaneous Nocturne patches I applied on this repository.
+- [ImSwordQueen](https://github.com/ImSwordQueen) for miscellaneous Nocturne patches I applied on this repository.
 - My house for food and electricity.
 - My computer for being able to build this.
 
