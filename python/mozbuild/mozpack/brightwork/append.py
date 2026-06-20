@@ -22,7 +22,7 @@ import tempfile
 import zipfile
 
 # Build artifacts/caches that should never be part of a diff
-_SKIP_DIR_NAMES = {"__pycache__"}
+_SKIP_DIR_NAMES = {"__pycache__", ".git"}
 _SKIP_SUFFIXES = (".pyc",)
 # Skipped only at the tree root (the SDK's build output), not nested
 _SKIP_ROOT_DIRS = {"dist"}
