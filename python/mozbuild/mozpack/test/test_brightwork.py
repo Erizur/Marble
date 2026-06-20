@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import zipfile
 
 import mozunit
 
@@ -156,6 +157,100 @@ class TestBrightworkCompare(unittest.TestCase):
             for p in (a, b):
                 if os.path.exists(p):
                     os.remove(p)
+
+
+class TestBrightworkAppend(unittest.TestCase):
+    def setUp(self):
+        self.dirs = []
+
+    def tearDown(self):
+        for d in self.dirs:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def _tmp(self):
+        d = tempfile.mkdtemp()
+        self.dirs.append(d)
+        return d
+
+    def _write(self, root, rel, data):
+        p = os.path.join(root, *rel.split("/"))
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            f.write(data)
+
+    def test_delta_added_changed_removed(self):
+        from mozpack.brightwork.append import build_append_package
+
+        old = self._tmp()
+        new = self._tmp()
+        # unchanged, changed, removed, added
+        self._write(old, "src/a.css", "A")
+        self._write(new, "src/a.css", "A")  # same
+        self._write(old, "src/b.js", "OLD")
+        self._write(new, "src/b.js", "NEW")  # changed
+        self._write(old, "src/gone.txt", "x")  # removed (not in new)
+        self._write(new, "adk-win/new.txt", "fresh")  # added
+        # build artifacts/caches must be ignored
+        self._write(new, "dist/win/omni.ja", "huge")  # root dist -> skipped
+        self._write(new, "src/__pycache__/x.pyc", "bytecode")  # skipped
+        self._write(new, "metadata.json", '{"name":"X","version":"2.0"}')
+        self._write(old, "metadata.json", '{"name":"X","version":"1.0"}')
+
+        out = self._tmp()
+        zp = os.path.join(self._tmp(), "delta.zip")
+        s = build_append_package(old, new, out, zip_path=zp)
+
+        self.assertEqual(s["added"], ["adk-win/new.txt"])
+        self.assertEqual(s["changed"], ["metadata.json", "src/b.js"])
+        self.assertEqual(s["removed"], ["src/gone.txt"])
+
+        # changed/added copied; unchanged + removed + skipped NOT copied
+        self.assertTrue(os.path.isfile(os.path.join(out, "src", "b.js")))
+        self.assertTrue(os.path.isfile(os.path.join(out, "adk-win", "new.txt")))
+        self.assertFalse(os.path.exists(os.path.join(out, "src", "a.css")))
+        self.assertFalse(os.path.exists(os.path.join(out, "src", "gone.txt")))
+        self.assertFalse(os.path.exists(os.path.join(out, "dist")))
+        self.assertFalse(
+            os.path.exists(os.path.join(out, "src", "__pycache__"))
+        )
+        # no manifest is written
+        self.assertFalse(
+            os.path.exists(os.path.join(out, "brightwork-append.json"))
+        )
+
+        # zip contains exactly the changed/added payload
+        with zipfile.ZipFile(zp) as z:
+            names = set(z.namelist())
+        self.assertIn("src/b.js", names)
+        self.assertIn("adk-win/new.txt", names)
+        self.assertNotIn("src/a.css", names)
+        self.assertNotIn("brightwork-append.json", names)
+
+    def test_identical_trees_empty_delta(self):
+        from mozpack.brightwork.append import build_append_package
+
+        old = self._tmp()
+        new = self._tmp()
+        self._write(old, "src/a.css", "same")
+        self._write(new, "src/a.css", "same")
+        s = build_append_package(old, new, self._tmp())
+        self.assertEqual((s["added"], s["changed"], s["removed"]), ([], [], []))
+
+    def test_accepts_zip_inputs(self):
+        from mozpack.brightwork.append import build_append_package
+
+        old = self._tmp()
+        new = self._tmp()
+        self._write(old, "pkg/f.txt", "1")
+        self._write(new, "pkg/f.txt", "2")
+        # zip each with a single shared top dir; _resolve_tree descends into it
+        oz = os.path.join(self._tmp(), "old.zip")
+        nz = os.path.join(self._tmp(), "new.zip")
+        for root, zp in ((old, oz), (new, nz)):
+            with zipfile.ZipFile(zp, "w") as z:
+                z.write(os.path.join(root, "pkg", "f.txt"), "sdk/pkg/f.txt")
+        s = build_append_package(oz, nz, self._tmp())
+        self.assertEqual(s["changed"], ["pkg/f.txt"])
 
 
 class TestBrightworkRecipe(unittest.TestCase):

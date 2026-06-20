@@ -70,6 +70,9 @@ MACH_COMMANDS = {
     "build-backend": MachCommandReference(
         "python/mozbuild/mozbuild/build_commands.py",
     ),
+    "brightwork-append": MachCommandReference(
+        "python/mozbuild/mozbuild/mach_commands.py"
+    ),
     "brightwork-extract": MachCommandReference(
         "python/mozbuild/mozbuild/mach_commands.py"
     ),

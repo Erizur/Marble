@@ -3777,3 +3777,57 @@ def brightwork_extract(command_context, output=None):
         )
     )
     return 0
+
+
+@Command(
+    "brightwork-append",
+    category="post-build",
+    description="Build an append (delta) package of the files that changed "
+    "between two brightwork SDKs/packages, for incremental upgrades.",
+)
+@CommandArgument(
+    "--old", required=True, help="Previous release (a directory or a .zip)."
+)
+@CommandArgument(
+    "--new", required=True, help="New release to diff against --old (dir or .zip)."
+)
+@CommandArgument(
+    "--output",
+    "-o",
+    default=None,
+    help="Directory to write the changed files + manifest into "
+    "(default: <distdir>/bw-append).",
+)
+@CommandArgument(
+    "--zip",
+    dest="zip_path",
+    default=None,
+    help="Also write the append package as a .zip here.",
+)
+def brightwork_append(command_context, old, new, output=None, zip_path=None):
+    from mozpack.brightwork.append import build_append_package
+
+    output = output or os.path.join(command_context.distdir, "bw-append")
+    summary = build_append_package(old, new, output, zip_path)
+
+    def mib(n):
+        return n / (1024 * 1024)
+
+    print(
+        "Wrote append package to %s\n"
+        "  added:   %d\n"
+        "  changed: %d\n"
+        "  removed: %d (not copied)\n"
+        "  payload: %.1f MiB%s"
+        % (
+            summary["output_dir"],
+            len(summary["added"]),
+            len(summary["changed"]),
+            len(summary["removed"]),
+            mib(summary["bytes"]),
+            ("\n  zip:     " + summary["zip"]) if summary["zip"] else "",
+        )
+    )
+    if not summary["added"] and not summary["changed"] and not summary["removed"]:
+        print("  (the two trees are identical)")
+    return 0
