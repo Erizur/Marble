@@ -162,11 +162,11 @@ _BUILD_PY = '''\
 # modify all metadata from metadata.json. ONLY USE THIS TOOL TO PACK.
 # Hijacking this thing to make it do something else is not recommended
 #
-# Each adk-<platform>/ holds one platform's layout, and src/ is shared. 
+# Each adk-<platform>/ holds one platform's layout, and src/ is shared.
 # By default every available platform is packed, producing
 # dist/<platform>/omni.ja, dist/<platform>/browser/omni.ja
 # plus a single dist/brightwork.json that records which platforms are present.
-# Use --platform to pack just one.
+# Use --platform to pack just one. More details in the README file!
 
 import argparse
 import os
@@ -204,8 +204,15 @@ def main():
                     help="package metadata.json (default: ./metadata.json)")
     ap.add_argument("--platform", action="append", choices=avail or None,
                     help="platform(s) to pack; repeatable "
-                         "(default: all available%s)"
+                         "(default: all available%s). Pack just the one you are "
+                         "testing to roughly halve build time."
                          % (": " + ", ".join(avail) if avail else ""))
+    ap.add_argument("--fast", action="store_true",
+                    help="store the omni.ja entries uncompressed -- packs much "
+                         "faster (skips deflate) at the cost of larger jars. "
+                         "Ideal for local dev iteration (e.g. a symlinked dist); "
+                         "the loader reads uncompressed jars fine. Compress for "
+                         "release.")
     args = ap.parse_args()
 
     if not avail:
@@ -221,6 +228,7 @@ def main():
         adk = os.path.join(HERE, "adk-" + plat)
         out = os.path.join(args.out, plat)
         gre, skipped = build_from_recipe(adk, src, out, token,
+                                         compress=not args.fast,
                                          write_metadata=False)
         built.append(plat)
         print("Built", gre)
@@ -247,16 +255,17 @@ if __name__ == "__main__":
 
 def _readme():
     return """\
-# My new addon
+# Brightwork Addon Template
+This is the basic template for developing a Brightwork addon for Marble.
 Update this if needed!
 
-# Installation instructions
+## Installation instructions
 - On the add-ons manager, go to the brightwork section and install the package after building it or downloading it.
 - You can do this by using the cog icon on the top and pressing the Brightwork-related options.
 - If nothing failed, activate it and restart your browser!
 - enjoi.
 
-# Building the omni.ja
+## Building the omni.ja
 You need atleast **Python 3.12** installed on your system.
 To build the addon, run the following command:
 ```python
@@ -264,6 +273,7 @@ To build the addon, run the following command:
 # --out (path) - Define a custom output directory. default is the dist folder that will get created in your repo.
 # --metadata (path/to/metadata.json) - Define a custom metadata builder. useful if you want to write different metadata for specific versions of your package.
 # --platform (win,linux) - Define whether to build for a windows or linux only environment. Rewrites the platform check in metadata.json.
+# --fast - Allow to build an uncompressed (skips deflate) omni.ja for faster compilation times. This should only be used when developing addons, and not used when deploying an actual release due to its uncompressed size.
 
 python build.py
 ```

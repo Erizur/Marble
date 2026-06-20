@@ -431,6 +431,22 @@ def _generated_fallback(generated_root, dest):
     return candidate if os.path.isfile(candidate) else None
 
 
+def _preprocess_or_none(path, marker, defines, silence):
+    import io
+
+    from mozbuild.preprocessor import Preprocessor
+
+    try:
+        pp = Preprocessor(defines=defines, marker=marker)
+        pp.setSilenceDirectiveWarnings(silence)
+        out = io.StringIO()
+        with open(path, "r", encoding="utf-8") as inp:
+            pp.processFile(input=inp, output=out)
+        return out.getvalue().encode("utf-8")
+    except Exception:
+        return None
+
+
 def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
                      skipped, resources_only):
     from mozpack.files import File, FileFinder, GeneratedFile
@@ -452,20 +468,30 @@ def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
                 continue
             registry.add(dest, File(rebased))
         elif install_type == InstallManifest.PREPROCESS:
-            # Preprocessed files are served only from the already-preprocessed
-            # copy captured into the ADK's generated/ dir at export time. We
-            # deliberately do NOT re-run the preprocessor on the consumer: these
-            # files routinely #include headers generated into the build's objdir
-            # (e.g. AppConstants.sys.mjs -> @TOPOBJDIR@/brightwork-abi.h) which
-            # the consumer does not have, so re-preprocessing is not
-            # reproducible and would either error out or silently drop the file.
-            # If no prebuilt output was bundled, treat it as skipped; the caller
-            # guards the startup-critical ones (see build_from_recipe).
-            gen = _generated_fallback(generated_root, dest)
-            if gen:
-                registry.add(dest, File(gen))
+            # Re-run the preprocessor from the shipped src so edits to a
+            # preprocessed file -- and to the sources it #includes (e.g. editing
+            # navigator-toolbox.inc.xhtml, pulled into browser.xhtml) -- take
+            # effect on rebuild. If preprocessing can't be reproduced here (the
+            # file #includes an objdir-only header such as
+            # @TOPOBJDIR@/brightwork-abi.h that is absent from src), fall back to
+            # the already-preprocessed copy captured into generated/ at export
+            # time; failing that, skip (the caller guards startup-critical ones).
+            data = None
+            rebased = rebase_source(entry[1], recipe.topsrcdir, src_root)
+            if rebased is not None and os.path.isfile(rebased):
+                defines = dict(recipe.defines)
+                defines.update(manifest._decode_field_entry(entry[4]))
+                data = _preprocess_or_none(
+                    rebased, entry[3], defines, bool(int(entry[5]))
+                )
+            if data is not None:
+                registry.add(dest, GeneratedFile(data))
             else:
-                skipped.append((dest, entry[1]))
+                gen = _generated_fallback(generated_root, dest)
+                if gen:
+                    registry.add(dest, File(gen))
+                else:
+                    skipped.append((dest, entry[1]))
         elif install_type == InstallManifest.CONTENT:
             content = manifest._decode_field_entry(entry[1]).encode("utf-8")
             registry.add(dest, GeneratedFile(content))

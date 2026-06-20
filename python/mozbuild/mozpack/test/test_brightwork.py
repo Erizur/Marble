@@ -448,6 +448,58 @@ class TestBrightworkBuild(unittest.TestCase):
         )
         self.assertFalse(os.path.isfile(os.path.join(gen, "modules", "Real.sys.mjs")))
 
+    def test_editing_preprocessed_include_takes_effect(self):
+        # Regression: a preprocessed file (browser.xhtml-style) is re-run from
+        # src so edits to it AND to the sources it #includes
+        # (navigator-toolbox.inc.xhtml-style) show up on rebuild, instead of
+        # being frozen to the generated/ snapshot.
+        src = self._tmp()
+        adk = self._tmp()
+        os.makedirs(os.path.join(src, "b/content"))
+        with open(os.path.join(src, "rootchrome.manifest"), "w") as f:
+            f.write("content global chrome/global/\n")
+        with open(os.path.join(src, "b/content/main.xhtml"), "w") as f:
+            f.write("#include part.inc.xhtml\n<root/>\n")
+        inc = os.path.join(src, "b/content/part.inc.xhtml")
+        with open(inc, "w") as f:
+            f.write("<part>ORIGINAL</part>\n")
+
+        m = InstallManifest()
+        m.add_copy(os.path.join(src, "rootchrome.manifest"), "chrome.manifest")
+        m.add_preprocess(
+            os.path.join(src, "b/content/main.xhtml"),
+            "chrome/browser/content/main.xhtml",
+            "deps",
+            marker="#",
+        )
+        os.makedirs(os.path.join(adk, "manifests"))
+        m.write(path=os.path.join(adk, "manifests", "dist_bin"))
+        BrightworkRecipe(topsrcdir=src, manifests=["manifests/dist_bin"]).save(adk)
+
+        # A stale generated/ snapshot that must NOT win over the live src.
+        gen = os.path.join(adk, "generated", "chrome", "browser", "content")
+        os.makedirs(gen)
+        with open(os.path.join(gen, "main.xhtml"), "w") as f:
+            f.write("<part>STALE</part>\n<root/>\n")
+
+        def build_and_read():
+            dest = self._tmp()
+            build_from_recipe(adk, src, dest, BrightworkToken())
+            jr = JarReader(os.path.join(dest, "omni.ja"))
+            return jr["chrome/browser/content/main.xhtml"].read().decode()
+
+        body = build_and_read()
+        self.assertIn("ORIGINAL", body)  # re-preprocessed from src
+        self.assertNotIn("STALE", body)  # not the generated/ snapshot
+        self.assertNotIn("#include", body)  # actually preprocessed
+
+        # Edit the *included* source -> the change must appear on rebuild.
+        with open(inc, "w") as f:
+            f.write("<part>EDITED</part>\n")
+        body2 = build_and_read()
+        self.assertIn("EDITED", body2)
+        self.assertNotIn("ORIGINAL", body2)
+
     def test_missing_canary_is_refused(self):
         src = self._tmp()
         adk = self._tmp()
