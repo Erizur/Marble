@@ -73,6 +73,8 @@ brightwork/
 If you want to run an automated CI instance, you should call `mozpack.brightwork.build.verify_omnijar(path, expected_abi=…)`
 to confirm each artifact is well-formed and has no ABI inconsistencies (only if you did a half-assed upgrade of the tools or missed an upgrade spot) before publishing.
 
+You are free to use the brightwork-sdk template that I provide under [this repository](https://github.com/Erizur/brightwork-sdk).
+
 ## Installing a package (runtime)
 
 You are able to run a brightwork addon in two different ways. You can pass an environment variable while using mach run in order to define the brightwork directory, in which it will locate the metadata to load the addon, or manage it using the Extensions/Addon manager.
