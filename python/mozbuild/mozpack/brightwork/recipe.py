@@ -390,11 +390,25 @@ def stage_from_recipe(adk_dir, src_root, staging_dir, resources_only=True):
 
     registry = FileRegistry()
     skipped = []
+    errors = []
     for rel in recipe.manifests:
         manifest = InstallManifest(path=os.path.join(adk_dir, rel))
         _replay_manifest(
             manifest, recipe, src_root, generated_root, registry, skipped,
-            resources_only,
+            errors, resources_only,
+        )
+
+    if errors:
+        detail = "\n".join(
+            "  %s (line %s): #include %s -- not found in the package src tree"
+            % (dest, line, os.path.basename(target))
+            for dest, line, target in errors
+        )
+        raise ValueError(
+            "Refusing to build: %d preprocessed file(s) reference an #include "
+            "that is missing from src. Add the file to src/ (its name must "
+            "match the #include directive exactly, extension included) or fix "
+            "the directive:\n%s" % (len(errors), detail)
         )
 
     if os.path.isdir(generated_root):
@@ -432,6 +446,14 @@ def _generated_fallback(generated_root, dest):
 
 
 def _preprocess_or_none(path, marker, defines, silence):
+    """Preprocess `path`; return (bytes, None) or (None, exception).
+
+    The exception is surfaced to the caller (rather than raised here) so it can
+    classify the failure: a developer-introduced one (a bad #include, a typo) is
+    reported, while the legitimately non-reproducible cases (objdir-only
+    #includes such as @TOPOBJDIR@/brightwork-abi.h) still fall back to the
+    copy captured into generated/ at export time.
+    """
     import io
 
     from mozbuild.preprocessor import Preprocessor
@@ -442,13 +464,45 @@ def _preprocess_or_none(path, marker, defines, silence):
         out = io.StringIO()
         with open(path, "r", encoding="utf-8") as inp:
             pp.processFile(input=inp, output=out)
-        return out.getvalue().encode("utf-8")
-    except Exception:
+        return out.getvalue().encode("utf-8"), None
+    except Exception as e:
+        return None, e
+
+
+# Matches an unresolved preprocessor build variable such as @TOPOBJDIR@.
+_UNRESOLVED_PP_VAR = re.compile(r"@[A-Za-z0-9_]+@")
+
+
+def _missing_local_include(error):
+    """If `error` is a preprocessor FILE_NOT_FOUND for a concrete include path
+    -- a real file the author expected to ship in src, not a build-time
+    variable like @TOPOBJDIR@ -- return (line, missing_path). Otherwise None.
+
+    This is what separates a developer error (e.g. `#include browser-appmenu.inc`
+    whose target was never added to src, or whose name doesn't match the file)
+    from the legitimately non-reproducible objdir #includes that are *meant* to
+    fall back to generated/. The former should stop the build; the latter
+    shouldn't.
+    """
+    from mozbuild.preprocessor import Preprocessor
+
+    if not isinstance(error, Preprocessor.Error):
         return None
+    if getattr(error, "key", None) != "FILE_NOT_FOUND":
+        return None
+    # Preprocessor.Error packs (file, line, key, context) as a single tuple in
+    # .args[0]; context is the include path that wasn't found.
+    inner = error.args[0] if getattr(error, "args", None) else None
+    if not isinstance(inner, tuple) or len(inner) < 4 or not isinstance(inner[3], str):
+        return None
+    missing = inner[3]
+    if _UNRESOLVED_PP_VAR.search(missing):
+        return None  # @TOPOBJDIR@ etc. -- not reproducible here, by design
+    return getattr(error, "line", inner[1]), missing
 
 
 def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
-                     skipped, resources_only):
+                     skipped, errors, resources_only):
     from mozpack.files import File, FileFinder, GeneratedFile
 
     for dest in sorted(manifest._dests):
@@ -477,17 +531,41 @@ def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
             # the already-preprocessed copy captured into generated/ at export
             # time; failing that, skip (the caller guards startup-critical ones).
             data = None
+            pp_error = None
             rebased = rebase_source(entry[1], recipe.topsrcdir, src_root)
             if rebased is not None and os.path.isfile(rebased):
                 defines = dict(recipe.defines)
                 defines.update(manifest._decode_field_entry(entry[4]))
-                data = _preprocess_or_none(
+                data, pp_error = _preprocess_or_none(
                     rebased, entry[3], defines, bool(int(entry[5]))
                 )
             if data is not None:
                 registry.add(dest, GeneratedFile(data))
             else:
                 gen = _generated_fallback(generated_root, dest)
+                # The file is shipped in src but couldn't be preprocessed here.
+                missing = _missing_local_include(pp_error)
+                if missing is not None:
+                    # A concrete #include that isn't in src: an unambiguous
+                    # developer error (typo, missing file, or a name that
+                    # doesn't match the directive). Collect it and fail the
+                    # build -- silently shipping the export-time copy makes
+                    # "my edit did nothing" impossible to diagnose.
+                    line, target = missing
+                    errors.append((dest, line, target))
+                elif pp_error is not None:
+                    # Some other preprocess failure (an objdir-only #include
+                    # whose @TOPOBJDIR@ didn't resolve here, etc.). This is the
+                    # legitimate fallback case; warn so a frozen file is at
+                    # least visible, then ship the export-time copy.
+                    print(
+                        "brightwork: WARNING: could not preprocess %s from src "
+                        "(%s).\n  Shipping the copy captured at export time -- "
+                        "your edits to this file and the sources it #includes "
+                        "will NOT take effect until this is fixed." % (
+                            dest, pp_error
+                        )
+                    )
                 if gen:
                     registry.add(dest, File(gen))
                 else:

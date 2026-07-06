@@ -622,6 +622,46 @@ class TestBrightworkBuild(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_from_recipe(adk, src, dest, BrightworkToken())
 
+    def test_missing_local_include_is_refused(self):
+        # A preprocessed file that #includes a concrete file missing from src
+        # (a typo, or a name that doesn't match the file -- e.g. shipping
+        # browser-appmenu.inc.xhtml while the directive says browser-appmenu.inc)
+        # must FAIL the build, not silently ship the frozen generated/ copy.
+        src = self._tmp()
+        adk = self._tmp()
+        dest = self._tmp()
+        os.makedirs(os.path.join(src, "b/content"))
+        with open(os.path.join(src, "rootchrome.manifest"), "w") as f:
+            f.write("content global chrome/global/\n")
+        with open(os.path.join(src, "b/content/main.xhtml"), "w") as f:
+            f.write("<root>\n#include appmenu.inc\n</root>\n")
+        # Ship a *similarly* named file, but not the one the directive asks for.
+        with open(os.path.join(src, "b/content/appmenu.inc.xhtml"), "w") as f:
+            f.write("<menu/>\n")
+
+        m = InstallManifest()
+        m.add_copy(os.path.join(src, "rootchrome.manifest"), "chrome.manifest")
+        m.add_preprocess(
+            os.path.join(src, "b/content/main.xhtml"),
+            "chrome/browser/content/main.xhtml",
+            "deps",
+            marker="#",
+        )
+        os.makedirs(os.path.join(adk, "manifests"))
+        m.write(path=os.path.join(adk, "manifests", "dist_bin"))
+        BrightworkRecipe(topsrcdir=src, manifests=["manifests/dist_bin"]).save(adk)
+
+        # A stale generated/ snapshot exists; it must NOT mask the error.
+        gen = os.path.join(adk, "generated", "chrome", "browser", "content")
+        os.makedirs(gen)
+        with open(os.path.join(gen, "main.xhtml"), "w") as f:
+            f.write("<root><frozen/></root>\n")
+
+        with self.assertRaises(ValueError) as ctx:
+            build_from_recipe(adk, src, dest, BrightworkToken())
+        # The message must name the offending include so it's actually fixable.
+        self.assertIn("appmenu.inc", str(ctx.exception))
+
     def test_multiplatform_fat_package_layout(self):
         # Mirror the build.py driver: build two platforms into <out>/<plat>/ with
         # write_metadata=False, then write one root brightwork.json listing the
