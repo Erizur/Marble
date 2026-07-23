@@ -20,7 +20,6 @@ Here are some useful sources for Mozilla documentation (in order):
 
 1. [Mozilla Wiki (Gecko:Overview)](https://wiki.mozilla.org/Gecko:Overview) - by far the most useful source to understanding the Mozilla framework architecture.
 2. [Firefox Source Docs](https://firefox-source-docs.mozilla.org/) - pertains more to modern Firefox specifically.
-3. [Isabella's Documentation](https://kawapure.github.io/mozilla_simple_docs/) - written by Isabella and aims to provide a good introduction to the Mozilla framework.
 
 ## Building from source
 
