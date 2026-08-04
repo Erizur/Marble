@@ -81,8 +81,6 @@ RasterImage::RasterImage(nsIURI* aURI /* = nullptr */)
 
 //******************************************************************************
 RasterImage::~RasterImage() {
-  mIsBeingDestroyed = true;
-
   // Make sure our SourceBuffer is marked as complete. This will ensure that any
   // outstanding decoders terminate.
   if (!mSourceBuffer->IsComplete()) {
@@ -491,19 +489,21 @@ RasterImage::WillDrawOpaqueNow() {
 void RasterImage::OnSurfaceDiscarded(const SurfaceKey& aSurfaceKey) {
   MOZ_ASSERT(mProgressTracker);
 
-  if (mIsBeingDestroyed) {
-    return;
-  }
-
   bool animatedFramesDiscarded =
       aSurfaceKey.Playback() == PlaybackType::eAnimated;
 
   nsCOMPtr<nsIEventTarget> eventTarget = do_GetMainThread();
 
-  RefPtr<RasterImage> image = this;
-  nsCOMPtr<nsIRunnable> ev =
-      NS_NewRunnableFunction("RasterImage::OnSurfaceDiscarded", [=]() -> void {
-        image->OnSurfaceDiscardedInternal(animatedFramesDiscarded);
+  RefPtr<ProgressTracker> progressTracker = mProgressTracker;
+  nsCOMPtr<nsIRunnable> ev = NS_NewRunnableFunction(
+      "RasterImage::OnSurfaceDiscarded",
+      [progressTracker, animatedFramesDiscarded]() -> void {
+        RefPtr<Image> image = progressTracker->GetImage();
+        if (!image) {
+          return;
+        }
+        static_cast<RasterImage*>(image.get())
+            ->OnSurfaceDiscardedInternal(animatedFramesDiscarded);
       });
   eventTarget->Dispatch(ev.forget(), NS_DISPATCH_NORMAL);
 }
@@ -1680,10 +1680,12 @@ void RasterImage::NotifyDecodeComplete(
     }
 
     if (mAnimationState && LoadHasBeenDecoded()) {
-      // We've finished a full decode of all animation frames and our
-      // AnimationState has been notified about them all, so let it know not to
-      // expect anymore.
-      mAnimationState->NotifyDecodeComplete();
+      // If we've successfully finished a full decode of all animation frames
+      // then let our animation state know it is complete and to not expect
+      // anymore frames.
+      if (aStatus.mFinished && !aStatus.mHadError) {
+        mAnimationState->NotifyDecodeComplete();
+      }
 
       IntRect rect = mAnimationState->UpdateState(this, mSize.ToUnknownSize());
 

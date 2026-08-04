@@ -377,16 +377,26 @@ void MFCDMParent::SetWidevineL1Path(const char* aPath) {
   MFCDM_PARENT_SLOG("Set Widevine L1 dll path=%ls\n", sWidevineL1Path);
 }
 
+/* static */
+already_AddRefed<MFCDMParent> MFCDMParent::GetCDMById(uint64_t aId) {
+  StaticMutexAutoLock lock(sRegistryMutex);
+  RefPtr<MFCDMParent> cdm = sRegisteredCDMs.Get(aId);
+  return cdm.forget();
+}
+
 void MFCDMParent::Register() {
+  StaticMutexAutoLock lock(sRegistryMutex);
   MOZ_ASSERT(!sRegisteredCDMs.Contains(this->mId));
   sRegisteredCDMs.InsertOrUpdate(this->mId, this);
   MFCDM_PARENT_LOG("Registered!");
 }
 
 void MFCDMParent::Unregister() {
-  MOZ_ASSERT(sRegisteredCDMs.Contains(this->mId));
-  sRegisteredCDMs.Remove(this->mId);
-  MFCDM_PARENT_LOG("Unregistered!");
+  StaticMutexAutoLock lock(sRegistryMutex);
+  if (sRegisteredCDMs.Contains(this->mId)) {
+    sRegisteredCDMs.Remove(this->mId);
+    MFCDM_PARENT_LOG("Unregistered!");
+  }
 }
 
 MFCDMParent::MFCDMParent(const nsAString& aKeySystem,
@@ -466,6 +476,7 @@ void MFCDMParent::Destroy() {
   }
   mSessions.clear();
   mIPDLSelfRef = nullptr;
+  Unregister();
 }
 
 MFCDMParent::~MFCDMParent() {

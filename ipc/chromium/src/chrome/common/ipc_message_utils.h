@@ -102,7 +102,8 @@ class MOZ_STACK_CLASS MessageWriter final {
     return message_.WriteBytes(data, data_len);
   }
 
-  bool WriteBytesZeroCopy(void* data, uint32_t data_len, uint32_t capacity) {
+  // data_len and capacity must be within the range of uint32_t
+  bool WriteBytesZeroCopy(void* data, size_t data_len, size_t capacity) {
     return message_.WriteBytesZeroCopy(data, data_len, capacity);
   }
 

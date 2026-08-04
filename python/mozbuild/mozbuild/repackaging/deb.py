@@ -148,6 +148,7 @@ def repackage_deb_l10n(
     version,
     build_number,
     release_product,
+    extensions_dir,
 ):
     arch = "all"
 
@@ -155,15 +156,28 @@ def repackage_deb_l10n(
     source_dir = os.path.join(tmpdir, "source")
     try:
         langpack_metadata = _extract_langpack_metadata(input_xpi_file)
-        langpack_dir = mozpath.join(source_dir, "firefox", "distribution", "extensions")
+        langpack_dir = mozpath.join(source_dir, extensions_dir)
         application_ini_data = _load_application_ini_data(
             input_tar_file, version, build_number
         )
         langpack_id = langpack_metadata["langpack_id"]
         if release_product == "devedition":
-            depends = f"firefox-devedition (= {application_ini_data['pkg_version']})"
+            depends_package = "firefox-devedition"
         else:
-            depends = f"{application_ini_data['remoting_name']} (= {application_ini_data['pkg_version']})"
+            depends_package = application_ini_data["remoting_name"]
+
+        depends_version = application_ini_data["pkg_version"]
+
+        # Thunderbird prepends epoch 1 to the version number to prevent
+        # accidental downgrading to Thunderbird .debs in non-Mozilla APT
+        # repositories.
+        #
+        # See bug 2005200
+        if depends_package == "thunderbird":
+            depends_version = f"1:{depends_version}"
+
+        depends = f"{depends_package} (= {depends_version})"
+
         build_variables = get_build_variables(
             application_ini_data,
             _DEB_ARCH[arch],

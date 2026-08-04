@@ -478,6 +478,8 @@ skip-if = ["os == 'android' && debug"]
 
 ["test_ext_runtime_ports_gc.js"]
 
+["test_ext_runtime_ports_membership.js"]
+
 ["test_ext_runtime_sendMessage.js"]
 
 ["test_ext_runtime_sendMessage_errors.js"]
@@ -723,6 +725,7 @@ skip-if = ["appname == 'thunderbird'"]
 
 ["test_webRequest_filtering.js"]
 
+["test_wpt_actor_pref.js"]
+
 ["test_wpt_test_onMessage.js"]
 prefs = ["extensions.wpt.enabled=true"]
-skip-if = ["!nightly_build"]

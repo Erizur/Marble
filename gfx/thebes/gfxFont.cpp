@@ -791,9 +791,20 @@ void gfxShapedText::SetupClusterBoundaries(uint32_t aOffset,
   }
 }
 
+void gfxShapedText::ClearGlyphs() {
+  auto* cg = GetCharacterGlyphs();
+  const auto* end = cg + GetLength();
+  while (cg < end) {
+    cg->ClearGlyph();
+    ++cg;
+  }
+  mDetailedGlyphs = nullptr;
+}
+
 gfxShapedText::DetailedGlyph* gfxShapedText::AllocateDetailedGlyphs(
     uint32_t aIndex, uint32_t aCount) {
-  NS_ASSERTION(aIndex < GetLength(), "Index out of range");
+  MOZ_ASSERT(aIndex < GetLength(), "Index out of range");
+  MOZ_ASSERT(aCount <= CompressedGlyph::GLYPH_COUNT_MASK);
 
   if (!mDetailedGlyphs) {
     mDetailedGlyphs = MakeUnique<DetailedGlyphStore>();
@@ -808,6 +819,13 @@ void gfxShapedText::SetDetailedGlyphs(uint32_t aIndex, uint32_t aGlyphCount,
 
   MOZ_ASSERT(aIndex > 0 || g.IsLigatureGroupStart(),
              "First character can't be a ligature continuation!");
+
+  // Clamp the (potentially font-controlled) glyph count to the 16-bit field
+  // in CompressedGlyph, so that it cannot overflow into the flag bits.
+  // Any additional items in aGlyphs will be discarded. No real-world use case
+  // should need >64K component glyphs to represent a single character.
+  aGlyphCount =
+      std::min<uint32_t>(aGlyphCount, CompressedGlyph::GLYPH_COUNT_MASK);
 
   if (aGlyphCount > 0) {
     DetailedGlyph* details = AllocateDetailedGlyphs(aIndex, aGlyphCount);
@@ -894,14 +912,11 @@ void gfxShapedText::ApplyTrackingToClusters(gfxFloat aTrackingAdjustment,
       }
     } else {
       // complex glyphs ==> add offset at cluster/ligature boundaries
-      uint32_t detailedLength = glyphData->GetGlyphCount();
-      if (detailedLength) {
-        DetailedGlyph* details = GetDetailedGlyphs(i);
-        if (!details) {
-          continue;
-        }
+      uint32_t glyphCount = glyphData->GetGlyphCount();
+      if (glyphCount) {
+        auto* details = GetDetailedGlyphs(i, glyphCount);
         auto& advance = IsRightToLeft() ? details[0].mAdvance
-                                        : details[detailedLength - 1].mAdvance;
+                                        : details[glyphCount - 1].mAdvance;
         if (advance > 0) {
           advance = std::max(0, advance + appUnitAdjustment);
         }
@@ -2085,7 +2100,7 @@ bool gfxFont::DrawGlyphs(const gfxShapedText* aShapedText,
         // Add extra buffer capacity to allow for multiple-glyph entry.
         aBuffer.AddCapacity(glyphCount - 1, capacityMult);
         const gfxShapedText::DetailedGlyph* details =
-            aShapedText->GetDetailedGlyphs(aOffset + i);
+            aShapedText->GetDetailedGlyphs(aOffset + i, glyphCount);
         MOZ_ASSERT(details, "missing DetailedGlyph!");
         for (uint32_t j = 0; j < glyphCount; ++j, ++details) {
           float advance =
@@ -2984,7 +2999,7 @@ bool gfxFont::MeasureGlyphs(const gfxTextRun* aTextRun, uint32_t aStart,
       uint32_t glyphCount = glyphData->GetGlyphCount();
       if (glyphCount > 0) {
         const gfxTextRun::DetailedGlyph* details =
-            aTextRun->GetDetailedGlyphs(i);
+            aTextRun->GetDetailedGlyphs(i, glyphCount);
         NS_ASSERTION(details != nullptr,
                      "detailedGlyph record should not be missing!");
         uint32_t j;
@@ -3057,7 +3072,7 @@ bool gfxFont::MeasureGlyphs(const gfxTextRun* aTextRun, uint32_t aStart,
       uint32_t glyphCount = glyphData->GetGlyphCount();
       if (glyphCount > 0) {
         const gfxTextRun::DetailedGlyph* details =
-            aTextRun->GetDetailedGlyphs(i);
+            aTextRun->GetDetailedGlyphs(i, glyphCount);
         NS_ASSERTION(details != nullptr,
                      "detailedGlyph record should not be missing!");
         uint32_t j;

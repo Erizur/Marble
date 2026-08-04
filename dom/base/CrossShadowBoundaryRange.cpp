@@ -28,19 +28,6 @@ CrossShadowBoundaryRange::Create(const RawRangeBoundary& aStartBoundary,
                                  const RawRangeBoundary& aEndBoundary,
                                  nsRange* aOwner);
 
-template void CrossShadowBoundaryRange::DoSetRange(
-    const RangeBoundary& aStartBoundary, const RangeBoundary& aEndBoundary,
-    nsINode* aRootNode, nsRange* aOwner);
-template void CrossShadowBoundaryRange::DoSetRange(
-    const RangeBoundary& aStartBoundary, const RawRangeBoundary& aEndBoundary,
-    nsINode* aRootNode, nsRange* aOwner);
-template void CrossShadowBoundaryRange::DoSetRange(
-    const RawRangeBoundary& aStartBoundary, const RangeBoundary& aEndBoundary,
-    nsINode* aRootNode, nsRange* aOwner);
-template void CrossShadowBoundaryRange::DoSetRange(
-    const RawRangeBoundary& aStartBoundary,
-    const RawRangeBoundary& aEndBoundary, nsINode* aRootNode, nsRange* aOwner);
-
 template nsresult CrossShadowBoundaryRange::SetStartAndEnd(
     const RangeBoundary& aStartBoundary, const RangeBoundary& aEndBoundary);
 template nsresult CrossShadowBoundaryRange::SetStartAndEnd(
@@ -57,8 +44,7 @@ nsTArray<RefPtr<CrossShadowBoundaryRange>>*
 NS_IMPL_CYCLE_COLLECTING_ADDREF(CrossShadowBoundaryRange)
 
 NS_IMPL_CYCLE_COLLECTING_RELEASE_WITH_INTERRUPTABLE_LAST_RELEASE(
-    CrossShadowBoundaryRange,
-    DoSetRange(RawRangeBoundary(), RawRangeBoundary(), nullptr, nullptr),
+    CrossShadowBoundaryRange, ResetToReuse(),
     AbstractRange::MaybeCacheToReuse(*this))
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(CrossShadowBoundaryRange)
@@ -95,39 +81,29 @@ already_AddRefed<CrossShadowBoundaryRange> CrossShadowBoundaryRange::Create(
     range = sCachedRanges->PopLastElement().forget();
   }
 
+  // mOwner is fixed for the lifetime of the range; set it here so it is also
+  // re-established on the cache-reuse path, where the constructor doesn't run.
+  range->mOwner = aOwner;
   range->Init(aStartBoundary.GetContainer());
-  range->DoSetRange(aStartBoundary, aEndBoundary, nullptr, aOwner);
+  range->DoSetRange(aStartBoundary, aEndBoundary, nullptr);
   return range.forget();
 }
 
-template <typename SPT, typename SRT, typename EPT, typename ERT>
-void CrossShadowBoundaryRange::DoSetRange(
-    const RangeBoundaryBase<SPT, SRT>& aStartBoundary,
-    const RangeBoundaryBase<EPT, ERT>& aEndBoundary, nsINode* aRootNode,
-    nsRange* aOwner) {
-  // aRootNode is useless to CrossShadowBoundaryRange because aStartBoundary
-  // and aEndBoundary could have different roots.
-  StaticRange::DoSetRange(aStartBoundary, aEndBoundary, nullptr);
+void CrossShadowBoundaryRange::ResetToReuse() {
+  DoSetRange(RawRangeBoundary(), RawRangeBoundary(), nullptr);
+  mOwner = nullptr;
+}
 
+void CrossShadowBoundaryRange::UpdateCommonAncestor() {
   nsINode* startRoot = RangeUtils::ComputeRootNode(mStart.GetContainer());
   nsINode* endRoot = RangeUtils::ComputeRootNode(mEnd.GetContainer());
 
   nsINode* previousCommonAncestor = mCommonAncestor;
-  if (startRoot == endRoot) {
-    MOZ_ASSERT(!startRoot && !endRoot);
-    MOZ_ASSERT(!aOwner);
-    // This should be the case when Release() is called.
-    mCommonAncestor = startRoot;
-    mOwner = nullptr;
-  } else {
-    mCommonAncestor =
-        nsContentUtils::GetClosestCommonShadowIncludingInclusiveAncestor(
-            mStart.GetContainer(), mEnd.GetContainer());
-    MOZ_ASSERT_IF(mOwner, mOwner == aOwner);
-    if (!mOwner) {
-      mOwner = aOwner;
-    }
-  }
+  mCommonAncestor =
+      startRoot == endRoot
+          ? startRoot
+          : nsContentUtils::GetClosestCommonShadowIncludingInclusiveAncestor(
+                mStart.GetContainer(), mEnd.GetContainer());
 
   if (previousCommonAncestor != mCommonAncestor) {
     if (previousCommonAncestor) {
@@ -138,6 +114,7 @@ void CrossShadowBoundaryRange::DoSetRange(
     }
   }
 }
+
 void CrossShadowBoundaryRange::ContentWillBeRemoved(nsIContent* aChild,
                                                     const BatchRemovalState*) {
   // It's unclear from the spec about what should the selection be after
@@ -207,8 +184,8 @@ void CrossShadowBoundaryRange::ContentWillBeRemoved(nsIContent* aChild,
       MaybeCreateNewBoundary(endContainer, mEnd);
 
   if (newStartBoundary || newEndBoundary) {
-    SetStartAndEnd(newStartBoundary ? newStartBoundary.ref() : mStart.AsRaw(),
-                   newEndBoundary ? newEndBoundary.ref() : mEnd.AsRaw());
+    DoSetRange(newStartBoundary ? newStartBoundary.ref() : mStart.AsRaw(),
+               newEndBoundary ? newEndBoundary.ref() : mEnd.AsRaw(), nullptr);
   }
 }
 
@@ -252,8 +229,7 @@ void CrossShadowBoundaryRange::CharacterDataChanged(
 
   if (newStartBoundary || newEndBoundary) {
     DoSetRange(newStartBoundary ? newStartBoundary.ref() : mStart.AsRaw(),
-               newEndBoundary ? newEndBoundary.ref() : mEnd.AsRaw(), nullptr,
-               mOwner);
+               newEndBoundary ? newEndBoundary.ref() : mEnd.AsRaw(), nullptr);
   }
 }
 

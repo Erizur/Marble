@@ -639,8 +639,12 @@ class ScopedDrawWithTransformFeedback final {
     const auto usedVerts =
         CheckedInt<uint32_t>(usedVertsPerInstance) * instanceCount;
 
-    const auto remainingCapacity =
-        mTFO->mActive_VertCapacity - mTFO->mActive_VertPosition;
+    // The position can exceed the capacity if a bound buffer was shrunk while
+    // the TF was paused.
+    const size_t remainingCapacity =
+        mTFO->mActive_VertCapacity > mTFO->mActive_VertPosition
+            ? mTFO->mActive_VertCapacity - mTFO->mActive_VertPosition
+            : 0;
     if (!usedVerts.isValid() || usedVerts.value() > remainingCapacity) {
       mWebGL->ErrorInvalidOperation(
           "Insufficient buffer capacity remaining for"

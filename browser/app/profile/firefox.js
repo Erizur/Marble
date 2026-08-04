@@ -3381,3 +3381,6 @@ pref("toolkit.contentRelevancy.log", false);
 // rotation altogether.
 pref("browser.contextual-services.contextId.rotation-in-days", 0);
 pref("browser.contextual-services.contextId.rust-component.enabled", false);
+
+// When enabled, Firefox ignores the distribution.ini file if global.id is MozillaOnline.
+pref("distribution.mozillaonline.ignore", true);

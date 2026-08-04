@@ -1383,37 +1383,26 @@ IPCResult BrowserParent::RecvNewWindowGlobal(
     return IPC_FAIL(this, "Cannot create without valid principal");
   }
 
+  nsCOMPtr<nsIURI> docURI = aInit.documentURI();
+  WindowGlobalParent* parentWgp = browsingContext->GetParentWindowContext();
+
   // Ensure we never load a document with a content principal in
   // the wrong type of webIsolated process
+  // NOTE: Keep this in sync with the similar check in
+  // DocumentLoadListener::TriggerRedirectToRealChannel.
   EnumSet<ValidatePrincipalOptions> validationOptions = {};
-  nsCOMPtr<nsIURI> docURI = aInit.documentURI();
-  if (docURI->SchemeIs("blob") || docURI->SchemeIs("chrome")) {
-    // XXXckerschb TODO - Do not use SystemPrincipal for:
-    // Bug 1699385: Remove allowSystem for blobs
-    // Bug 1698087: chrome://devtools/content/shared/webextension-fallback.html
-    // chrome reftests, e.g.
-    //   * chrome://reftest/content/writing-mode/ua-style-sheet-button-1a-ref.html
-    //   * chrome://reftest/content/xul-document-load/test003.xhtml
-    //   * chrome://reftest/content/forms/input/text/centering-1.xhtml
-    validationOptions = {ValidatePrincipalOptions::AllowSystem};
+  // FIXME(bug 1699385): Remove allowSystem for blobs
+  // FIXME(bug 1698087): chrome://devtools/**/webextension-fallback.html
+  // Automation-Only: chrome://reftest/** + blank subframes
+  if (docURI->SchemeIs("blob") || docURI->SchemeIs("chrome") ||
+      (xpc::IsInAutomation() && NS_IsAboutBlank(docURI) && parentWgp &&
+       parentWgp->Manager() == this &&
+       parentWgp->DocumentPrincipal()->IsSystemPrincipal())) {
+    validationOptions += ValidatePrincipalOptions::AllowSystem;
   }
-
-  // Some reftests have frames inside their chrome URIs and those load
-  // about:blank:
-  if (xpc::IsInAutomation() && docURI->SchemeIs("about")) {
-    WindowGlobalParent* wgp = browsingContext->GetParentWindowContext();
-    nsAutoCString spec;
-    NS_ENSURE_SUCCESS(docURI->GetSpec(spec),
-                      IPC_FAIL(this, "Should have spec for about: URI"));
-    if (spec.Equals("about:blank") && wgp &&
-        wgp->DocumentPrincipal()->IsSystemPrincipal()) {
-      validationOptions = {ValidatePrincipalOptions::AllowSystem};
-    }
-  }
-
   if (!Manager()->ValidatePrincipal(aInit.principal(), validationOptions)) {
-    ContentParent::LogAndAssertFailedPrincipalValidationInfo(aInit.principal(),
-                                                             __func__);
+    return ContentParent::PrincipalValidationIpcFail(aInit.principal(), this,
+                                                     __func__);
   }
 
   // Construct our new WindowGlobalParent, bind, and initialize it.
@@ -3913,6 +3902,12 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
     // session.
     Manager()->SetInputPriorityEventEnabled(true);
     return IPC_OK();
+  }
+
+  if (!Manager()->ValidatePrincipal(aPrincipal,
+                                    {ValidatePrincipalOptions::AllowNullPtr})) {
+    return ContentParent::PrincipalValidationIpcFail(aPrincipal, this,
+                                                     __func__);
   }
 
   nsCOMPtr<nsICookieJarSettings> cookieJarSettings;

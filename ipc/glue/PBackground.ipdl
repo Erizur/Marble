@@ -178,7 +178,7 @@ parent:
   async CreateWebTransportParent(
       nsString aURL,
       nullable nsIPrincipal aPrincipal,
-      IPCClientInfo?  aClientInfo,
+      IPCClientInfo aClientInfo,
       bool aDedicated,
       bool aRequireUnreliable,
       uint32_t aCongestionControl,

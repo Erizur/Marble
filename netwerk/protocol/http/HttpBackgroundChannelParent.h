@@ -11,6 +11,7 @@
 #include "mozilla/net/PHttpBackgroundChannelParent.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Mutex.h"
+#include "mozilla/dom/ipc/IdType.h"
 #include "nsID.h"
 #include "nsISupportsImpl.h"
 
@@ -27,9 +28,14 @@ class HttpBackgroundChannelParent final : public PHttpBackgroundChannelParent {
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(HttpBackgroundChannelParent, final)
 
-  // Try to find associated HttpChannelParent with the same
-  // channel Id.
-  nsresult Init(const uint64_t& aChannelId);
+  // Try to find associated HttpChannelParent with the same content process
+  // and channel Id.
+  nsresult Init(const dom::ContentParentId& aCpId, const uint64_t& aChannelId);
+
+  // The content process that opened this background channel. Used by
+  // BackgroundChannelRegistrar to ensure the channel is only linked to a
+  // HttpChannelParent belonging to the same process.
+  dom::ContentParentId GetContentParentId() const { return mContentParentId; }
 
   // Callbacks for BackgroundChannelRegistrar to notify
   // the associated HttpChannelParent is found.
@@ -113,6 +119,10 @@ class HttpBackgroundChannelParent final : public PHttpBackgroundChannelParent {
   Mutex mBgThreadMutex MOZ_UNANNOTATED;
 
   nsCOMPtr<nsISerialEventTarget> mBackgroundThread;
+
+  // The content process that opened this background channel, set once in Init
+  // before the actor is registered.
+  dom::ContentParentId mContentParentId;
 
   // associated HttpChannelParent for generating the channel events
   RefPtr<HttpChannelParent> mChannelParent;

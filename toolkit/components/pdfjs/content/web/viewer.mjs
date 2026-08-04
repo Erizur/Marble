@@ -604,6 +604,10 @@ const defaultOptions = {
     value: true,
     kind: OptionKind.BROWSER
   },
+  supportsDownloading: {
+    value: true,
+    kind: OptionKind.BROWSER
+  },
   supportsIntegratedFind: {
     value: false,
     kind: OptionKind.BROWSER
@@ -3580,7 +3584,7 @@ class PDFAttachmentViewer extends BaseTreeViewer {
       element.title = description;
     }
     element.onclick = () => {
-      this.downloadManager.openOrDownloadData(content, filename);
+      this.downloadManager?.openOrDownloadData(content, filename);
       return false;
     };
   }
@@ -5748,7 +5752,7 @@ class PDFOutlineViewer extends BaseTreeViewer {
     if (attachment) {
       element.href = linkService.getAnchorUrl("");
       element.onclick = () => {
-        this.downloadManager.openOrDownloadData(attachment.content, attachment.filename);
+        this.downloadManager?.openOrDownloadData(attachment.content, attachment.filename);
         return false;
       };
       return;
@@ -13566,7 +13570,14 @@ const PDFViewerApplication = {
       externalLinkRel: AppOptions.get("externalLinkRel"),
       ignoreDestinationZoom: AppOptions.get("ignoreDestinationZoom")
     });
-    const downloadManager = this.downloadManager = new DownloadManager();
+    const supportsDownloading = AppOptions.get("supportsDownloading");
+    const downloadManager = this.downloadManager = supportsDownloading ? new DownloadManager() : null;
+    if (appConfig.secondaryToolbar?.downloadButton) {
+      appConfig.secondaryToolbar.downloadButton.hidden = !supportsDownloading;
+    }
+    if (appConfig.toolbar?.download) {
+      appConfig.toolbar.download.hidden = !supportsDownloading;
+    }
     const findController = this.findController = new PDFFindController({
       linkService,
       eventBus,
@@ -13995,6 +14006,9 @@ const PDFViewerApplication = {
     });
   },
   async download() {
+    if (!this.downloadManager) {
+      return;
+    }
     let data;
     try {
       data = await (this.pdfDocument ? this.pdfDocument.getData() : this.pdfLoadingTask.getData());
@@ -14002,6 +14016,9 @@ const PDFViewerApplication = {
     this.downloadManager.download(data, this._downloadUrl, this._docFilename);
   },
   async save() {
+    if (!this.downloadManager) {
+      return;
+    }
     if (this._saveInProgress) {
       return;
     }
@@ -14028,6 +14045,9 @@ const PDFViewerApplication = {
     }
   },
   async downloadOrSave() {
+    if (!this.downloadManager) {
+      return;
+    }
     const {
       classList
     } = this.appConfig.appContainer;

@@ -1708,6 +1708,26 @@ template void FetchBody<Response>::MaybeTeeReadableStreamBody(
     ErrorResult& aRv);
 
 template <class Derived>
+void FetchBody<Derived>::MaybeRebindReadableStreamBody() {
+  if (!mReadableStreamBody) {
+    return;
+  }
+
+  // Only native streams hold an nsIInputStream that clone() may have replaced;
+  // SetInputStreamIfUnread() is a no-op for JS-backed streams. clone() rejects
+  // used bodies, so the stream is guaranteed to be non-disturbed here.
+  nsCOMPtr<nsIInputStream> currentBody;
+  DerivedClass()->GetBody(getter_AddRefs(currentBody));
+  if (currentBody) {
+    mReadableStreamBody->SetInputStreamIfUnread(currentBody);
+  }
+}
+
+template void FetchBody<Request>::MaybeRebindReadableStreamBody();
+
+template void FetchBody<Response>::MaybeRebindReadableStreamBody();
+
+template <class Derived>
 void FetchBody<Derived>::RunAbortAlgorithm() {
   if (!mReadableStreamBody) {
     return;

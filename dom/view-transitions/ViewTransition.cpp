@@ -174,8 +174,12 @@ struct OldSnapshotData {
     mManager = aManager;
     mImageKey = aManager->WrBridge()->GetNextImageKey();
     auto size = mFallback->GetSize();
-    auto format = mFallback->GetFormat();
-    wr::ImageDescriptor desc(size, format);
+    auto format = wr::SurfaceFormatToImageFormat(mFallback->GetFormat());
+    if (NS_WARN_IF(!format)) {
+      return;
+    }
+    wr::ImageDescriptor desc(size, *format,
+                             wr::ToOpacityType(mFallback->GetFormat()));
     Range<uint8_t> bytes(map.GetData(), map.GetStride() * size.height);
     Unused << NS_WARN_IF(!aResources.AddImage(mImageKey, desc, bytes));
   }

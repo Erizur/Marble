@@ -29,6 +29,7 @@
 #include "skia/src/core/SkWriteBuffer.h"
 #include "skia/src/shaders/SkEmptyShader.h"
 #include "Blur.h"
+#include "DataSurfaceHelpers.h"
 #include "Logging.h"
 #include "Tools.h"
 #include "PathHelpers.h"
@@ -260,30 +261,35 @@ static sk_sp<SkImage> GetSkImageForSurface(SourceSurface* aSurface,
     return nullptr;
   }
 
-  // Wrapper surfaces (e.g. SourceSurfaceOffset) can hand back the inner
-  // SourceSurfaceSkia here; route it through GetImage so copy-on-write
-  // snapshots are detached/locked rather than borrowing a raw pixel pointer
-  // that can outlive the originating SkSurface.
-  if (dataSurface->GetType() == SurfaceType::SKIA) {
-    return static_cast<SourceSurfaceSkia*>(dataSurface.get())->GetImage(aLock);
-  }
-
   DataSourceSurface::MappedSurface map;
   void (*releaseProc)(const void*, void*);
-  if (dataSurface->GetType() == SurfaceType::DATA_SHARED_WRAPPER) {
-    // Technically all surfaces should be mapped and unmapped explicitly but it
-    // appears SourceSurfaceSkia and DataSourceSurfaceWrapper have issues with
-    // this. For now, we just map SourceSurfaceSharedDataWrapper to ensure we
-    // don't unmap the data during the transaction (for blob images).
-    if (!dataSurface->Map(DataSourceSurface::MapType::READ, &map)) {
-      gfxWarning() << "Failed mapping DataSourceSurface for Skia image";
-      return nullptr;
-    }
-    releaseProc = ReleaseTemporaryMappedSurface;
-  } else {
-    map.mData = dataSurface->GetData();
-    map.mStride = dataSurface->Stride();
-    releaseProc = ReleaseTemporarySurface;
+  switch (dataSurface->GetType()) {
+    case SurfaceType::SKIA:
+      // Wrapper surfaces (e.g. SourceSurfaceOffset) can hand back the inner
+      // SourceSurfaceSkia here; route it through GetImage so copy-on-write
+      // snapshots are detached/locked rather than borrowing a raw pixel pointer
+      // that can outlive the originating SkSurface.
+      return static_cast<SourceSurfaceSkia*>(dataSurface.get())
+          ->GetImage(aLock);
+    case SurfaceType::DATA_SHARED_WRAPPER:
+    case SurfaceType::DATA_SHARED:
+    case SurfaceType::DATA_RECYCLING_SHARED:
+      // Technically all surfaces should be mapped and unmapped explicitly but
+      // it appears SourceSurfaceSkia and DataSourceSurfaceWrapper have issues
+      // with this. For now, we just map SourceSurfaceSharedDataWrapper to
+      // ensure we don't unmap the data during the transaction (for blob
+      // images).
+      if (!dataSurface->Map(DataSourceSurface::MapType::READ, &map)) {
+        gfxWarning() << "Failed mapping DataSourceSurface for Skia image";
+        return nullptr;
+      }
+      releaseProc = ReleaseTemporaryMappedSurface;
+      break;
+    default:
+      map.mData = dataSurface->GetData();
+      map.mStride = dataSurface->Stride();
+      releaseProc = ReleaseTemporarySurface;
+      break;
   }
 
   DataSourceSurface* surf = dataSurface.forget().take();
@@ -1814,12 +1820,16 @@ bool DrawTargetSkia::Init(const IntSize& aSize, SurfaceFormat aFormat) {
   }
   SkSurfaceProps props(0, GetSkPixelGeometry());
 
+  size_t bufSize = BufferSizeFromStrideAndHeight(stride, info.height());
+  if (!bufSize) {
+    return false;
+  }
+
   if (aFormat == SurfaceFormat::A8) {
     // Skia does not fully allocate the last row according to stride.
     // Since some of our algorithms (i.e. blur) depend on this, we must allocate
     // the bitmap pixels manually.
-    CheckedInt<size_t> size = stride;
-    size *= info.height();
+    CheckedInt<size_t> size = bufSize;
     // We need to leave room for an additional 3 bytes for a potential overrun
     // in our blurring code.
     size += 3;

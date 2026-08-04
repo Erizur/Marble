@@ -62,7 +62,14 @@ task-defaults:
                         default: "72.0.2"
                 esr140:
                     by-platform:
+                        # While we technically shipped 32-bit linux in esr115 and earlier
+                        # we stopped shipping it in 115.37.0esr. Lying a little bit about
+                        # where the last watershed is for this platform is not ideal, but
+                        # it allows us to avoid making update verify support gaps in
+                        # release availability at the cost of a bit of coverage.
+                        linux-shippable.*: "128.0esr"
                         linux64-aarch64.*: "140.0esr"
+                        win64-aarch64.*: "140.0esr"
                         default: "68.0esr"
                 default: "default"
 

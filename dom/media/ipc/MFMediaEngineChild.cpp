@@ -59,11 +59,19 @@ RefPtr<GenericNonExclusivePromise> MFMediaEngineChild::Init(
 
   MOZ_ASSERT(mMediaEngineId == 0);
   RefPtr<MFMediaEngineChild> self = this;
+  RefPtr<GenericNonExclusivePromise> initPromise =
+      mInitPromiseHolder.Ensure(__func__);
   RemoteDecoderManagerChild::LaunchUtilityProcessIfNeeded(
       RemoteDecodeIn::UtilityProcess_MFMediaEngineCDM)
       ->Then(
           mManagerThread, __func__,
           [self, this, flag = aFlags, info = aInfo](bool) {
+            mLaunchProcessRequest.Complete();
+            if (mShutdown || !mOwner) {
+              CLOG("Already shut down or no owner, won't bind the actor");
+              mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
+              return;
+            }
             RefPtr<RemoteDecoderManagerChild> manager =
                 RemoteDecoderManagerChild::GetSingleton(
                     RemoteDecodeIn::UtilityProcess_MFMediaEngineCDM);
@@ -113,10 +121,12 @@ RefPtr<GenericNonExclusivePromise> MFMediaEngineChild::Init(
                 ->Track(mInitEngineRequest);
           },
           [self, this](nsresult aResult) {
+            mLaunchProcessRequest.Complete();
             CLOG("SendInitMediaEngine Failed");
             self->mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
-          });
-  return mInitPromiseHolder.Ensure(__func__);
+          })
+      ->Track(mLaunchProcessRequest);
+  return initPromise;
 }
 
 mozilla::ipc::IPCResult MFMediaEngineChild::RecvRequestSample(TrackType aType,
@@ -200,6 +210,9 @@ mozilla::ipc::IPCResult MFMediaEngineChild::RecvNotifyError(
 mozilla::ipc::IPCResult MFMediaEngineChild::RecvUpdateStatisticData(
     const StatisticData& aData) {
   AssertOnManagerThread();
+  if (mShutdown || !mOwner) {
+    return IPC_OK();
+  }
   const uint64_t currentRenderedFrames = mFrameStats->GetPresentedFrames();
   const uint64_t newRenderedFrames = GetUpdatedRenderedFrames(aData);
   // Media engine won't tell us that which stage those dropped frames happened,
@@ -278,6 +291,7 @@ void MFMediaEngineChild::Shutdown() {
   }
   SendShutdown();
   mInitPromiseHolder.RejectIfExists(NS_ERROR_FAILURE, __func__);
+  mLaunchProcessRequest.DisconnectIfExists();
   mInitEngineRequest.DisconnectIfExists();
   mShutdown = true;
 }

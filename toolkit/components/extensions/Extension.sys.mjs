@@ -72,6 +72,11 @@ const lazy = XPCOMUtils.declareLazy({
       .getProtocolHandler("resource")
       .QueryInterface(Ci.nsIResProtocolHandler),
 
+  // TODO Bug 1598804 - same condition as:
+  // https://searchfox.org/firefox-main/rev/1f6f9eea1a/toolkit/components/extensions/child/ext-test.js#8
+  testApiEnabled: () =>
+    Cu.isInAutomation || Services.env.exists("XPCSHELL_TEST_PROFILE_DIR"),
+
   aomStartup: {
     service: "@mozilla.org/addons/addon-manager-startup;1",
     iid: Ci.amIAddonManagerStartup,
@@ -3255,6 +3260,16 @@ const PROXIED_EVENTS = new Set([
   "background-script-suspend-ignored",
 ]);
 
+const PROXIED_TEST_EVENTS = new Set([
+  "test-task-start",
+  "test-task-done",
+  "test-result",
+  "test-eq",
+  "test-message",
+  "test-done",
+  "test-log",
+]);
+
 class BootstrapScope {
   install() {}
   uninstall(data) {
@@ -3632,7 +3647,13 @@ export class Extension extends ExtensionData {
   }
 
   receiveMessage({ name, data }) {
-    if (name === this.MESSAGE_EMIT_EVENT) {
+    if (name !== this.MESSAGE_EMIT_EVENT) {
+      return;
+    }
+    if (
+      data.event === "background-script-reset-idle" ||
+      (lazy.testApiEnabled && PROXIED_TEST_EVENTS.has(data.event))
+    ) {
       this.emitter.emit(data.event, ...data.args);
     }
   }

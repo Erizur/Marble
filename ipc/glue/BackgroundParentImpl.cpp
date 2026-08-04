@@ -464,7 +464,7 @@ mozilla::ipc::IPCResult BackgroundParentImpl::RecvCreateFileSystemManagerParent(
 
 mozilla::ipc::IPCResult BackgroundParentImpl::RecvCreateWebTransportParent(
     const nsAString& aURL, nsIPrincipal* aPrincipal,
-    const mozilla::Maybe<IPCClientInfo>& aClientInfo, const bool& aDedicated,
+    const IPCClientInfo& aClientInfo, const bool& aDedicated,
     const bool& aRequireUnreliable, const uint32_t& aCongestionControl,
     nsTArray<WebTransportHash>&& aServerCertHashes,
     Endpoint<PWebTransportParent>&& aParentEndpoint,
@@ -1093,7 +1093,12 @@ BackgroundParentImpl::RecvPHttpBackgroundChannelConstructor(
   net::HttpBackgroundChannelParent* aParent =
       static_cast<net::HttpBackgroundChannelParent*>(aActor);
 
-  if (NS_WARN_IF(NS_FAILED(aParent->Init(aChannelId)))) {
+  // Record the content process that owns this PBackground actor, so the
+  // background channel can only ever be paired with a HttpChannelParent
+  // from the same process.
+  dom::ContentParentId cpId(BackgroundParent::GetChildID(this));
+
+  if (NS_WARN_IF(NS_FAILED(aParent->Init(cpId, aChannelId)))) {
     return IPC_FAIL_NO_REASON(this);
   }
 

@@ -123,7 +123,7 @@ class BackgroundParentImpl : public PBackgroundParent {
 
   mozilla::ipc::IPCResult RecvCreateWebTransportParent(
       const nsAString& aURL, nsIPrincipal* aPrincipal,
-      const mozilla::Maybe<IPCClientInfo>& aClientInfo, const bool& aDedicated,
+      const IPCClientInfo& aClientInfo, const bool& aDedicated,
       const bool& aRequireUnreliable, const uint32_t& aCongestionControl,
       nsTArray<WebTransportHash>&& aServerCertHashes,
       Endpoint<PWebTransportParent>&& aParentEndpoint,

@@ -43,9 +43,7 @@ MAX_HISTORY = 10
 
 MACH_TRY_PUSH_TO_VCS = os.getenv("MACH_TRY_PUSH_TO_VCS") == "1"
 
-TREEHERDER_LANDO_TRY_RUN_URL = (
-    "https://treeherder.mozilla.org/jobs?repo=try&landoCommitID={job_id}"
-)
+TREEHERDER_LANDO_TRY_RUN_URL = "https://treeherder.mozilla.org/jobs?repo=try&landoInstance=lando-prod-2025&landoCommitID={job_id}"
 
 here = os.path.abspath(os.path.dirname(__file__))
 build = MozbuildObject.from_environment(cwd=here)

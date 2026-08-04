@@ -705,7 +705,11 @@ gfxFont* gfxDWriteFontEntry::CreateFontInstance(
       useBoldSim ? DWRITE_FONT_SIMULATIONS_BOLD : DWRITE_FONT_SIMULATIONS_NONE;
   ThreadSafeWeakPtr<UnscaledFontDWrite>& unscaledFontPtr =
       useBoldSim ? mUnscaledFontBold : mUnscaledFont;
-  RefPtr<UnscaledFontDWrite> unscaledFont(unscaledFontPtr);
+  RefPtr<UnscaledFontDWrite> unscaledFont;
+  {
+    AutoReadLock lock(mLock);
+    unscaledFont = RefPtr<UnscaledFontDWrite>(unscaledFontPtr);
+  }
   if (!unscaledFont) {
     RefPtr<IDWriteFontFace> fontFace;
     nsresult rv =
@@ -713,6 +717,7 @@ gfxFont* gfxDWriteFontEntry::CreateFontInstance(
     if (NS_FAILED(rv)) {
       return nullptr;
     }
+    AutoWriteLock lock(mLock);
     // Only pass in the underlying IDWriteFont if the unscaled font doesn't
     // reflect a data font. This signals whether or not we can safely query
     // a descriptor to represent the font for various transport use-cases.
@@ -1778,7 +1783,7 @@ nsresult gfxDWriteFontList::InitFontListForPlatform() {
       // add faces to Gill Sans MT
       for (const auto& face : faces) {
         // change the entry's family name to match its adoptive family
-        face->mFamilyName = gillSansMTFamily->Name();
+        face->SetFamilyName(gillSansMTFamily->Name());
         gillSansMTFamily->AddFontEntry(face);
 
         if (LOG_FONTLIST_ENABLED()) {

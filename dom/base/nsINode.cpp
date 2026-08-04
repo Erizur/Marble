@@ -1802,6 +1802,7 @@ static IndexCacheSlot sIndexCache[CACHE_NUM_SLOTS];
 static inline void AddChildAndIndexToCache(const nsINode* aParent,
                                            const nsINode* aChild,
                                            uint32_t aChildIndex) {
+  MOZ_ASSERT(NS_IsMainThread());
   uint32_t index = CACHE_GET_INDEX(aParent);
   sIndexCache[index].mParent = aParent;
   sIndexCache[index].mChild = aChild;
@@ -1811,6 +1812,8 @@ static inline void AddChildAndIndexToCache(const nsINode* aParent,
 static inline void GetChildAndIndexFromCache(const nsINode* aParent,
                                              const nsINode** aChild,
                                              Maybe<uint32_t>* aChildIndex) {
+  MOZ_ASSERT(NS_IsMainThread());
+
   uint32_t index = CACHE_GET_INDEX(aParent);
   if (sIndexCache[index].mParent == aParent) {
     *aChild = sIndexCache[index].mChild;
@@ -1822,6 +1825,7 @@ static inline void GetChildAndIndexFromCache(const nsINode* aParent,
 }
 
 static inline void RemoveFromCache(const nsINode* aParent) {
+  MOZ_ASSERT(NS_IsMainThread());
   uint32_t index = CACHE_GET_INDEX(aParent);
   if (sIndexCache[index].mParent == aParent) {
     sIndexCache[index] = {nullptr, nullptr, UINT32_MAX};
@@ -1938,8 +1942,9 @@ Maybe<uint32_t> nsINode::ComputeIndexOf(const nsINode* aPossibleChild) const {
     MOZ_ASSERT(GetChildCount());
     return Some(GetChildCount() - 1);
   }
+  const bool isMainThread = NS_IsMainThread();
 
-  if (MaybeCachesComputedIndex()) {
+  if (isMainThread && MaybeCachesComputedIndex()) {
     const nsINode* child;
     Maybe<uint32_t> maybeChildIndex;
     GetChildAndIndexFromCache(this, &child, &maybeChildIndex);
@@ -1980,7 +1985,7 @@ Maybe<uint32_t> nsINode::ComputeIndexOf(const nsINode* aPossibleChild) const {
   while (current) {
     MOZ_ASSERT(current->GetParentNode() == this);
     if (current == aPossibleChild) {
-      if (MaybeCachesComputedIndex()) {
+      if (isMainThread && MaybeCachesComputedIndex()) {
         AddChildAndIndexToCache(this, current, index);
       }
       return Some(index);
@@ -2011,11 +2016,6 @@ Maybe<uint32_t> nsINode::ComputeIndexInParentContent() const {
     return Nothing();
   }
   return parent->ComputeIndexOf(this);
-}
-
-bool nsINode::MaybeParentCachesComputedIndex() const {
-  nsINode* parent = GetParentNode();
-  return parent && parent->MaybeCachesComputedIndex();
 }
 
 uint32_t nsINode::GetFlatTreeChildCount() const {

@@ -8,6 +8,7 @@
 
 #include "FFmpegLog.h"
 #include "FFmpegUtils.h"
+#include "FFmpegVideoUtils.h"
 #include "ImageContainer.h"
 #include "MP4Decoder.h"
 #include "MediaInfo.h"
@@ -1534,55 +1535,8 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::CreateImage(
 
   b.mPlanes[0].mWidth = mFrame->width;
   b.mPlanes[0].mHeight = mFrame->height;
-  if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P ||
-      mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P10LE ||
-      mCodecContext->pix_fmt == AV_PIX_FMT_GBRP ||
-      mCodecContext->pix_fmt == AV_PIX_FMT_GBRP10LE
-#if LIBAVCODEC_VERSION_MAJOR >= 57
-      || mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P12LE
-#endif
-  ) {
-    b.mPlanes[1].mWidth = b.mPlanes[2].mWidth = mFrame->width;
-    b.mPlanes[1].mHeight = b.mPlanes[2].mHeight = mFrame->height;
-    if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P10LE ||
-        mCodecContext->pix_fmt == AV_PIX_FMT_GBRP10LE) {
-      b.mColorDepth = gfx::ColorDepth::COLOR_10;
-    }
-#if LIBAVCODEC_VERSION_MAJOR >= 57
-    else if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV444P12LE) {
-      b.mColorDepth = gfx::ColorDepth::COLOR_12;
-    }
-#endif
-  } else if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV422P ||
-             mCodecContext->pix_fmt == AV_PIX_FMT_YUV422P10LE
-#if LIBAVCODEC_VERSION_MAJOR >= 57
-             || mCodecContext->pix_fmt == AV_PIX_FMT_YUV422P12LE
-#endif
-  ) {
-    b.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH;
-    b.mPlanes[1].mWidth = b.mPlanes[2].mWidth = (mFrame->width + 1) >> 1;
-    b.mPlanes[1].mHeight = b.mPlanes[2].mHeight = mFrame->height;
-    if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV422P10LE) {
-      b.mColorDepth = gfx::ColorDepth::COLOR_10;
-    }
-#if LIBAVCODEC_VERSION_MAJOR >= 57
-    else if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV422P12LE) {
-      b.mColorDepth = gfx::ColorDepth::COLOR_12;
-    }
-#endif
-  } else {
-    b.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT;
-    b.mPlanes[1].mWidth = b.mPlanes[2].mWidth = (mFrame->width + 1) >> 1;
-    b.mPlanes[1].mHeight = b.mPlanes[2].mHeight = (mFrame->height + 1) >> 1;
-    if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV420P10LE) {
-      b.mColorDepth = gfx::ColorDepth::COLOR_10;
-    }
-#if LIBAVCODEC_VERSION_MAJOR >= 57
-    else if (mCodecContext->pix_fmt == AV_PIX_FMT_YUV420P12LE) {
-      b.mColorDepth = gfx::ColorDepth::COLOR_12;
-    }
-#endif
-  }
+  SetChromaPlaneGeometryFromAVFormat(b, static_cast<int>(mFrame->format),
+                                     mFrame->width, mFrame->height);
   b.mYUVColorSpace = GetFrameColorSpace();
   b.mColorRange = GetFrameColorRange();
 
@@ -2174,6 +2128,20 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::CreateImageD3D11(
     return MediaResult(NS_ERROR_DOM_MEDIA_DECODE_ERR, msg);
   }
 
+  D3D11_TEXTURE2D_DESC desc;
+  texture->GetDesc(&desc);
+
+  auto format = [&]() {
+    if (desc.Format == DXGI_FORMAT_P010) {
+      return gfx::SurfaceFormat::P010;
+    }
+    if (desc.Format == DXGI_FORMAT_P016) {
+      return gfx::SurfaceFormat::P016;
+    }
+    MOZ_ASSERT(desc.Format == DXGI_FORMAT_NV12);
+    return gfx::SurfaceFormat::NV12;
+  }();
+
   RefPtr<Image> image;
   gfx::IntRect pictureRegion =
       mInfo.ScaledImageRect(mFrame->width, mFrame->height);
@@ -2185,7 +2153,7 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::CreateImageD3D11(
                 mNumOfHWTexturesInUse.load());
     hr = mDXVA2Manager->WrapTextureWithImage(
         new D3D11TextureWrapper(
-            mFrame, mLib, texture, index,
+            mFrame, mLib, texture, format, index,
             [self = RefPtr<FFmpegVideoDecoder>(this), this]() {
               MOZ_ASSERT(mNumOfHWTexturesInUse > 0);
               mNumOfHWTexturesInUse--;

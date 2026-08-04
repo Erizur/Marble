@@ -171,6 +171,12 @@ add_task(async function test_onMessage_queuing_scenarios() {
   await runTestExt();
   let page1 = await loadPage(WPT, 1);
 
+  // Positive counterpart to test_wpt_actor_pref.js. Keep actor name in sync.
+  Assert.ok(
+    page1.browsingContext.currentWindowGlobal.getActor("WPTMessages"),
+    "WPTMessages actor is registered after init."
+  );
+
   let results1 = await page1.spawn([], requestAndCollect);
   checkMessages(results1, "Correct messages queued.");
 

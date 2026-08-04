@@ -135,8 +135,10 @@ mozilla::ipc::IPCResult FileChannelParent::RecvSetChannelIdForRedirect(
     const uint64_t& aChannelId) {
   nsCOMPtr<nsIChannel> channel;
 
+  dom::ContentParentId cpId =
+      static_cast<dom::ContentParent*>(Manager()->Manager())->ChildID();
   MOZ_ALWAYS_SUCCEEDS_FUZZING(
-      NS_LinkRedirectChannels(aChannelId, this, getter_AddRefs(channel)));
+      NS_LinkRedirectChannels(aChannelId, cpId, this, getter_AddRefs(channel)));
 
   return IPC_OK();
 }

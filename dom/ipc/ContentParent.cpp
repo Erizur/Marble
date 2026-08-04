@@ -73,6 +73,7 @@
 #include "mozilla/ScriptPreloader.h"
 #include "mozilla/Components.h"
 #include "mozilla/Sprintf.h"
+#include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StaticPrefs_fission.h"
 #include "mozilla/StaticPrefs_media.h"
@@ -247,6 +248,7 @@
 #include "nsStyleSheetService.h"
 #include "nsThread.h"
 #include "nsThreadUtils.h"
+#include "nsURLHelper.h"
 #include "nsWidgetsCID.h"
 #include "nsWindowWatcher.h"
 #include "prenv.h"
@@ -1269,51 +1271,85 @@ IPCResult ContentParent::RecvAttributionConversion(
   return IPC_OK();
 }
 
+static mozilla::glean::security::FissionPrincipalsExtra
+GetAndLogPrincipalValidationFailure(nsIPrincipal* aPrincipal,
+                                    const char* aMethod) {
+  mozilla::glean::security::FissionPrincipalsExtra extra = {};
+  extra.value = Some(aMethod);
+
+  if (!aPrincipal) {
+    extra.principaltype = Some("NullPtr"_ns);
+  } else if (aPrincipal->IsSystemPrincipal()) {
+    extra.principaltype = Some("SystemPrincipal"_ns);
+  } else if (aPrincipal->GetIsExpandedPrincipal()) {
+    extra.principaltype = Some("ExpandedPrincipal"_ns);
+  } else if (aPrincipal->GetIsContentPrincipal()) {
+    extra.principaltype = Some("ContentPrincipal"_ns);
+
+    // NOTE: Pull the scheme from the origin, rather than from our URI.
+    // This can be relevant in cases where the URI is unwrapped to determine the
+    // origin (e.g. view-source).
+    nsAutoCString scheme;
+    nsAutoCString origin;
+    MOZ_ALWAYS_SUCCEEDS(aPrincipal->GetOriginNoSuffix(origin));
+    MOZ_ALWAYS_SUCCEEDS(net_ExtractURLScheme(origin, scheme));
+    extra.scheme = Some(scheme);
+  } else {
+    extra.principaltype = Some("Unknown"_ns);
+  }
+
+  // NOTE: This log can contain PII (the full origin) as it's local-only.
+  if (MOZ_LOG_TEST(ContentParent::GetLog(), LogLevel::Error)) {
+    nsAutoCString origin;
+    if (aPrincipal) {
+      MOZ_ALWAYS_SUCCEEDS(aPrincipal->GetOrigin(origin));
+    }
+    MOZ_LOG(ContentParent::GetLog(), LogLevel::Error,
+            ("  Receiving unexpected Principal (%s) within %s", origin.get(),
+             aMethod));
+  }
+
+  return extra;
+}
+
 /*static*/
 void ContentParent::LogAndAssertFailedPrincipalValidationInfo(
     nsIPrincipal* aPrincipal, const char* aMethod) {
-  // Send Telemetry
-  nsAutoCString principalScheme, principalType, spec;
-  mozilla::glean::security::FissionPrincipalsExtra extra = {};
-
-  if (!aPrincipal) {
-    principalType.AssignLiteral("NullPtr");
-  } else if (aPrincipal->IsSystemPrincipal()) {
-    principalType.AssignLiteral("SystemPrincipal");
-  } else if (aPrincipal->GetIsExpandedPrincipal()) {
-    principalType.AssignLiteral("ExpandedPrincipal");
-  } else if (aPrincipal->GetIsContentPrincipal()) {
-    principalType.AssignLiteral("ContentPrincipal");
-    aPrincipal->GetSpec(spec);
-    aPrincipal->GetScheme(principalScheme);
-
-    extra.scheme = Some(principalScheme);
-  } else {
-    principalType.AssignLiteral("Unknown");
-  }
-  extra.principaltype = Some(principalType);
-  extra.value = Some(aMethod);
-
+  auto gleanExtra = GetAndLogPrincipalValidationFailure(aPrincipal, aMethod);
   // Do not send telemetry when chrome-debugging is enabled
   bool isChromeDebuggingEnabled =
       Preferences::GetBool("devtools.chrome.enabled", false);
   if (!isChromeDebuggingEnabled) {
-    glean::security::fission_principals.Record(mozilla::Some(extra));
+    glean::security::fission_principals.Record(mozilla::Some(gleanExtra));
   }
-
-  // And log it
-  MOZ_LOG(
-      ContentParent::GetLog(), LogLevel::Error,
-      ("  Receiving unexpected Principal (%s) within %s",
-       aPrincipal && aPrincipal->GetIsContentPrincipal() ? spec.get()
-                                                         : principalType.get(),
-       aMethod));
 
 #ifdef DEBUG
   // Not only log but also ensure we do not receive an unexpected
   // principal when running in debug mode.
   MOZ_ASSERT(false, "Receiving unexpected Principal");
 #endif
+}
+
+/*static*/
+mozilla::ipc::IPCResult ContentParent::PrincipalValidationIpcFail(
+    nsIPrincipal* aPrincipal, mozilla::ipc::IProtocol* aActor,
+    const char* aMethod) {
+  // Always get the telemetry extra, as we'll use it for building the crash
+  // report as well.
+  auto gleanExtra = GetAndLogPrincipalValidationFailure(aPrincipal, aMethod);
+
+  // Do not send telemetry when chrome-debugging is enabled
+  bool isChromeDebuggingEnabled =
+      Preferences::GetBool("devtools.chrome.enabled", false);
+  if (!isChromeDebuggingEnabled) {
+    glean::security::fission_principals.Record(mozilla::Some(gleanExtra));
+  }
+
+  return IPC_FAIL_UNSAFE_PRINTF(
+      aActor, "Invalid principal (%s%s%s) in %s%s",
+      gleanExtra.principaltype->get(), gleanExtra.scheme ? " " : "",
+      gleanExtra.scheme ? gleanExtra.scheme->get() : "", aMethod,
+      isChromeDebuggingEnabled ? " (chrome debug on)" : "");
 }
 
 bool ContentParent::ValidatePrincipal(
@@ -3167,8 +3203,8 @@ mozilla::ipc::IPCResult ContentParent::RecvSetClipboard(
                          {ValidatePrincipalOptions::AllowNullPtr,
                           ValidatePrincipalOptions::AllowExpanded,
                           ValidatePrincipalOptions::AllowSystem})) {
-    LogAndAssertFailedPrincipalValidationInfo(aTransferable.dataPrincipal(),
-                                              __func__);
+    return PrincipalValidationIpcFail(aTransferable.dataPrincipal(), this,
+                                      __func__);
   }
 
   nsresult rv;
@@ -3366,7 +3402,7 @@ mozilla::ipc::IPCResult ContentParent::RecvGetClipboardDataSnapshot(
   if (!ValidatePrincipal(aRequestingPrincipal,
                          {ValidatePrincipalOptions::AllowSystem,
                           ValidatePrincipalOptions::AllowExpanded})) {
-    LogAndAssertFailedPrincipalValidationInfo(aRequestingPrincipal, __func__);
+    return PrincipalValidationIpcFail(aRequestingPrincipal, this, __func__);
   }
 
   // If the requesting context has been discarded, cancel the paste.
@@ -4142,8 +4178,8 @@ mozilla::ipc::IPCResult ContentParent::RecvConstructPopupBrowser(
   }
 
   if (!ValidatePrincipal(aInitialWindowInit.principal())) {
-    LogAndAssertFailedPrincipalValidationInfo(aInitialWindowInit.principal(),
-                                              __func__);
+    return PrincipalValidationIpcFail(aInitialWindowInit.principal(), this,
+                                      __func__);
   }
 
   if (browsingContext->GetBrowserParent()) {
@@ -4510,11 +4546,11 @@ ContentParent::AllocPExternalHelperAppParent(
     const nsACString& aMimeContentType, const nsACString& aContentDisposition,
     const uint32_t& aContentDispositionHint,
     const nsAString& aContentDispositionFilename, const bool& aForceSave,
-    const int64_t& aContentLength, const bool& aWasFileChannel,
-    nsIURI* aReferrer, const MaybeDiscarded<BrowsingContext>& aContext) {
+    const int64_t& aContentLength, nsIURI* aReferrer,
+    const MaybeDiscarded<BrowsingContext>& aContext) {
   RefPtr<ExternalHelperAppParent> parent = new ExternalHelperAppParent(
-      uri, aContentLength, aWasFileChannel, aContentDisposition,
-      aContentDispositionHint, aContentDispositionFilename);
+      uri, aContentLength, aContentDisposition, aContentDispositionHint,
+      aContentDispositionFilename);
   return parent.forget();
 }
 
@@ -4524,8 +4560,20 @@ mozilla::ipc::IPCResult ContentParent::RecvPExternalHelperAppConstructor(
     const nsACString& aContentDisposition,
     const uint32_t& aContentDispositionHint,
     const nsAString& aContentDispositionFilename, const bool& aForceSave,
-    const int64_t& aContentLength, const bool& aWasFileChannel,
-    nsIURI* aReferrer, const MaybeDiscarded<BrowsingContext>& aContext) {
+    const int64_t& aContentLength, nsIURI* aReferrer,
+    const MaybeDiscarded<BrowsingContext>& aContext) {
+  // A content process must never be able to drive a native helper-app launch
+  // of a local file it chose: that decision has to be bound to a channel the
+  // process was actually allowed to open. A file:// URI can only be loaded in
+  // a file content process (mirrors ValidatePrincipalCouldPotentiallyBeLoadedBy
+  // and the sandboxing policy enforced in ProcessIsolation), so reject a
+  // file:// URI coming from any other process.
+  if (uri && uri->SchemeIs("file") &&
+      StaticPrefs::browser_tabs_remote_separateFileUriProcess() &&
+      GetRemoteType() != FILE_REMOTE_TYPE) {
+    return IPC_FAIL(this, "Non-file process sent a file:// URI.");
+  }
+
   BrowsingContext* context = aContext.IsDiscarded() ? nullptr : aContext.get();
   if (!static_cast<ExternalHelperAppParent*>(actor)->Init(
           loadInfoArgs, aMimeContentType, aForceSave, aReferrer, context)) {
@@ -4655,14 +4703,16 @@ mozilla::ipc::IPCResult ContentParent::RecvExtProtocolChannelConnectParent(
 
   // First get the real channel created before redirect on the parent.
   nsCOMPtr<nsIChannel> channel;
-  rv = NS_LinkRedirectChannels(registrarId, nullptr, getter_AddRefs(channel));
+  rv = NS_LinkRedirectChannels(registrarId, ChildID(), nullptr,
+                               getter_AddRefs(channel));
   NS_ENSURE_SUCCESS(rv, IPC_OK());
 
   nsCOMPtr<nsIParentChannel> parent = do_QueryInterface(channel, &rv);
   NS_ENSURE_SUCCESS(rv, IPC_OK());
 
   // The channel itself is its own (faked) parent, link it.
-  rv = NS_LinkRedirectChannels(registrarId, parent, getter_AddRefs(channel));
+  rv = NS_LinkRedirectChannels(registrarId, ChildID(), parent,
+                               getter_AddRefs(channel));
   NS_ENSURE_SUCCESS(rv, IPC_OK());
 
   // Signal the parent channel that it's a redirect-to parent.  This will
@@ -5168,11 +5218,10 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
     const bool& aForPrinting, const bool& aForWindowDotPrint,
     const bool& aIsTopLevelCreatedByWebContent, nsIURI* aURIToLoad,
     const nsACString& aFeatures, const UserActivation::Modifiers& aModifiers,
-    BrowserParent* aNextRemoteBrowser, const nsAString& aName,
-    nsresult& aResult, nsCOMPtr<nsIRemoteTab>& aNewRemoteTab,
-    bool* aWindowIsNew, int32_t& aOpenLocation,
-    nsIPrincipal* aTriggeringPrincipal, nsIReferrerInfo* aReferrerInfo,
-    bool aLoadURI, nsIContentSecurityPolicy* aCsp,
+    BrowserParent* aNextRemoteBrowser, nsresult& aResult,
+    nsCOMPtr<nsIRemoteTab>& aNewRemoteTab, bool* aWindowIsNew,
+    int32_t& aOpenLocation, nsIPrincipal* aTriggeringPrincipal,
+    nsIReferrerInfo* aReferrerInfo, nsIContentSecurityPolicy* aCsp,
     const OriginAttributes& aOriginAttributes, bool aUserActivation,
     bool aTextDirectiveUserActivation) {
   // The content process should never be in charge of computing whether or
@@ -5301,15 +5350,9 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
 
     RefPtr<Element> el;
 
-    if (aLoadURI) {
-      aResult = browserDOMWin->OpenURIInFrame(aURIToLoad, params, aOpenLocation,
-                                              nsIBrowserDOMWindow::OPEN_NEW,
-                                              aName, getter_AddRefs(el));
-    } else {
-      aResult = browserDOMWin->CreateContentWindowInFrame(
-          aURIToLoad, params, aOpenLocation, nsIBrowserDOMWindow::OPEN_NEW,
-          aName, getter_AddRefs(el));
-    }
+    aResult = browserDOMWin->CreateContentWindowInFrame(
+        aURIToLoad, params, aOpenLocation, nsIBrowserDOMWindow::OPEN_NEW,
+        VoidString(), getter_AddRefs(el));
     RefPtr<nsFrameLoaderOwner> frameLoaderOwner = do_QueryObject(el);
     if (NS_SUCCEEDED(aResult) && frameLoaderOwner) {
       RefPtr<nsFrameLoader> frameLoader = frameLoaderOwner->GetFrameLoader();
@@ -5355,7 +5398,6 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
 
   MOZ_ASSERT(aNewRemoteTab);
   RefPtr<BrowserHost> newBrowserHost = BrowserHost::GetFrom(aNewRemoteTab);
-  RefPtr<BrowserParent> newBrowserParent = newBrowserHost->GetActor();
 
   // At this point, it's possible the inserted frameloader hasn't gone through
   // layout yet. To ensure that the dimensions that we send down when telling
@@ -5378,32 +5420,8 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
     frameLoader->ForceLayoutIfNecessary();
   }
 
-  // If we were passed a name for the window which would override the default,
-  // we should send it down to the new tab.
-  if (nsContentUtils::IsOverridingWindowName(aName)) {
-    MOZ_ALWAYS_SUCCEEDS(newBrowserHost->GetBrowsingContext()->SetName(aName));
-  }
-
   MOZ_ASSERT(newBrowserHost->GetBrowsingContext()->OriginAttributesRef() ==
              aOriginAttributes);
-
-  if (aURIToLoad && aLoadURI) {
-    nsCOMPtr<mozIDOMWindowProxy> openerWindow;
-    if (aSetOpener && topParent) {
-      openerWindow = topParent->GetParentWindowOuter();
-    }
-    nsCOMPtr<nsIBrowserDOMWindow> newBrowserDOMWin =
-        newBrowserParent->GetBrowserDOMWindow();
-    if (NS_WARN_IF(!newBrowserDOMWin)) {
-      aResult = NS_ERROR_ABORT;
-      return IPC_OK();
-    }
-    RefPtr<BrowsingContext> bc;
-    aResult = newBrowserDOMWin->OpenURI(
-        aURIToLoad, openInfo, nsIBrowserDOMWindow::OPEN_CURRENTWINDOW,
-        nsIBrowserDOMWindow::OPEN_NEW, aTriggeringPrincipal, aCsp,
-        getter_AddRefs(bc));
-  }
 
   return IPC_OK();
 }
@@ -5424,7 +5442,7 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
   }
 
   if (!ValidatePrincipal(aTriggeringPrincipal)) {
-    LogAndAssertFailedPrincipalValidationInfo(aTriggeringPrincipal, __func__);
+    return PrincipalValidationIpcFail(aTriggeringPrincipal, this, __func__);
   }
 
   nsresult rv = NS_OK;
@@ -5501,10 +5519,9 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
   mozilla::ipc::IPCResult ipcResult = CommonCreateWindow(
       aThisTab, *parent, newBCOpenerId != 0, aChromeFlags, aCalledFromJS,
       aForPrinting, aForWindowDotPrint, aIsTopLevelCreatedByWebContent,
-      aURIToLoad, aFeatures, aModifiers, newTab, VoidString(), rv, newRemoteTab,
+      aURIToLoad, aFeatures, aModifiers, newTab, rv, newRemoteTab,
       &cwi.windowOpened(), openLocation, aTriggeringPrincipal, aReferrerInfo,
-      /* aLoadUri = */ false, aCsp, aOriginAttributes, aUserActivation,
-      aTextDirectiveUserActivation);
+      aCsp, aOriginAttributes, aUserActivation, aTextDirectiveUserActivation);
   if (!ipcResult) {
     return ipcResult;
   }
@@ -5532,73 +5549,6 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
   }
 
   cwi.maxTouchPoints() = newTab->GetMaxTouchPoints();
-
-  return IPC_OK();
-}
-
-mozilla::ipc::IPCResult ContentParent::RecvCreateWindowInDifferentProcess(
-    PBrowserParent* aThisTab, const MaybeDiscarded<BrowsingContext>& aParent,
-    const uint32_t& aChromeFlags, const bool& aCalledFromJS,
-    const bool& aIsTopLevelCreatedByWebContent, nsIURI* aURIToLoad,
-    const nsACString& aFeatures, const UserActivation::Modifiers& aModifiers,
-    const nsAString& aName, nsIPrincipal* aTriggeringPrincipal,
-    nsIContentSecurityPolicy* aCsp, nsIReferrerInfo* aReferrerInfo,
-    const OriginAttributes& aOriginAttributes, bool aUserActivation,
-    bool aTextDirectiveUserActivation) {
-  MOZ_DIAGNOSTIC_ASSERT(!nsContentUtils::IsSpecialName(aName));
-
-  // Don't continue to try to create a new window if we've been fully discarded.
-  RefPtr<BrowsingContext> parent = aParent.GetMaybeDiscarded();
-  if (NS_WARN_IF(!parent)) {
-    return IPC_OK();
-  }
-
-  nsCOMPtr<nsIRemoteTab> newRemoteTab;
-  bool windowIsNew;
-  int32_t openLocation = nsIBrowserDOMWindow::OPEN_NEWWINDOW;
-
-  // If we have enough data, check the schemes of the loader and loadee
-  // to make sure they make sense.
-  if (aURIToLoad && aURIToLoad->SchemeIs("file") &&
-      GetRemoteType() != FILE_REMOTE_TYPE &&
-      Preferences::GetBool("browser.tabs.remote.enforceRemoteTypeRestrictions",
-                           false)) {
-#ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
-#  ifdef DEBUG
-    nsAutoCString uriToLoadStr;
-    nsAutoCString triggeringUriStr;
-    aURIToLoad->GetAsciiSpec(uriToLoadStr);
-    aTriggeringPrincipal->GetAsciiSpec(triggeringUriStr);
-
-    NS_WARNING(nsPrintfCString(
-                   "RecvCreateWindowInDifferentProcess blocked loading file "
-                   "scheme from non-file remotetype: %s tried to load %s",
-                   triggeringUriStr.get(), uriToLoadStr.get())
-                   .get());
-#  endif
-    MOZ_CRASH(
-        "RecvCreateWindowInDifferentProcess blocked loading improper scheme");
-#endif
-    return IPC_OK();
-  }
-
-  nsresult rv;
-  mozilla::ipc::IPCResult ipcResult = CommonCreateWindow(
-      aThisTab, *parent, /* aSetOpener = */ false, aChromeFlags, aCalledFromJS,
-      /* aForPrinting = */ false,
-      /* aForWindowDotPrint = */ false, aIsTopLevelCreatedByWebContent,
-      aURIToLoad, aFeatures, aModifiers,
-      /* aNextRemoteBrowser = */ nullptr, aName, rv, newRemoteTab, &windowIsNew,
-      openLocation, aTriggeringPrincipal, aReferrerInfo,
-      /* aLoadUri = */ true, aCsp, aOriginAttributes, aUserActivation,
-      aTextDirectiveUserActivation);
-  if (!ipcResult) {
-    return ipcResult;
-  }
-
-  if (NS_FAILED(rv)) {
-    NS_WARNING("Call to CommonCreateWindow failed.");
-  }
 
   return IPC_OK();
 }
@@ -5869,7 +5819,7 @@ mozilla::ipc::IPCResult ContentParent::RecvStoreAndBroadcastBlobURLRegistration(
   }
 
   if (!ValidatePrincipal(aPrincipal, {ValidatePrincipalOptions::AllowSystem})) {
-    LogAndAssertFailedPrincipalValidationInfo(aPrincipal, __func__);
+    return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
   RefPtr<BlobImpl> blobImpl = IPCBlobUtils::Deserialize(aBlob);
   if (NS_WARN_IF(!blobImpl)) {
@@ -5891,7 +5841,7 @@ ContentParent::RecvUnstoreAndBroadcastBlobURLUnregistration(
   for (const BroadcastBlobURLUnregistrationRequest& request : aRequests) {
     if (!ValidatePrincipal(request.principal(),
                            {ValidatePrincipalOptions::AllowSystem})) {
-      LogAndAssertFailedPrincipalValidationInfo(request.principal(), __func__);
+      return PrincipalValidationIpcFail(request.principal(), this, __func__);
     }
 
     uris.AppendElement(request.url());
@@ -6343,7 +6293,7 @@ mozilla::ipc::IPCResult ContentParent::RecvPURLClassifierConstructor(
     return IPC_OK();
   }
   if (!ValidatePrincipal(aPrincipal)) {
-    LogAndAssertFailedPrincipalValidationInfo(aPrincipal, __func__);
+    return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
   return actor->StartClassify(principal, aSuccess);
 }
@@ -6517,7 +6467,7 @@ ContentParent::RecvAutomaticStorageAccessPermissionCanBeGranted(
   }
 
   if (!ValidatePrincipal(aPrincipal)) {
-    LogAndAssertFailedPrincipalValidationInfo(aPrincipal, __func__);
+    return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
   aResolver(Document::AutomaticStorageAccessPermissionCanBeGranted(aPrincipal));
   return IPC_OK();
@@ -6691,7 +6641,7 @@ mozilla::ipc::IPCResult ContentParent::RecvStoreUserInteractionAsPermission(
   }
 
   if (!ValidatePrincipal(aPrincipal)) {
-    LogAndAssertFailedPrincipalValidationInfo(aPrincipal, __func__);
+    return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
   ContentBlockingUserInteraction::Observe(aPrincipal);
   return IPC_OK();

@@ -522,7 +522,7 @@ void StyleSheet::DropStyleSet(ServoStyleSet* aStyleSet) {
   do {                                                                    \
     StyleSheet* current = this;                                           \
     do {                                                                  \
-      for (ServoStyleSet * set : current->mStyleSets) {                   \
+      for (ServoStyleSet* set : current->mStyleSets) {                    \
         set->function_ args_;                                             \
       }                                                                   \
       if (auto* docOrShadow = current->mDocumentOrShadowRoot) {           \
@@ -1221,9 +1221,8 @@ RefPtr<StyleSheetParsePromise> StyleSheet::ParseSheet(
   // @import rules are disallowed due to this decision:
   // https://github.com/WICG/construct-stylesheets/issues/119#issuecomment-588352418
   // We may allow @import rules again in the future.
-  auto allowImportRules = SelfOrAncestorIsConstructed()
-                              ? StyleAllowImportRules::No
-                              : StyleAllowImportRules::Yes;
+  auto allowImportRules =
+      IsConstructed() ? StyleAllowImportRules::No : StyleAllowImportRules::Yes;
   URLExtraData* urlData = URLData();
   if (aLoadData->get()->mRecordErrors) {
     MOZ_ASSERT(NS_IsMainThread());
@@ -1298,9 +1297,8 @@ void StyleSheet::ParseSheetSync(
   SetURLExtraData();
 
   URLExtraData* urlData = URLData();
-  auto allowImportRules = SelfOrAncestorIsConstructed()
-                              ? StyleAllowImportRules::No
-                              : StyleAllowImportRules::Yes;
+  auto allowImportRules =
+      IsConstructed() ? StyleAllowImportRules::No : StyleAllowImportRules::Yes;
 
   Inner().mContents =
       Servo_StyleSheet_FromUTF8Bytes(

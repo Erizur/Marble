@@ -3,7 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 [DEFAULT]
-run-if = ["!socketprocess_networking"]
+head = "head.js"
+run-if = [
+  "!socketprocess_networking",
+]
 # XXX figure out why android doesn't get MOZHTTP3_PORT
 skip-if = [
   "os == 'android' && android_version == '24' && processor == 'x86_64'",

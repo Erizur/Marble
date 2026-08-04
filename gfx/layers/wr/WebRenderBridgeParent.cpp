@@ -797,8 +797,12 @@ bool WebRenderBridgeParent::AddSharedExternalImage(
       policy == TextureHost::NativeTexturePolicy::REQUIRE
           ? wr::ExternalImageType::TextureHandle(wr::ImageBufferKind::Texture2D)
           : wr::ExternalImageType::Buffer();
-  wr::ImageDescriptor descriptor(surfaceSize, dSurf->Stride(),
-                                 dSurf->GetFormat());
+  auto format = wr::SurfaceFormatToImageFormat(dSurf->GetFormat());
+  if (NS_WARN_IF(!format)) {
+    return false;
+  }
+  wr::ImageDescriptor descriptor(surfaceSize, dSurf->Stride(), *format,
+                                 wr::ToOpacityType(dSurf->GetFormat()));
   aResources.AddExternalImage(aKey, descriptor, aExtId, imageType, 0);
   return true;
 }
@@ -859,7 +863,13 @@ bool WebRenderBridgeParent::PushExternalImageForTexture(
   }
 
   IntSize size = dSurf->GetSize();
-  wr::ImageDescriptor descriptor(size, map.mStride, dSurf->GetFormat());
+  auto format = wr::SurfaceFormatToImageFormat(dSurf->GetFormat());
+  if (NS_WARN_IF(!format)) {
+    dSurf->Unmap();
+    return false;
+  }
+  wr::ImageDescriptor descriptor(size, map.mStride, *format,
+                                 wr::ToOpacityType(dSurf->GetFormat()));
   wr::Vec<uint8_t> data;
   data.PushBytes(Range<uint8_t>(map.mData, size.height * map.mStride));
 
@@ -881,6 +891,12 @@ bool WebRenderBridgeParent::UpdateSharedExternalImage(
   if (!MatchesNamespace(aKey)) {
     MOZ_ASSERT_UNREACHABLE("Stale shared external image key (update)!");
     return true;
+  }
+
+  if (!GetCompositorBridge()->GetCompositorManager()->OwnsExternalImageId(
+          aExtId)) {
+    gfxCriticalNote << "We do not own extId:" << wr::AsUint64(aExtId);
+    return false;
   }
 
   auto key = wr::AsUint64(aKey);
@@ -923,8 +939,12 @@ bool WebRenderBridgeParent::UpdateSharedExternalImage(
       policy == TextureHost::NativeTexturePolicy::REQUIRE
           ? wr::ExternalImageType::TextureHandle(wr::ImageBufferKind::Texture2D)
           : wr::ExternalImageType::Buffer();
-  wr::ImageDescriptor descriptor(surfaceSize, dSurf->Stride(),
-                                 dSurf->GetFormat());
+  auto format = wr::SurfaceFormatToImageFormat(dSurf->GetFormat());
+  if (NS_WARN_IF(!format)) {
+    return false;
+  }
+  wr::ImageDescriptor descriptor(surfaceSize, dSurf->Stride(), *format,
+                                 wr::ToOpacityType(dSurf->GetFormat()));
   aResources.UpdateExternalImageWithDirtyRect(
       aKey, descriptor, aExtId, imageType, wr::ToDeviceIntRect(aDirtyRect), 0,
       /* aNormalizedUvs */ false);
@@ -1018,9 +1038,17 @@ mozilla::ipc::IPCResult WebRenderBridgeParent::RecvDeleteCompositorAnimations(
       wr::AsUint64(mPipelineId), wr::AsUint64(mApi->GetId()),
       IsRootWebRenderBridgeParent());
 
+  nsTArray<uint64_t> ids;
+  ids.SetCapacity(aIds.Length());
+  for (uint64_t id : aIds) {
+    if (OwnsCompositorAnimationsId(id)) {
+      ids.AppendElement(id);
+    }
+  }
+
   // Once mWrEpoch has been rendered, we can delete these compositor animations
   mCompositorAnimationsToDelete.push(
-      CompositorAnimationIdsForEpoch(mWrEpoch, std::move(aIds)));
+      CompositorAnimationIdsForEpoch(mWrEpoch, std::move(ids)));
   return IPC_OK();
 }
 
@@ -1599,10 +1627,7 @@ bool WebRenderBridgeParent::ProcessWebRenderParentCommands(
         const OpAddCompositorAnimations& op =
             cmd.get_OpAddCompositorAnimations();
         CompositorAnimations data(std::move(op.data()));
-        // AnimationHelper::GetNextCompositorAnimationsId() encodes the child
-        // process PID in the upper 32 bits of the id, verify that this is as
-        // expected.
-        if ((data.id() >> 32) != (uint64_t)OtherPid()) {
+        if (!OwnsCompositorAnimationsId(data.id())) {
           gfxCriticalNote << "TOpAddCompositorAnimations bad id";
           success = false;
           continue;
@@ -2255,7 +2280,9 @@ mozilla::ipc::IPCResult WebRenderBridgeParent::RecvGetAnimationValue(
     return IPC_FAIL_NO_REASON(this);
   }
 
-  if (RefPtr<OMTASampler> sampler = GetOMTASampler()) {
+  if (!OwnsCompositorAnimationsId(aCompositorAnimationsId)) {
+    *aValue = mozilla::null_t();
+  } else if (RefPtr<OMTASampler> sampler = GetOMTASampler()) {
     Maybe<TimeStamp> testingTimeStamp;
     if (CompositorBridgeParent* cbp = GetRootCompositorBridgeParent()) {
       testingTimeStamp = cbp->GetTestingTimeStamp();

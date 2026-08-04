@@ -281,12 +281,14 @@ void WebTransport::Init(const GlobalObject& aGlobal, const nsAString& aURL,
     return;
   }
 
-  nsCOMPtr<nsIPrincipal> principal = mGlobal->PrincipalOrNull();
-  mozilla::Maybe<IPCClientInfo> ipcClientInfo;
-
-  if (mGlobal->GetClientInfo().isSome()) {
-    ipcClientInfo = mozilla::Some(mGlobal->GetClientInfo().ref().ToIPC());
+  if (mGlobal->GetClientInfo().isNothing()) {
+    aError.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
+    return;
   }
+  IPCClientInfo ipcClientInfo = mGlobal->GetClientInfo().ref().ToIPC();
+
+  nsCOMPtr<nsIPrincipal> principal = mGlobal->PrincipalOrNull();
+
   // Create a new IPC connection
   Endpoint<PWebTransportParent> parentEndpoint;
   Endpoint<PWebTransportChild> childEndpoint;

@@ -1196,7 +1196,6 @@ parent:
                              nsString aContentDispositionFilename,
                              bool aForceSave,
                              int64_t aContentLength,
-                             bool aWasFileChannel,
                              nullable nsIURI aReferrer,
                              MaybeDiscardedBrowsingContext aContext);
 
@@ -1548,23 +1547,6 @@ parent:
                        bool aUserActivation,
                        bool aTextDirectiveUserActivation)
         returns (CreatedWindowInfo window);
-
-    async CreateWindowInDifferentProcess(
-      PBrowser aThisTab,
-      MaybeDiscardedBrowsingContext aParent,
-      uint32_t aChromeFlags,
-      bool aCalledFromJS,
-      bool aTopLevelCreatedByContent,
-      nullable nsIURI aURIToLoad,
-      nsCString aFeatures,
-      Modifiers aModifiers,
-      nsString aName,
-      nullable nsIPrincipal aTriggeringPrincipal,
-      nullable nsIContentSecurityPolicy aCsp,
-      nullable nsIReferrerInfo aReferrerInfo,
-      OriginAttributes aOriginAttributes,
-      bool aUserActivation,
-      bool aTextDirectiveUserActivation);
 
     /**
      * Notify `push-message` observers without data in the parent.

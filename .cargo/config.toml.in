@@ -85,9 +85,9 @@ git = "https://github.com/mozilla/application-services"
 rev = "f5907a411e52a3985d0369d71c486eb507c2c4e6"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/audioipc?rev=e6f44a2bd1e57d11dfc737632a9e849077632330"]
+[source."git+https://github.com/mozilla/audioipc?rev=3f0d4aef7a2c06b0146384592b312a7f47ab7cea"]
 git = "https://github.com/mozilla/audioipc"
-rev = "e6f44a2bd1e57d11dfc737632a9e849077632330"
+rev = "3f0d4aef7a2c06b0146384592b312a7f47ab7cea"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/cubeb-coreaudio-rs?rev=bebaa23317332c95734df76e25193c24a83a6840"]
@@ -95,9 +95,9 @@ git = "https://github.com/mozilla/cubeb-coreaudio-rs"
 rev = "bebaa23317332c95734df76e25193c24a83a6840"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/cubeb-pulse-rs?rev=8678dcab1c287de79c4c184ccc2e065bc62b70e2"]
+[source."git+https://github.com/mozilla/cubeb-pulse-rs?rev=b46defa5370f16c57ce8b163d8fbb0b68a8e81e1"]
 git = "https://github.com/mozilla/cubeb-pulse-rs"
-rev = "8678dcab1c287de79c4c184ccc2e065bc62b70e2"
+rev = "b46defa5370f16c57ce8b163d8fbb0b68a8e81e1"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/midir.git?rev=85156e360a37d851734118104619f86bd18e94c6"]

@@ -861,7 +861,12 @@ TextLeafPoint TextLeafPoint::FindLineStartSameRemoteAcc(
   if (aDirection == eDirPrevious) {
     --index;
   }
-  return TextLeafPoint(mAcc, lines->ElementAt(index));
+  int32_t offset = lines->ElementAt(index);
+  if (MOZ_UNLIKELY(offset < 0 || static_cast<uint32_t>(offset) >
+                                     nsAccUtils::TextLength(mAcc))) {
+    return TextLeafPoint();
+  }
+  return TextLeafPoint(mAcc, offset);
 }
 
 TextLeafPoint TextLeafPoint::FindLineStartSameAcc(

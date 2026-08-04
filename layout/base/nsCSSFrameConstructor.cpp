@@ -8289,6 +8289,25 @@ static nsIFrame* FindPreviousNonWhitespaceSibling(nsIFrame* aFrame) {
   return f;
 }
 
+static nsIFrame* CheckRubyContainers(nsIFrame* aFrame, nsIFrame* aParent) {
+  auto* ancestor = aParent;
+  auto* ancestorChild = aFrame;
+  while (ancestor && IsWrapperPseudo(ancestor) &&
+         CanRemoveWrapperPseudoForChildRemoval(ancestorChild, ancestor)) {
+    ancestorChild = ancestor;
+    ancestor = ancestorChild->GetParent();
+  }
+  if (!ancestor) {
+    return nullptr;
+  }
+  const auto ancestorType = ancestor->Type();
+  if (ancestorType != LayoutFrameType::Ruby &&
+      !RubyUtils::IsRubyContainerBox(ancestorType)) {
+    return nullptr;
+  }
+  return ancestor;
+}
+
 bool nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(
     nsIFrame* aFrame) {
 #define TRACE(reason)                                                       \
@@ -8399,9 +8418,7 @@ bool nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(
   }
 
   // Check ruby containers
-  LayoutFrameType parentType = parent->Type();
-  if (parentType == LayoutFrameType::Ruby ||
-      RubyUtils::IsRubyContainerBox(parentType)) {
+  if (const auto* ancestor = CheckRubyContainers(inFlowFrame, parent)) {
     // In ruby containers, pseudo frames may be created from
     // whitespaces or even nothing. There are two cases we actually
     // need to handle here, but hard to check exactly:
@@ -8410,7 +8427,7 @@ bool nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(
     // 2. The type of the first child of a ruby frame determines
     //    whether a pseudo ruby base container should exist.
     TRACE("Ruby container");
-    RecreateFramesForContent(parent->GetContent(), InsertionKind::Async);
+    RecreateFramesForContent(ancestor->GetContent(), InsertionKind::Async);
     return true;
   }
 

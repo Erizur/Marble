@@ -5,6 +5,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/dom/StaticRange.h"
+
+#include "mozilla/dom/CrossShadowBoundaryRange.h"
 #include "mozilla/dom/StaticRangeBinding.h"
 #include "nsContentUtils.h"
 #include "nsINode.h"
@@ -132,6 +134,13 @@ void StaticRange::DoSetRange(const RangeBoundaryBase<SPT, SRT>& aStartBoundary,
   mAreStartAndEndInSameTree =
       RangeUtils::ComputeRootNode(mStart.GetContainer()) ==
       RangeUtils::ComputeRootNode(mEnd.GetContainer());
+
+  // CrossShadowBoundaryRange must keep its mutation observer registered on the
+  // common ancestor of the current boundaries. This is the single point every
+  // boundary change funnels through, so update it here for all of them.
+  if (IsCrossShadowBoundaryRange()) {
+    AsCrossShadowBoundaryRange()->UpdateCommonAncestor();
+  }
 }
 
 /* static */

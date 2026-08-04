@@ -1162,6 +1162,7 @@ def test_full_run(options, call_counts, log_ind, expected_log_message):
                 "here once the tests are complete (the autodetected framework "
                 "selection may not show all of your tests):\n"
                 " https://perf.compare/compare-lando-results?"
+                "landoInstance=lando-prod-2025&"
                 "baseLando=13&newLando=14&"
                 "baseRepo=try&newRepo=try&framework=1\n"
             ),

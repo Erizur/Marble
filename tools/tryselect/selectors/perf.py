@@ -50,12 +50,10 @@ PERFCOMPARE_BASE_URL = (
 )
 PERFCOMPARE_BASE_URL_LANDO = (
     "https://perf.compare/compare-lando-results?"
-    "baseLando=%s&newLando=%s&baseRepo=try&newRepo=try&framework=%s"
+    "landoInstance=lando-prod-2025&baseLando=%s&newLando=%s&baseRepo=try&newRepo=try&framework=%s"
 )
 TREEHERDER_TRY_BASE_URL = "https://treeherder.mozilla.org/jobs?repo=try&revision=%s"
-TREEHERDER_TRY_LANDO_BASE_URL = (
-    "https://treeherder.mozilla.org/jobs?repo=try&landoCommitID=%s"
-)
+TREEHERDER_TRY_LANDO_BASE_URL = "https://treeherder.mozilla.org/jobs?repo=try&landoInstance=lando-prod-2025&landoCommitID=%s"
 TREEHERDER_ALERT_TASKS_URL = (
     "https://treeherder.mozilla.org/api/performance/alertsummary-tasks/?id=%s"
 )

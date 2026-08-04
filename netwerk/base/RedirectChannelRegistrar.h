@@ -11,6 +11,7 @@
 #include "nsIParentChannel.h"
 #include "nsInterfaceHashtable.h"
 #include "mozilla/Attributes.h"
+#include "nsTHashMap.h"
 #include "mozilla/Mutex.h"
 
 namespace mozilla {
@@ -36,6 +37,12 @@ class RedirectChannelRegistrar final : public nsIRedirectChannelRegistrar {
 
   ChannelHashtable mRealChannels;
   ParentChannelHashtable mParentChannels;
+  // Maps a registered channel id to the ContentParentId (as a raw uint64_t,
+  // 0 for the parent process) of the process the redirect is destined for.
+  // linkChannels refuses to pair a real channel with a parent actor coming
+  // from any other process.
+  nsTHashMap<nsUint64HashKey, uint64_t> mChannelOwners;
+
   Mutex mLock MOZ_UNANNOTATED;
 
   static StaticRefPtr<RedirectChannelRegistrar> gSingleton;

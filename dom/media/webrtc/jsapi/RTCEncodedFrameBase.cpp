@@ -17,8 +17,6 @@ namespace mozilla::dom {
 
 NS_IMPL_CYCLE_COLLECTION_CLASS(RTCEncodedFrameBase)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(RTCEncodedFrameBase)
-  using ::ImplCycleCollectionUnlink;
-  tmp->DetachData();
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mOwner, mGlobal)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mData)
   NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
@@ -55,14 +53,20 @@ RTCEncodedFrameBase::RTCEncodedFrameBase(
 
   mozilla::HoldJSObjects(this);
 
-  // Avoid a copy
-  mData = JS::NewArrayBufferWithUserOwnedContents(
-      jsapi.cx(), mFrame->GetData().size(), (void*)(mFrame->GetData().data()));
+  const auto& frame = mFrame->GetData();
+  if (frame.data()) {
+    UniquePtr<void, JS::FreePolicy> data(js_pod_arena_malloc<uint8_t>(
+        js::ArrayBufferContentsArena, frame.size()));
+    memcpy(data.get(), frame.data(), frame.size());
+    mData = JS::NewArrayBufferWithContents(jsapi.cx(), frame.size(),
+                                           std::move(data));
+  } else {
+    mData = JS::NewArrayBuffer(jsapi.cx(), 0);
+  }
 }
 
 RTCEncodedFrameBase::~RTCEncodedFrameBase() {
   DetachData();
-  mData = nullptr;
   mozilla::DropJSObjects(this);
 }
 
@@ -88,7 +92,6 @@ nsIGlobalObject* RTCEncodedFrameBase::GetParentObject() const {
 unsigned long RTCEncodedFrameBase::Timestamp() const { return mTimestamp; }
 
 void RTCEncodedFrameBase::SetData(const ArrayBuffer& aData) {
-  DetachData();
   mData.set(aData.Obj());
   if (mFrame) {
     aData.ProcessData([&](const Span<uint8_t>& aData, JS::AutoCheckCannotGC&&) {
@@ -111,10 +114,7 @@ RTCEncodedFrameBase::TakeFrame() {
 }
 
 size_t RTCEncodedFrameBase::Size() const {
-  if (!mFrame) {
-    return 0;
-  }
-  return mFrame->GetData().size();
+  return GetArrayBufferByteLength(mData);
 }
 
 }  // namespace mozilla::dom

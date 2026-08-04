@@ -391,6 +391,29 @@ bool nsNestedAboutURI::Deserialize(const mozilla::ipc::URIParams& aParams) {
   return true;
 }
 
+bool nsNestedAboutURI::IsValidInnerURI(nsIURI* aInnerURI) {
+  if (!Scheme().EqualsLiteral("about")) {
+    return false;
+  }
+
+  if (!IsSafeToLinkForUntrustedContent(this)) {
+    return false;
+  }
+
+  nsAutoCString expectedSpec;
+  if (NS_FAILED(GetPathQueryRef(expectedSpec))) {
+    return false;
+  }
+  expectedSpec.InsertLiteral("moz-safe-about:", 0);
+
+  nsAutoCString innerSpec;
+  if (NS_FAILED(aInnerURI->GetAsciiSpec(innerSpec))) {
+    return false;
+  }
+
+  return innerSpec == expectedSpec;
+}
+
 // nsSimpleURI
 /* virtual */ already_AddRefed<nsSimpleURI> nsNestedAboutURI::StartClone() {
   NS_ENSURE_TRUE(mInnerURI, nullptr);

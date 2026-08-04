@@ -2830,8 +2830,8 @@ HTMLFieldSetElement* nsGenericHTMLFormControlElement::GetFieldSet() {
 
 void nsGenericHTMLFormControlElement::SetForm(HTMLFormElement* aForm) {
   MOZ_ASSERT(aForm, "Don't pass null here");
-  NS_ASSERTION(!mForm,
-               "We don't support switching from one non-null form to another.");
+  MOZ_ASSERT(!mForm && !HasFlag(ADDED_TO_FORM),
+             "We don't support switching from one non-null form to another.");
 
   SetFormInternal(aForm, false);
 }
@@ -3306,12 +3306,13 @@ bool nsGenericHTMLFormControlElementWithState::RestoreFormControlState() {
     return false;
   }
 
-  // Get the pres state for this key
-  PresState* state = history->GetState(mStateKey);
+  // Take ownership of the pres state for this key: RestoreState() can run
+  // script (e.g. by synchronously committing an IME composition), which may
+  // re-enter restoration for the same key and free a table-owned state while
+  // we are still using it.
+  UniquePtr<PresState> state = history->TakeState(mStateKey);
   if (state) {
-    bool result = RestoreState(state);
-    history->RemoveState(mStateKey);
-    return result;
+    return RestoreState(state.get());
   }
 
   return false;
@@ -3770,7 +3771,8 @@ void nsGenericHTMLElement::HidePopover(ErrorResult& aRv) {
 void nsGenericHTMLElement::HidePopoverInternal(bool aFocusPreviousElement,
                                                bool aFireEvents,
                                                ErrorResult& aRv) {
-  OwnerDoc()->HidePopover(*this, aFocusPreviousElement, aFireEvents, aRv);
+  RefPtr<Document> document = OwnerDoc();
+  document->HidePopover(*this, aFocusPreviousElement, aFireEvents, aRv);
 }
 
 void nsGenericHTMLElement::ForgetPreviouslyFocusedElementAfterHidingPopover() {

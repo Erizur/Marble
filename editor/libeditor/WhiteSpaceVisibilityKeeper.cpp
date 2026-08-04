@@ -1749,6 +1749,9 @@ WhiteSpaceVisibilityKeeper::NormalizeSurroundingWhiteSpacesToJoin(
       MOZ_ASSERT(rangeToDelete.StartRef().EqualsOrIsBefore(pointToSplit));
       rangeToDelete.SetEnd(std::move(pointToSplit));
     }
+    if (NS_WARN_IF(!rangeToDelete.IsPositionedAndValidInComposedDoc())) {
+      return Err(NS_ERROR_EDITOR_UNEXPECTED_DOM_TREE);
+    }
   } else {
     AutoTrackDOMRange trackRangeToDelete(aHTMLEditor.RangeUpdaterRef(),
                                          &rangeToDelete);
@@ -1810,6 +1813,9 @@ WhiteSpaceVisibilityKeeper::NormalizeSurroundingWhiteSpacesToJoin(
       return afterLastVisibleThingOrError.propagateErr();
     }
     trackRangeToDelete.FlushAndStopTracking();
+    if (NS_WARN_IF(!rangeToDelete.IsPositionedAndValidInComposedDoc())) {
+      return Err(NS_ERROR_EDITOR_UNEXPECTED_DOM_TREE);
+    }
     EditorDOMPoint pointToSplit = afterLastVisibleThingOrError.unwrap();
     if (pointToSplit.IsSet() && pointToSplit != rangeToDelete.StartRef()) {
       MOZ_ASSERT(pointToSplit.EqualsOrIsBefore(rangeToDelete.EndRef()));

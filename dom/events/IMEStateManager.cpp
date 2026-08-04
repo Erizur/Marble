@@ -147,11 +147,12 @@ void IMEStateManager::Shutdown() {
 // static
 void IMEStateManager::OnFocusMovedBetweenBrowsers(BrowserParent* aBlur,
                                                   BrowserParent* aFocus) {
-  MOZ_ASSERT(aBlur != aFocus);
+  RefPtr<BrowserParent> blur(aBlur);
+  MOZ_ASSERT(blur != aFocus);
   MOZ_ASSERT(XRE_IsParentProcess());
 
   if (sPendingFocusedBrowserSwitchingData.isSome()) {
-    MOZ_ASSERT(aBlur ==
+    MOZ_ASSERT(blur ==
                sPendingFocusedBrowserSwitchingData.ref().mBrowserParentFocused);
     // If focus is not changed between browsers actually, we need to do
     // nothing here.  Let's cancel handling what this method does.
@@ -163,9 +164,9 @@ void IMEStateManager::OnFocusMovedBetweenBrowsers(BrowserParent* aBlur,
                "moves between browsers"));
       return;
     }
-    aBlur = sPendingFocusedBrowserSwitchingData.ref().mBrowserParentBlurred;
+    blur = sPendingFocusedBrowserSwitchingData.ref().mBrowserParentBlurred;
     sPendingFocusedBrowserSwitchingData.ref().mBrowserParentFocused = aFocus;
-    MOZ_ASSERT(aBlur != aFocus);
+    MOZ_ASSERT(blur != aFocus);
   }
 
   // If application was inactive, but is now activated, and the last focused
@@ -175,11 +176,11 @@ void IMEStateManager::OnFocusMovedBetweenBrowsers(BrowserParent* aBlur,
   // composition shouldn't be commited now.  Therefore, we should put off to
   // handle this until getting another call of this method or a call of
   //`OnFocusChangeInternal()`.
-  if (aBlur && !aFocus && !sIsActive && sTextInputHandlingWidget &&
+  if (blur && !aFocus && !sIsActive && sTextInputHandlingWidget &&
       sTextCompositions &&
       sTextCompositions->GetCompositionFor(sTextInputHandlingWidget)) {
     if (sPendingFocusedBrowserSwitchingData.isNothing()) {
-      sPendingFocusedBrowserSwitchingData.emplace(aBlur, aFocus);
+      sPendingFocusedBrowserSwitchingData.emplace(blur, aFocus);
     }
     MOZ_LOG(sISMLog, LogLevel::Debug,
             ("  OnFocusMovedBetweenBrowsers(), put off to handle it until "
@@ -212,12 +213,12 @@ void IMEStateManager::OnFocusMovedBetweenBrowsers(BrowserParent* aBlur,
   // The manager check is to avoid telling the content process to stop
   // IME state management after focus has already moved there between
   // two same-process-hosted out-of-process iframes.
-  if (aBlur && (!aFocus || (aBlur->Manager() != aFocus->Manager()))) {
+  if (blur && (!aFocus || (blur->Manager() != aFocus->Manager()))) {
     MOZ_LOG(sISMLog, LogLevel::Debug,
             ("  OnFocusMovedBetweenBrowsers(), notifying previous "
              "focused child process of parent process or another child process "
              "getting focus"));
-    aBlur->StopIMEStateManagement();
+    blur->StopIMEStateManagement();
   }
 
   if (sActiveIMEContentObserver) {
@@ -227,10 +228,10 @@ void IMEStateManager::OnFocusMovedBetweenBrowsers(BrowserParent* aBlur,
   if (sFocusedIMEWidget) {
     // sFocusedIMEBrowserParent can be null, if IME focus hasn't been
     // taken before BrowserParent blur.
-    // aBlur can be null when keyboard focus moves not actually
+    // `blur` can be null when keyboard focus moves not actually
     // between tabs but an open menu is involved.
-    MOZ_ASSERT(!sFocusedIMEBrowserParent || !aBlur ||
-               (sFocusedIMEBrowserParent == aBlur));
+    MOZ_ASSERT(!sFocusedIMEBrowserParent || !blur ||
+               (sFocusedIMEBrowserParent == blur));
     MOZ_LOG(sISMLog, LogLevel::Debug,
             ("  OnFocusMovedBetweenBrowsers(), notifying IME of blur"));
     NotifyIME(NOTIFY_IME_OF_BLUR, sFocusedIMEWidget, sFocusedIMEBrowserParent);

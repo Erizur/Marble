@@ -6885,6 +6885,9 @@ void nsBlockFrame::DidSetComputedStyle(ComputedStyle* aOldStyle) {
       RemoveStateBits(NS_BLOCK_BFC);
       MarkSameFloatManagerLinesDirty(this);
     }
+    if (isBFC && !IsLineClampRoot(this)) {
+      ClearLineClampEllipsis();
+    }
     AddOrRemoveStateBits(NS_BLOCK_BFC, isBFC);
   }
 }

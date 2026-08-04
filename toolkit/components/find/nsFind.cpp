@@ -974,7 +974,7 @@ already_AddRefed<nsRange> nsFind::FindFromRangeBoundaries(
 
           // If a word break isn't there when it needs to be, reset search.
           if (mWordEndBounded && nextChar && !BreakInBetween(c, nextChar)) {
-            matchAnchorNode = nullptr;
+            EndPartialMatch();
             continue;
           }
 

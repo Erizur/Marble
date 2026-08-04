@@ -673,6 +673,11 @@ workers:
             implementation: docker-worker
             os: linux
             worker-type: b-linux-xlarge
+        b-linux-docker-large-amd:
+            provisioner: '{trust-domain}-{level}'
+            implementation: docker-worker
+            os: linux
+            worker-type: '{alias}'
         b-win2012:
             provisioner: '{trust-domain}-{level}'
             implementation: generic-worker

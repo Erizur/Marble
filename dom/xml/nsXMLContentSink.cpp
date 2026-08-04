@@ -284,6 +284,7 @@ nsXMLContentSink::DidBuildModel(bool aTerminated) {
       }
     }
 
+    mDocumentChildren.Clear();
     mXSLTProcessor->SetSourceContentModel(source);
     // Since the processor now holds a reference to us we drop our reference
     // to it to avoid owning cycles
@@ -1001,6 +1002,9 @@ nsresult nsXMLContentSink::HandleStartElement(
     if (!SetDocElement(nameSpaceID, localName, content) && appendContent) {
       NS_ENSURE_TRUE(parent, NS_ERROR_UNEXPECTED);
 
+      if (MOZ_UNLIKELY(content->GetParentNode())) {
+        content->Remove();
+      }
       parent->AppendChildTo(content, false, IgnoreErrors());
     }
   }

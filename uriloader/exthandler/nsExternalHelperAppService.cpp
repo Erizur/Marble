@@ -701,7 +701,6 @@ nsresult nsExternalHelperAppService::DoContentContentProcessHelper(
   nsCString disp;
   nsCOMPtr<nsIURI> uri;
   int64_t contentLength = -1;
-  bool wasFileChannel = false;
   uint32_t contentDisposition = -1;
   nsAutoString fileName;
   nsCOMPtr<nsILoadInfo> loadInfo;
@@ -712,9 +711,6 @@ nsresult nsExternalHelperAppService::DoContentContentProcessHelper(
   aChannel->GetContentDispositionFilename(fileName);
   aChannel->GetContentDispositionHeader(disp);
   loadInfo = aChannel->LoadInfo();
-
-  nsCOMPtr<nsIFileChannel> fileChan(do_QueryInterface(aChannel));
-  wasFileChannel = fileChan != nullptr;
 
   nsCOMPtr<nsIURI> referrer;
   NS_GetReferrerFromChannel(aChannel, getter_AddRefs(referrer));
@@ -729,8 +725,8 @@ nsresult nsExternalHelperAppService::DoContentContentProcessHelper(
   RefPtr<ExternalHelperAppChild> childListener = new ExternalHelperAppChild();
   MOZ_ALWAYS_TRUE(child->SendPExternalHelperAppConstructor(
       childListener, uri, loadInfoArgs, nsCString(aMimeContentType), disp,
-      contentDisposition, fileName, aForceSave, contentLength, wasFileChannel,
-      referrer, aContentContext));
+      contentDisposition, fileName, aForceSave, contentLength, referrer,
+      aContentContext));
 
   NS_ADDREF(*aStreamListener = childListener);
 

@@ -52,11 +52,11 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
 
 elif CONFIG["OS_ARCH"] == "WINNT":
     XPIDL_SOURCES += [
+        "nsILimitedAccessFeature.idl",
         "nsIWindowsShellService.idl",
     ]
     SOURCES += [
         "nsWindowsShellService.cpp",
-        "Windows11LimitedAccessFeatures.cpp",
         "Windows11TaskbarPinning.cpp",
         "WindowsDefaultBrowser.cpp",
         "WindowsUserChoice.cpp",

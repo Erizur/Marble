@@ -757,6 +757,11 @@ class Pref {
       if (!ValueMatches(PrefValueKind::Default, type, value)) {
         // Type() is PrefType::None if it's a newly added pref. This is ok.
         mDefaultValue.Replace(mHasDefaultValue, Type(), type, value);
+        // Both values share the type tag, so clear a user value of the old
+        // type now, while Clear() still matches how it was stored.
+        if (mHasUserValue && !IsType(type)) {
+          ClearUserValue();
+        }
         SetType(type);
         mHasDefaultValue = true;
         defaultValueChanged = true;

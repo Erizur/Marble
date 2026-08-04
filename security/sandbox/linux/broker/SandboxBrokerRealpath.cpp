@@ -35,15 +35,19 @@
 #if defined(LIBC_SCCS) && !defined(lint)
 static char sccsid[] = "@(#)realpath.c	8.1 (Berkeley) 2/16/94";
 #endif /* LIBC_SCCS and not lint */
+#include <linux/magic.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <sys/vfs.h>
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "base/string_util.h"
+#include "mozilla/UniquePtrExtensions.h"
 #include "SandboxBroker.h"
 #include "SandboxLogging.h"
 
@@ -60,6 +64,34 @@ static size_t my_strlcat(char* s1, const char* s2, size_t len) {
 }
 
 namespace mozilla {
+
+static ssize_t SafeReadlink(const char* __restrict path, char* __restrict buf,
+                            size_t bufsiz) {
+  // In theory this is subsumed by the f_type check, but just in case
+  if (strncmp(path, "/proc/", 6) == 0) {
+    errno = EPERM;
+    return -1;
+  }
+
+  // Linux extension: open any filesystem node, including a symlink
+  UniqueFileHandle fd{open(path, O_PATH | O_NOFOLLOW)};
+  if (!fd) {
+    return -1;
+  }
+
+  // Check the filesystem info for the symlink (not its target)
+  struct statfs sf;
+  if (fstatfs(fd.get(), &sf) != 0) {
+    return -1;
+  }
+  if (sf.f_type == PROC_SUPER_MAGIC) {
+    errno = EPERM;
+    return -1;
+  }
+
+  // Linux extension: readlink the object referenced by the fd itself
+  return readlinkat(fd.get(), "", buf, bufsiz);
+}
 
 /*
  * Original: realpath
@@ -221,7 +253,7 @@ char* SandboxBroker::SymlinkPath(const Policy* policy,
         *perms |= link_path_perms;
       }
       /* Original symlink lookup code */
-      slen = readlink(resolved, symlink, sizeof(symlink) - 1);
+      slen = SafeReadlink(resolved, symlink, sizeof(symlink) - 1);
       if (slen < 0) {
         if (m) free(resolved);
         return (NULL);

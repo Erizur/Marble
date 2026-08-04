@@ -34,8 +34,8 @@ class WebTransportParent : public PWebTransportParent,
   NS_DECL_WEBTRANSPORTSESSIONEVENTLISTENER
 
   void Create(const nsAString& aURL, nsIPrincipal* aPrincipal,
-              const mozilla::Maybe<IPCClientInfo>& aClientInfo,
-              const bool& aDedicated, const bool& aRequireUnreliable,
+              const IPCClientInfo& aClientInfo, const bool& aDedicated,
+              const bool& aRequireUnreliable,
               const uint32_t& aCongestionControl,
               nsTArray<WebTransportHash>&& aServerCertHashes,
               Endpoint<PWebTransportParent>&& aParentEndpoint,

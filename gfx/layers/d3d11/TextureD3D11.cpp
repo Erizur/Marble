@@ -1067,6 +1067,13 @@ already_AddRefed<gfx::DataSourceSurface> DXGITextureHostD3D11::GetAsSurface(
   D3D11_TEXTURE2D_DESC textureDesc = {0};
   d3dTexture->GetDesc(&textureDesc);
 
+  if (textureDesc.Format != SurfaceFormatToDXGIFormat(mFormat)) {
+    gfxCriticalNoteOnce << "Declared format does not match texture format: "
+                        << static_cast<int>(mFormat) << " "
+                        << static_cast<int>(textureDesc.Format);
+    return nullptr;
+  }
+
   RefPtr<ID3D11DeviceContext> context;
   d3d11Device->GetImmediateContext(getter_AddRefs(context));
 
@@ -1346,7 +1353,12 @@ void DXGITextureHostD3D11::PushResourceUpdates(
         return;
       }
 
-      wr::ImageDescriptor descriptor(mSize, GetFormat());
+      auto format = wr::SurfaceFormatToImageFormat(GetFormat());
+      if (NS_WARN_IF(!format)) {
+        return;
+      }
+      wr::ImageDescriptor descriptor(mSize, *format,
+                                     wr::ToOpacityType(GetFormat()));
       // Prefer TextureExternal unless the backend requires TextureRect.
       TextureHost::NativeTexturePolicy policy =
           TextureHost::BackendNativeTexturePolicy(aResources.GetBackendType(),
@@ -1371,13 +1383,13 @@ void DXGITextureHostD3D11::PushResourceUpdates(
       MOZ_ASSERT(mSize.width % 2 == 0);
       MOZ_ASSERT(mSize.height % 2 == 0);
 
-      wr::ImageDescriptor descriptor0(mSize, mFormat == gfx::SurfaceFormat::NV12
-                                                 ? gfx::SurfaceFormat::A8
-                                                 : gfx::SurfaceFormat::A16);
-      wr::ImageDescriptor descriptor1(mSize / 2,
-                                      mFormat == gfx::SurfaceFormat::NV12
-                                          ? gfx::SurfaceFormat::R8G8
-                                          : gfx::SurfaceFormat::R16G16);
+      const bool isNV12 = mFormat == gfx::SurfaceFormat::NV12;
+      wr::ImageDescriptor descriptor0(
+          mSize, isNV12 ? wr::ImageFormat::R8 : wr::ImageFormat::R16,
+          wr::OpacityType::HasAlphaChannel);
+      wr::ImageDescriptor descriptor1(
+          mSize / 2, isNV12 ? wr::ImageFormat::RG8 : wr::ImageFormat::RG16,
+          isNV12 ? wr::OpacityType::Opaque : wr::OpacityType::HasAlphaChannel);
       // Prefer TextureExternal unless the backend requires TextureRect.
       TextureHost::NativeTexturePolicy policy =
           TextureHost::BackendNativeTexturePolicy(aResources.GetBackendType(),
@@ -1465,7 +1477,8 @@ bool DXGITextureHostD3D11::SupportsExternalCompositing(
     return true;
   }
   // XXX Add P010 and P016 support.
-  if (GetFormat() == gfx::SurfaceFormat::NV12) {
+  if (GetFormat() == gfx::SurfaceFormat::NV12 ||
+      GetFormat() == gfx::SurfaceFormat::P010) {
     if ((mFlags & TextureFlags::SOFTWARE_DECODED_VIDEO) &&
         (gfx::gfxVars::UseWebRenderDCompVideoSwOverlayWin())) {
       return true;
@@ -1561,9 +1574,11 @@ void DXGIYCbCrTextureHostD3D11::PushResourceUpdates(
                              wr::ImageBufferKind::TextureExternal);
 
   // y
-  wr::ImageDescriptor descriptor0(mSizeY, gfx::SurfaceFormat::A8);
+  wr::ImageDescriptor descriptor0(mSizeY, wr::ImageFormat::R8,
+                                  wr::OpacityType::HasAlphaChannel);
   // cb and cr
-  wr::ImageDescriptor descriptor1(mSizeCbCr, gfx::SurfaceFormat::A8);
+  wr::ImageDescriptor descriptor1(mSizeCbCr, wr::ImageFormat::R8,
+                                  wr::OpacityType::HasAlphaChannel);
   (aResources.*method)(aImageKeys[0], descriptor0, aExtID, imageType, 0,
                        /* aNormalizedUvs */ false);
   (aResources.*method)(aImageKeys[1], descriptor1, aExtID, imageType, 1,

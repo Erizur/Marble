@@ -51,14 +51,9 @@ EXTRA_JS_MODULES += [
     "Schemas.sys.mjs",
     "WebNavigation.sys.mjs",
     "WebNavigationFrames.sys.mjs",
+    "WPTMessagesChild.sys.mjs",
+    "WPTMessagesParent.sys.mjs",
 ]
-
-if CONFIG["NIGHTLY_BUILD"]:
-    # Web Platform Test prototype is limited to Nightly for now.
-    EXTRA_JS_MODULES += [
-        "WPTMessagesChild.sys.mjs",
-        "WPTMessagesParent.sys.mjs",
-    ]
 
 EXTRA_COMPONENTS += [
     "extensions-toolkit.manifest",

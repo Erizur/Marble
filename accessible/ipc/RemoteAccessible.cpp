@@ -181,11 +181,16 @@ RemoteAccessible* RemoteAccessible::RemoteParent() const {
   return mParent;
 }
 
-void RemoteAccessible::ApplyCache(CacheUpdateType aUpdateType,
+bool RemoteAccessible::ApplyCache(CacheUpdateType aUpdateType,
                                   AccAttributes* aFields) {
   if (!aFields) {
     MOZ_ASSERT_UNREACHABLE("ApplyCache called with aFields == null");
-    return;
+    return false;
+  }
+  if (aFields->HasAttribute(CacheKey::HyperTextOffsets) ||
+      aFields->HasAttribute(CacheKey::GroupInfo)) {
+    MOZ_ASSERT_UNREACHABLE("Received invalid cache key");
+    return false;
   }
 
   const nsTArray<bool> relUpdatesNeeded = PreProcessRelations(aFields);
@@ -215,7 +220,7 @@ void RemoteAccessible::ApplyCache(CacheUpdateType aUpdateType,
     mCachedFields->Update(aFields);
   }
 
-  if (IsTextLeaf()) {
+  if (IsText()) {
     RemoteAccessible* parent = RemoteParent();
     if (parent && parent->IsHyperText()) {
       parent->InvalidateCachedHyperTextOffsets();
@@ -223,6 +228,7 @@ void RemoteAccessible::ApplyCache(CacheUpdateType aUpdateType,
   }
 
   PostProcessRelations(relUpdatesNeeded);
+  return true;
 }
 
 ENameValueFlag RemoteAccessible::Name(nsString& aName) const {

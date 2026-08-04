@@ -371,7 +371,11 @@ Result<MediaDataEncoder::EncodedData, MediaResult> FFmpegAudioEncoder<
   EncodedData output;
   MediaResult rv = NS_OK;
 
-  mPacketizer->Input(audio.data(), audio.Length() / mConfig.mNumberOfChannels);
+  nsresult inputRv = mPacketizer->Input(
+      audio.data(), audio.Length() / mConfig.mNumberOfChannels);
+  if (NS_FAILED(inputRv)) {
+    return Err(MediaResult(inputRv, "Failed to feed the audio packetizer"_ns));
+  }
 
   // Dequeue and encode each packet
   while (mPacketizer->PacketsAvailable() && rv.Code() == NS_OK) {

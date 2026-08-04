@@ -179,10 +179,15 @@ VideoFramePool<LIBAV_VER>::GetFFmpegVideoFrameSurfaceLocked(
   // to keep matched surface UID / FFmpeg ID.
   for (auto& surface : mDMABufSurfaces) {
     if (surface->mFFMPEGSurfaceID == aFFMPEGSurfaceID) {
-      // This should not happen as we reference FFmpeg surfaces from
-      // renderer process.
       if (surface->IsUsedByRenderer()) {
-        NS_WARNING("Using live surfaces, visual glitches ahead!");
+        // A re-output frame (e.g. VP9/AV1 show_existing_frame) re-displays an
+        // already-decoded frame from the reference buffer, so it can carry the
+        // same surface id as a frame the renderer is still using. When the
+        // matched surface is still in use, detach it from this FFmpeg id and
+        // let the caller allocate a fresh surface instead (as
+        // GetFreeVideoFrameSurfaceLocked does).
+        surface->mFFMPEGSurfaceID = sInvalidFFMPEGSurfaceID;
+        return nullptr;
       }
       return surface;
     }

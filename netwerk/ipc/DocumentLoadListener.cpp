@@ -644,6 +644,9 @@ static Result<SessionHistoryEntry*, const char*> ValidateHistoryLoad(
   if (!uriEq(snapshot->GetURI(), aLoadState->URI())) {
     return Err("URI");
   }
+  if (!uriEq(snapshot->GetUnstrippedURI(), aLoadState->GetUnstrippedURI())) {
+    return Err("UnstrippedURI");
+  }
   if (!uriEq(snapshot->GetOriginalURI(), aLoadState->OriginalURI())) {
     return Err("OriginalURI");
   }
@@ -652,9 +655,15 @@ static Result<SessionHistoryEntry*, const char*> ValidateHistoryLoad(
              aLoadState->ResultPrincipalURI())) {
     return Err("ResultPrincipalURI");
   }
-  if (!uriEq(snapshot->GetUnstrippedURI(), aLoadState->GetUnstrippedURI())) {
-    return Err("UnstrippedURI");
+  if (!uriEq(snapshot->GetBaseURI(), aLoadState->BaseURI())) {
+    return Err("BaseURI");
   }
+
+  if (snapshot->GetSrcdocData().valueOr(VoidString()) !=
+      aLoadState->SrcdocData()) {
+    return Err("SrcdocData");
+  }
+
   if (!principalEq(snapshot->GetTriggeringPrincipal(),
                    aLoadState->TriggeringPrincipal())) {
     return Err("TriggeringPrincipal");
@@ -753,7 +762,9 @@ auto DocumentLoadListener::Open(nsDocShellLoadState* aLoadState,
 
   if (aLoadState->GetRemoteTypeOverride()) {
     if (!mIsDocumentLoad || !NS_IsAboutBlank(aLoadState->URI()) ||
-        !loadingContext->IsTopContent()) {
+        !loadingContext->IsTopContent() ||
+        aLoadState->GetEffectiveTriggeringRemoteType() != NOT_REMOTE_TYPE ||
+        aLoadState->LoadIsFromSessionHistory()) {
       LOG(
           ("DocumentLoadListener::Open with invalid remoteTypeOverride "
            "[this=%p]",
@@ -1262,11 +1273,13 @@ bool DocumentLoadListener::SpeculativeLoadInParent(
     nsCOMPtr<nsIRedirectChannelRegistrar> registrar =
         RedirectChannelRegistrar::GetOrCreate();
     uint64_t loadIdentifier = aLoadState->GetLoadIdentifier();
+    // Parent-process speculative load, so the redirect is owned by the
+    // parent process (ContentParentId 0).
     DebugOnly<nsresult> rv =
-        registrar->RegisterChannel(nullptr, loadIdentifier);
+        registrar->RegisterChannel(nullptr, loadIdentifier, 0);
     MOZ_ASSERT(NS_SUCCEEDED(rv));
     // Register listener (as an nsIParentChannel) under our new identifier.
-    rv = registrar->LinkChannels(loadIdentifier, listener, nullptr);
+    rv = registrar->LinkChannels(loadIdentifier, 0, listener, nullptr);
     MOZ_ASSERT(NS_SUCCEEDED(rv));
   }
   return !!promise;
@@ -2197,7 +2210,20 @@ DocumentLoadListener::RedirectToRealChannel(
     chan = vsc->GetInnerChannel();
   }
   mRedirectChannelId = nsContentUtils::GenerateLoadIdentifier();
-  MOZ_ALWAYS_SUCCEEDS(registrar->RegisterChannel(chan, mRedirectChannelId));
+
+  // Bind the registered channel to the content process the redirect is
+  // destined for (0 for the parent process), so only that process can link
+  // its parent channel to it.
+  uint64_t ownerContentParentId = 0;
+  if (aDestinationProcess) {
+    if (ContentParent* destCp = *aDestinationProcess) {
+      ownerContentParentId = destCp->ChildID();
+    }
+  } else if (mContentParent) {
+    ownerContentParentId = mContentParent->ChildID();
+  }
+  MOZ_ALWAYS_SUCCEEDS(registrar->RegisterChannel(chan, mRedirectChannelId,
+                                                 ownerContentParentId));
 
   if (aDestinationProcess) {
     RefPtr<ContentParent> cp = *aDestinationProcess;
@@ -2353,19 +2379,38 @@ void DocumentLoadListener::TriggerRedirectToRealChannel(
     return;
   }
 
-  // Validate that the target process, if specified, would be allowed to load
-  // this principal, and fail the navigation if it would not.
-  // Don't enforce this requirement for silent error loads, as those never
-  // process switch, and should not result in a document being loaded in the
-  // content process.
-  // System principals are allowed for now, as they are used in some edge-cases.
-  if (!silentErrorLoad && contentParent &&
-      !contentParent->ValidatePrincipal(
-          unsandboxedPrincipal, {ValidatePrincipalOptions::AllowSystem})) {
-    ContentParent::LogAndAssertFailedPrincipalValidationInfo(
-        unsandboxedPrincipal, "TriggerRedirectToRealChannel");
-    RedirectToRealChannelFinished(NS_ERROR_FAILURE);
-    return;
+  // Checks related to loads which will complete in a content process.
+  //
+  // These checks are skipped for silent error loads, as those never process
+  // switch, and should not result in a document being loaded in the content
+  // process.
+  if (contentParent && !silentErrorLoad) {
+    nsCOMPtr<nsIURI> docURI;
+    MOZ_ALWAYS_SUCCEEDS(
+        NS_GetFinalChannelURI(mChannel, getter_AddRefs(docURI)));
+
+    // Validate that the target process, if specified, would be allowed to load
+    // this principal, and fail the navigation if it would not.
+    // NOTE: Keep this in sync with the similar check in
+    // BrowserParent::RecvNewWindowGlobal.
+    EnumSet<ValidatePrincipalOptions> validationOptions = {};
+    // FIXME(bug 1699385): Remove allowSystem for blobs
+    // FIXME(bug 1698087): chrome://devtools/**/webextension-fallback.html
+    // Automation-Only: chrome://reftest/** + blank subframes
+    if (docURI->SchemeIs("blob") || docURI->SchemeIs("chrome") ||
+        (xpc::IsInAutomation() && NS_IsAboutBlank(docURI) &&
+         GetParentWindowContext() &&
+         GetParentWindowContext()->Manager()->Manager() == contentParent &&
+         GetParentWindowContext()->DocumentPrincipal()->IsSystemPrincipal())) {
+      validationOptions += ValidatePrincipalOptions::AllowSystem;
+    }
+    if (!contentParent->ValidatePrincipal(unsandboxedPrincipal,
+                                          validationOptions)) {
+      ContentParent::LogAndAssertFailedPrincipalValidationInfo(
+          unsandboxedPrincipal, "TriggerRedirectToRealChannel");
+      RedirectToRealChannelFinished(NS_ERROR_FAILURE);
+      return;
+    }
   }
 
   // Ensure that the BrowsingContextGroup which will finish this load has the

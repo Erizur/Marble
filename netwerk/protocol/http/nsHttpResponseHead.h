@@ -233,7 +233,8 @@ class nsHttpResponseHead {
   // function calls nsIHttpHeaderVisitor::VisitHeader while under lock.
   mutable RecursiveMutex mRecursiveMutex{"nsHttpResponseHead.mRecursiveMutex"};
   // During VisitHeader we sould not allow call to SetHeader.
-  bool mInVisitHeaders MOZ_GUARDED_BY(mRecursiveMutex){false};
+  // Depth counter so nested visits cannot disarm the outer guard.
+  uint32_t mInVisitHeaders MOZ_GUARDED_BY(mRecursiveMutex){0};
 
   friend struct IPC::ParamTraits<nsHttpResponseHead>;
 };

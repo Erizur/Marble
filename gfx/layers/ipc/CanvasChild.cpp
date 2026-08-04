@@ -603,12 +603,21 @@ already_AddRefed<gfx::DataSourceSurface> CanvasChild::GetDataSurface(
   gfx::SurfaceFormat ssFormat = aSurface->GetFormat();
   auto stride = ImageDataSerializer::ComputeRGBStride(ssFormat, ssSize.width);
 
+  size_t sizeRequired =
+      ImageDataSerializer::ComputeRGBBufferSize(ssSize, ssFormat);
+  if (!sizeRequired) {
+    return nullptr;
+  }
+  sizeRequired = ipc::shared_memory::PageAlignedSize(sizeRequired);
+
   // Shmem is only valid if the surface is the latest snapshot (not detached).
   if (!aDetached) {
     // If there is a shmem associated with this snapshot id, then we want to try
-    // use that directly without having to allocate a new shmem for retrieval.
+    // to use that directly instead of allocating a new shmem for retrieval.
+    // Also check that it meets the size required.
     auto it = mTextureInfo.find(aTextureOwnerId);
-    if (it != mTextureInfo.end() && it->second.mSnapshotShmem) {
+    if (it != mTextureInfo.end() && it->second.mSnapshotShmem &&
+        !NS_WARN_IF(sizeRequired > it->second.mSnapshotShmem->Size())) {
       const auto* shmemPtr = it->second.mSnapshotShmem->DataAs<uint8_t>();
       MOZ_ASSERT(shmemPtr);
       mRecorder->RecordEvent(RecordedPrepareShmem(aTextureOwnerId));

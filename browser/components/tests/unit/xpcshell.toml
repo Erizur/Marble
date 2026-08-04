@@ -27,3 +27,5 @@ skip-if = [
 run-sequentially = "very high failure rate in parallel"
 
 ["test_distribution_cachedexistence.js"]
+
+["test_distribution_mozillaonline.js"]

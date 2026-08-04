@@ -202,7 +202,10 @@ class AudioProxyThread {
       mPacket = MakeUnique<int16_t[]>(audio_10ms * aChannels);
     }
 
-    mPacketizer->Input(aAudioData, aFrameCount);
+    // aFrameCount is one graph iteration's worth and the packetizer is drained
+    // to under one packet every call, with channels capped at two (above), so
+    // the queued sample count stays small and Input always succeeds here.
+    MOZ_ALWAYS_TRUE(NS_SUCCEEDED(mPacketizer->Input(aAudioData, aFrameCount)));
 
     while (mPacketizer->PacketsAvailable()) {
       mPacketizer->Output(mPacket.get());

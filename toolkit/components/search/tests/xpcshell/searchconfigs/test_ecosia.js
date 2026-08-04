@@ -5,7 +5,7 @@
 
 const test = new SearchConfigTest({
   identifier: "ecosia",
-  aliases: [],
+  aliases: ["@ecosia"],
   default: {
     // Not default anywhere.
   },

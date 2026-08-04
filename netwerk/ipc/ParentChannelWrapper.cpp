@@ -20,12 +20,13 @@ namespace net {
 NS_IMPL_ISUPPORTS(ParentChannelWrapper, nsIParentChannel, nsIStreamListener,
                   nsIRequestObserver);
 
-void ParentChannelWrapper::Register(uint64_t aRegistrarId) {
+void ParentChannelWrapper::Register(uint64_t aRegistrarId,
+                                    uint64_t aContentParentId) {
   nsCOMPtr<nsIRedirectChannelRegistrar> registrar =
       RedirectChannelRegistrar::GetOrCreate();
   nsCOMPtr<nsIChannel> dummy;
-  MOZ_ALWAYS_SUCCEEDS(
-      NS_LinkRedirectChannels(aRegistrarId, this, getter_AddRefs(dummy)));
+  MOZ_ALWAYS_SUCCEEDS(NS_LinkRedirectChannels(
+      aRegistrarId, aContentParentId, this, getter_AddRefs(dummy)));
 
 #ifdef DEBUG
   // The channel registered with the RedirectChannelRegistrar will be the inner

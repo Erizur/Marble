@@ -151,7 +151,7 @@ class DXInterop2Device : public RefCounted<DXInterop2Device> {
   WGLLibrary* const mWGL;
   const RefPtr<ID3D11Device> mD3D;  // Only needed for lifetime guarantee.
   const HANDLE mInteropDevice;
-  GLContext* const mGL;
+  const WeakPtr<GLContext> mGL;
 
   // AMD workaround.
   const RefPtr<ID3D11DeviceContext1> mD3DContext;
@@ -211,6 +211,10 @@ class DXInterop2Device : public RefCounted<DXInterop2Device> {
         mContextState(contextState) {}
 
   ~DXInterop2Device() {
+    if (!mGL) {
+      return;
+    }
+
     const auto isCurrent = mGL->MakeCurrent();
 
     if (mWGL->mSymbols.fDXCloseDeviceNV(mInteropDevice)) return;
@@ -228,7 +232,9 @@ class DXInterop2Device : public RefCounted<DXInterop2Device> {
 
   HANDLE RegisterObject(void* d3dObject, GLuint name, GLenum type,
                         GLenum access) const {
-    if (!mGL->MakeCurrent()) return nullptr;
+    if (!mGL || !mGL->MakeCurrent()) {
+      return nullptr;
+    }
 
     const ScopedContextState autoCS(mD3DContext, mContextState);
     const auto ret = mWGL->mSymbols.fDXRegisterObjectNV(
@@ -245,6 +251,10 @@ class DXInterop2Device : public RefCounted<DXInterop2Device> {
   }
 
   bool UnregisterObject(HANDLE lockHandle) const {
+    if (!mGL) {
+      return false;
+    }
+
     const auto isCurrent = mGL->MakeCurrent();
 
     const ScopedContextState autoCS(mD3DContext, mContextState);
@@ -264,6 +274,10 @@ class DXInterop2Device : public RefCounted<DXInterop2Device> {
   }
 
   bool LockObject(HANDLE lockHandle) const {
+    if (!mGL) {
+      return false;
+    }
+
     MOZ_ASSERT(mGL->IsCurrent());
 
     if (mWGL->mSymbols.fDXLockObjectsNV(mInteropDevice, 1, &lockHandle))
@@ -287,6 +301,10 @@ class DXInterop2Device : public RefCounted<DXInterop2Device> {
   }
 
   bool UnlockObject(HANDLE lockHandle) const {
+    if (!mGL) {
+      return false;
+    }
+
     MOZ_ASSERT(mGL->IsCurrent());
 
     if (mWGL->mSymbols.fDXUnlockObjectsNV(mInteropDevice, 1, &lockHandle))

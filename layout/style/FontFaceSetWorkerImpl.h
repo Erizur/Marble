@@ -7,6 +7,7 @@
 #ifndef mozilla_dom_FontFaceSetWorkerImpl_h
 #define mozilla_dom_FontFaceSetWorkerImpl_h
 
+#include "mozilla/dom/ClientInfo.h"
 #include "mozilla/dom/FontFaceSetImpl.h"
 
 namespace mozilla::dom {
@@ -61,6 +62,10 @@ class FontFaceSetWorkerImpl final : public FontFaceSetImpl {
   RefPtr<ThreadSafeWorkerRef> mWorkerRef MOZ_GUARDED_BY(mMutex);
 
   RefPtr<URLExtraData> mURLExtraData MOZ_GUARDED_BY(mMutex);
+
+  // Font loads happen on the main thread, but the required ClientInfo is only
+  // accessible on the worker thread.
+  Maybe<ClientInfo> mClientInfo MOZ_GUARDED_BY(mMutex);
 };
 
 }  // namespace mozilla::dom

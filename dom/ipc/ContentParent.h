@@ -175,6 +175,10 @@ class ContentParent final : public PContentParent,
   static void LogAndAssertFailedPrincipalValidationInfo(
       nsIPrincipal* aPrincipal, const char* aMethod);
 
+  static mozilla::ipc::IPCResult PrincipalValidationIpcFail(
+      nsIPrincipal* aPrincipal, mozilla::ipc::IProtocol* aActor,
+      const char* aMethod);
+
   /**
    * Picks a random content parent from |aContentParents| respecting the index
    * limit set by |aMaxContentParents|. If |aBrowserId| is non-zero, that tab
@@ -561,16 +565,6 @@ class ContentParent final : public PContentParent,
       bool aUserActivation, bool aTextDirectiveUserActivation,
       CreateWindowResolver&& aResolve);
 
-  mozilla::ipc::IPCResult RecvCreateWindowInDifferentProcess(
-      PBrowserParent* aThisTab, const MaybeDiscarded<BrowsingContext>& aParent,
-      const uint32_t& aChromeFlags, const bool& aCalledFromJS,
-      const bool& aTopLevelCreatedByWebContent, nsIURI* aURIToLoad,
-      const nsACString& aFeatures, const UserActivation::Modifiers& aModifiers,
-      const nsAString& aName, nsIPrincipal* aTriggeringPrincipal,
-      nsIContentSecurityPolicy* aCsp, nsIReferrerInfo* aReferrerInfo,
-      const OriginAttributes& aOriginAttributes, bool aUserActivation,
-      bool aTextDirectiveUserActivation);
-
   static void BroadcastBlobURLRegistration(
       const nsACString& aURI, BlobImpl* aBlobImpl, nsIPrincipal* aPrincipal,
       const nsCString& aPartitionKey, ContentParent* aIgnoreThisCP = nullptr);
@@ -777,20 +771,18 @@ class ContentParent final : public PContentParent,
   static mozilla::StaticAutoPtr<std::vector<std::string>> sMacSandboxParams;
 #endif
 
-  // Set aLoadUri to true to load aURIToLoad and to false to only create the
-  // window. aURIToLoad should always be provided, if available, to ensure
-  // compatibility with GeckoView.
+  // aURIToLoad should always be provided, if available, to ensure compatibility
+  // with GeckoView.
   mozilla::ipc::IPCResult CommonCreateWindow(
       PBrowserParent* aThisTab, BrowsingContext& aParent, bool aSetOpener,
       const uint32_t& aChromeFlags, const bool& aCalledFromJS,
       const bool& aForPrinting, const bool& aForWindowDotPrint,
       const bool& aIsTopLevelCreatedByWebContent, nsIURI* aURIToLoad,
       const nsACString& aFeatures, const UserActivation::Modifiers& aModifiers,
-      BrowserParent* aNextRemoteBrowser, const nsAString& aName,
-      nsresult& aResult, nsCOMPtr<nsIRemoteTab>& aNewRemoteTab,
-      bool* aWindowIsNew, int32_t& aOpenLocation,
-      nsIPrincipal* aTriggeringPrincipal, nsIReferrerInfo* aReferrerInfo,
-      bool aLoadUri, nsIContentSecurityPolicy* aCsp,
+      BrowserParent* aNextRemoteBrowser, nsresult& aResult,
+      nsCOMPtr<nsIRemoteTab>& aNewRemoteTab, bool* aWindowIsNew,
+      int32_t& aOpenLocation, nsIPrincipal* aTriggeringPrincipal,
+      nsIReferrerInfo* aReferrerInfo, nsIContentSecurityPolicy* aCsp,
       const OriginAttributes& aOriginAttributes, bool aUserActivation,
       bool aTextDirectiveUserActivation);
 
@@ -938,8 +930,8 @@ class ContentParent final : public PContentParent,
       const nsACString& aMimeContentType, const nsACString& aContentDisposition,
       const uint32_t& aContentDispositionHint,
       const nsAString& aContentDispositionFilename, const bool& aForceSave,
-      const int64_t& aContentLength, const bool& aWasFileChannel,
-      nsIURI* aReferrer, const MaybeDiscarded<BrowsingContext>& aContext);
+      const int64_t& aContentLength, nsIURI* aReferrer,
+      const MaybeDiscarded<BrowsingContext>& aContext);
 
   mozilla::ipc::IPCResult RecvPExternalHelperAppConstructor(
       PExternalHelperAppParent* actor, nsIURI* uri,
@@ -947,8 +939,7 @@ class ContentParent final : public PContentParent,
       const nsACString& aContentDisposition,
       const uint32_t& aContentDispositionHint,
       const nsAString& aContentDispositionFilename, const bool& aForceSave,
-      const int64_t& aContentLength, const bool& aWasFileChannel,
-      nsIURI* aReferrer,
+      const int64_t& aContentLength, nsIURI* aReferrer,
       const MaybeDiscarded<BrowsingContext>& aContext) override;
 
   already_AddRefed<PHandlerServiceParent> AllocPHandlerServiceParent();

@@ -17,6 +17,7 @@
 #include "js/Object.h"              // JS::GetBuiltinClass
 #include "js/PropertyAndElement.h"  // JS_DefineElement, JS_GetProperty, JS_GetPropertyById, JS_HasOwnProperty, JS_HasOwnPropertyById
 #include "js/Value.h"
+#include "jsapi.h"
 #include "jsfriendapi.h"
 #include "mozilla/Casting.h"
 #include "mozilla/CheckedInt.h"
@@ -518,7 +519,7 @@ nsresult Key::DecodeJSValInternal(const EncodedDataType*& aPos,
 
     aVal.setObject(*date);
   } else if (*aPos - aTypeOffset == eFloat) {
-    aVal.setDouble(DecodeNumber(aPos, aEnd));
+    aVal.set(JS_NumberValue(DecodeNumber(aPos, aEnd)));
   } else if (*aPos - aTypeOffset == eBinary) {
     JSObject* arrayBufferObject = DecodeBinary(aPos, aEnd, aCx);
     if (!arrayBufferObject) {
