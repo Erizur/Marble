@@ -531,7 +531,6 @@ toolbar:not(#TabsToolbar) > #personal-bookmarks {
 
 #managed-bookmarks > .toolbarbutton-icon,
 #bookmarks-toolbar-placeholder > .toolbarbutton-icon,
-#PlacesToolbarItems > .bookmark-item > .toolbarbutton-icon[label]:not([label=""]),
 #PersonalToolbar #import-button > .toolbarbutton-icon,
 #PersonalToolbar #aboutwelcome-button > .toolbarbutton-icon,
 #PersonalToolbar #fxms-bmb-button > .toolbarbutton-icon,
