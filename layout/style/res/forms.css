@@ -101,6 +101,7 @@ textarea {
   display: inline-block;
   appearance: auto;
   -moz-default-appearance: textarea;
+  margin-block: 1px;
   border: 2px inset ButtonBorder;
   padding: 2px;
   background-color: Field;

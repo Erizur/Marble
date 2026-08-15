@@ -5,7 +5,12 @@
 .v-rl { writing-mode: vertical-rl; }
 .ltr, .rtl, .v-rl { border: 1px solid blue; }
 
-textarea {
+.ltr textarea, .rtl textarea {
+  margin: 1px 0;
+  padding: 2px;
+}
+.v-rl textarea {
+  margin: 0 1px;
   padding: 2px;
 }
 </style>
