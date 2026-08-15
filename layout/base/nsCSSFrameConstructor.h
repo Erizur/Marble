@@ -1682,7 +1682,8 @@ class nsCSSFrameConstructor final : public nsFrameManager {
   already_AddRefed<ComputedStyle> BeginBuildingScrollContainerFrame(
       nsFrameConstructorState& aState, nsIContent* aContent,
       ComputedStyle* aContentStyle, nsContainerFrame* aParentFrame,
-      bool aIsRoot, nsContainerFrame*& aNewFrame);
+      mozilla::PseudoStyleType aScrolledPseudo, bool aIsRoot,
+      nsContainerFrame*& aNewFrame);
 
   // Completes the building of the scroll container frame.
   // Creates a view for the scrolledframe and makes it the child of the

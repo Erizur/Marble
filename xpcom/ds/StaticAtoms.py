@@ -2631,6 +2631,7 @@ STATIC_ATOMS = [
     Atom("PseudoStyle_MozCanvas", ":-moz-canvas"),
     Atom("PseudoStyle_MozPageSequence", ":-moz-page-sequence"),
     Atom("PseudoStyle_MozScrolledContent", ":-moz-scrolled-content"),
+    Atom("PseudoStyle_MozScrolledCanvas", ":-moz-scrolled-canvas"),
     Atom("PseudoStyle_MozColumnSet", ":-moz-column-set"),
     Atom("PseudoStyle_MozColumnContent", ":-moz-column-content"),
     Atom("PseudoStyle_MozViewport", ":-moz-viewport"),

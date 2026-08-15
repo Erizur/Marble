@@ -32,8 +32,13 @@ namespace mozilla {
 namespace {
 
 bool IsScrolled(const nsIFrame* aFrame) {
-  return aFrame->Style()->GetPseudoType() ==
-         PseudoStyleType::MozScrolledContent;
+  switch (aFrame->Style()->GetPseudoType()) {
+    case PseudoStyleType::MozScrolledContent:
+    case PseudoStyleType::MozScrolledCanvas:
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool DoTreeScopedPropertiesOfElementApplyToContent(

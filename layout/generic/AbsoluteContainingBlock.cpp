@@ -431,15 +431,22 @@ static AnchorPosResolutionCache PopulateAnchorResolutionCache(
 static nsRect ComputeScrollableContainingBlock(
     const nsContainerFrame* aDelegatingFrame, const nsRect& aContainingBlock,
     const OverflowAreas* aOverflowAreas) {
-  if (aOverflowAreas && aDelegatingFrame->Style()->GetPseudoType() ==
-                            PseudoStyleType::MozScrolledContent) {
-    // FIXME(bug 2004432): This is close enough to what we want. In practice
-    // we don't want to account for relative positioning and so on, but this
-    // seems good enough for now.
-    ScrollContainerFrame* sf = do_QueryFrame(aDelegatingFrame->GetParent());
-    // Clamp to the scrollable range.
-    return sf->GetUnsnappedScrolledRectInternal(
-        aOverflowAreas->ScrollableOverflow(), aContainingBlock.Size());
+  switch (aDelegatingFrame->Style()->GetPseudoType()) {
+    case PseudoStyleType::MozScrolledContent:
+    case PseudoStyleType::MozScrolledCanvas: {
+      if (!aOverflowAreas) {
+        break;
+      }
+      // FIXME(bug 2004432): This is close enough to what we want. In practice
+      // we don't want to account for relative positioning and so on, but this
+      // seems good enough for now.
+      ScrollContainerFrame* sf = do_QueryFrame(aDelegatingFrame->GetParent());
+      // Clamp to the scrollable range.
+      return sf->GetUnsnappedScrolledRectInternal(
+          aOverflowAreas->ScrollableOverflow(), aContainingBlock.Size());
+    }
+    default:
+      break;
   }
   return aContainingBlock;
 }

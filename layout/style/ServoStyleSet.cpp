@@ -563,6 +563,14 @@ ServoStyleSet::ResolveNonInheritingAnonymousBoxStyle(PseudoStyleType aType) {
   }
 
   UpdateStylistIfNeeded();
+
+  // We always want to skip parent-based display fixup here.  It never makes
+  // sense for non-inheriting anonymous boxes.  (Static assertions in
+  // nsCSSAnonBoxes.cpp ensure that all non-inheriting non-anonymous boxes
+  // are indeed annotated as skipping this fixup.)
+  MOZ_ASSERT(!PseudoStyle::IsNonInheritingAnonBox(PseudoStyleType::MozViewport),
+             "viewport needs fixup to handle blockifying it");
+
   RefPtr<ComputedStyle> computedValues =
       Servo_ComputedValues_GetForAnonymousBox(nullptr, aType, mRawData.get())
           .Consume();

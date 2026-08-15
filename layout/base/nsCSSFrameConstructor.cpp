@@ -2251,7 +2251,8 @@ nsIFrame* nsCSSFrameConstructor::ConstructTableCell(
                    StaticPrefs::layout_tables_scrollable_cells();
     if (isScrollable) {
       innerPseudoStyle = BeginBuildingScrollContainerFrame(
-          aState, content, innerPseudoStyle, cellFrame, false, scrollFrame);
+          aState, content, innerPseudoStyle, cellFrame,
+          PseudoStyleType::MozScrolledContent, false, scrollFrame);
     }
     cellInnerFrame = NS_NewBlockFrame(mPresShell, innerPseudoStyle);
   }
@@ -2332,6 +2333,17 @@ nsIFrame* nsCSSFrameConstructor::ConstructDocElementFrame(
              "No viewport?  Someone forgot to call ConstructRootFrame!");
   MOZ_ASSERT(!mDocElementContainingBlock,
              "Shouldn't have a doc element containing block here");
+
+  // Resolve a new style for the viewport since it may be affected by a new root
+  // element style (e.g. a propagated 'direction').
+  //
+  // @see ComputedStyle::ApplyStyleFixups
+  {
+    RefPtr<ComputedStyle> sc =
+        mPresShell->StyleSet()->ResolveInheritingAnonymousBoxStyle(
+            PseudoStyleType::MozViewport, nullptr);
+    GetRootFrame()->SetComputedStyleWithoutNotification(sc);
+  }
 
   // Ensure the document element is styled at this point.
   // FIXME(emilio, bug 1852735): This is only needed because of the sync frame
@@ -2605,8 +2617,8 @@ ViewportFrame* nsCSSFrameConstructor::ConstructRootFrame() {
 
   // --------- BUILD VIEWPORT -----------
   RefPtr<ComputedStyle> viewportPseudoStyle =
-      styleSet->ResolveNonInheritingAnonymousBoxStyle(
-          PseudoStyleType::MozViewport);
+      styleSet->ResolveInheritingAnonymousBoxStyle(PseudoStyleType::MozViewport,
+                                                   nullptr);
   ViewportFrame* viewportFrame =
       NS_NewViewportFrame(mPresShell, viewportPseudoStyle);
 
@@ -2729,6 +2741,7 @@ void nsCSSFrameConstructor::SetUpDocElementContainingBlock(
 
   nsCanvasFrame* rootCanvasFrame =
       NS_NewCanvasFrame(mPresShell, viewportPseudoStyle);
+  PseudoStyleType rootPseudo = PseudoStyleType::MozCanvas;
   mCanvasFrame = rootCanvasFrame;
   mDocElementContainingBlock = rootCanvasFrame;
 
@@ -2757,22 +2770,32 @@ void nsCSSFrameConstructor::SetUpDocElementContainingBlock(
   ServoStyleSet* styleSet = mPresShell->StyleSet();
   // If paginated, make sure we don't put scrollbars in
   if (!isScrollable) {
-    rootPseudoStyle = styleSet->ResolveNonInheritingAnonymousBoxStyle(
-        PseudoStyleType::MozCanvas);
+    rootPseudoStyle = styleSet->ResolveInheritingAnonymousBoxStyle(
+        rootPseudo, viewportPseudoStyle);
   } else {
+    rootPseudo = PseudoStyleType::MozScrolledCanvas;
+
     // Build the frame. We give it the content we are wrapping which is the
     // document element, the root frame, the parent view port frame, and we
     // should get back the new frame and the scrollable view if one was
     // created.
 
-    // Resolve a style for the scrollframe
+    // resolve a context for the scrollframe
     RefPtr<ComputedStyle> computedStyle =
-        styleSet->ResolveNonInheritingAnonymousBoxStyle(
-            PseudoStyleType::MozViewportScroll);
+        styleSet->ResolveInheritingAnonymousBoxStyle(
+            PseudoStyleType::MozViewportScroll, viewportPseudoStyle);
 
+    // Note that the viewport scrollframe is always built with
+    // overflow:auto style. This forces the scroll frame to create
+    // anonymous content for both scrollbars. This is necessary even
+    // if the HTML or BODY elements are overriding the viewport
+    // scroll style to 'hidden' --- dynamic style changes might put
+    // scrollbars back on the viewport and we don't want to have to
+    // reframe the viewport to create the scrollbar content.
     newFrame = nullptr;
     rootPseudoStyle = BeginBuildingScrollContainerFrame(
-        state, aDocElement, computedStyle, viewportFrame, true, newFrame);
+        state, aDocElement, computedStyle, viewportFrame, rootPseudo, true,
+        newFrame);
     parentFrame = newFrame;
   }
 
@@ -2931,8 +2954,9 @@ nsContainerFrame* nsCSSFrameConstructor::ConstructPageFrame(
   SetInitialSingleChild(pageFrame, pageContentFrame);
 
   RefPtr<ComputedStyle> canvasPseudoStyle =
-      styleSet->ResolveNonInheritingAnonymousBoxStyle(
-          PseudoStyleType::MozCanvas);
+      styleSet->ResolveInheritingAnonymousBoxStyle(PseudoStyleType::MozCanvas,
+                                                   pageContentPseudoStyle);
+
   aCanvasFrame = NS_NewCanvasFrame(aPresShell, canvasPseudoStyle);
 
   nsIFrame* prevCanvasFrame = nullptr;
@@ -3068,9 +3092,9 @@ nsIFrame* nsCSSFrameConstructor::ConstructFieldSetFrame(
   const bool isScrollable = fieldsetContentDisplay->IsScrollableOverflow();
   nsContainerFrame* scrollFrame = nullptr;
   if (isScrollable) {
-    fieldsetContentStyle =
-        BeginBuildingScrollContainerFrame(aState, content, fieldsetContentStyle,
-                                          fieldsetFrame, false, scrollFrame);
+    fieldsetContentStyle = BeginBuildingScrollContainerFrame(
+        aState, content, fieldsetContentStyle, fieldsetFrame,
+        PseudoStyleType::MozScrolledContent, false, scrollFrame);
   }
 
   // Create the inner ::-moz-fieldset-content frame.
@@ -4063,7 +4087,8 @@ nsCSSFrameConstructor::FindXULLabelOrDescriptionData(const Element& aElement,
 already_AddRefed<ComputedStyle>
 nsCSSFrameConstructor::BeginBuildingScrollContainerFrame(
     nsFrameConstructorState& aState, nsIContent* aContent,
-    ComputedStyle* aContentStyle, nsContainerFrame* aParentFrame, bool aIsRoot,
+    ComputedStyle* aContentStyle, nsContainerFrame* aParentFrame,
+    PseudoStyleType aScrolledPseudo, bool aIsRoot,
     nsContainerFrame*& aNewFrame) {
   nsContainerFrame* scrollContainerFrame = aNewFrame;
 
@@ -4105,8 +4130,8 @@ nsCSSFrameConstructor::BeginBuildingScrollContainerFrame(
   // we used the style that was passed in. So resolve another one.
   ServoStyleSet* styleSet = mPresShell->StyleSet();
   RefPtr<ComputedStyle> scrolledChildStyle =
-      styleSet->ResolveInheritingAnonymousBoxStyle(
-          PseudoStyleType::MozScrolledContent, aContentStyle);
+      styleSet->ResolveInheritingAnonymousBoxStyle(aScrolledPseudo,
+                                                   aContentStyle);
 
   scrollContainerFrame->SetInitialChildList(FrameChildListID::Principal,
                                             std::move(anonymousList));
@@ -4125,8 +4150,9 @@ void nsCSSFrameConstructor::BuildScrollContainerFrame(
     ComputedStyle* aContentStyle, nsIFrame* aScrolledFrame,
     nsContainerFrame* aParentFrame, nsContainerFrame*& aNewFrame) {
   RefPtr<ComputedStyle> scrolledContentStyle =
-      BeginBuildingScrollContainerFrame(aState, aContent, aContentStyle,
-                                        aParentFrame, false, aNewFrame);
+      BeginBuildingScrollContainerFrame(
+          aState, aContent, aContentStyle, aParentFrame,
+          PseudoStyleType::MozScrolledContent, false, aNewFrame);
 
   aScrolledFrame->SetComputedStyleWithoutNotification(scrolledContentStyle);
   InitAndRestoreFrame(aState, aContent, aNewFrame, aScrolledFrame);
@@ -4344,7 +4370,8 @@ void nsCSSFrameConstructor::ConstructScrollableBlockWithScrollContainer(
   RefPtr<ComputedStyle> scrolledContentStyle =
       BeginBuildingScrollContainerFrame(
           aState, content, computedStyle,
-          aState.GetGeometricParent(*aDisplay, aParentFrame), false, aNewFrame);
+          aState.GetGeometricParent(*aDisplay, aParentFrame),
+          PseudoStyleType::MozScrolledContent, false, aNewFrame);
 
   // Create our block frame
   // pass a temporary stylecontext, the correct one will be set later
