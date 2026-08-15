@@ -265,9 +265,17 @@ XULRadioButtonAccessible::XULRadioButtonAccessible(nsIContent* aContent,
 uint64_t XULRadioButtonAccessible::NativeState() const {
   uint64_t state = LeafAccessible::NativeState();
   state |= states::CHECKABLE;
-  if (Elm()->State().HasState(dom::ElementState::CHECKED)) {
-    state |= states::CHECKED;
+
+  nsCOMPtr<nsIDOMXULSelectControlItemElement> radioButton =
+      Elm()->AsXULSelectControlItem();
+  if (radioButton) {
+    bool selected = false;  // Radio buttons can be selected
+    radioButton->GetSelected(&selected);
+    if (selected) {
+      state |= states::CHECKED;
+    }
   }
+
   return state;
 }
 

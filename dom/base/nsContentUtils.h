@@ -3622,6 +3622,22 @@ class nsContentUtils {
    */
   static void RequestGeckoTaskBurst();
 
+  static void SetMayHaveFormCheckboxStateChangeListeners() {
+    sMayHaveFormCheckboxStateChangeListeners = true;
+  }
+
+  static bool MayHaveFormCheckboxStateChangeListeners() {
+    return sMayHaveFormCheckboxStateChangeListeners;
+  }
+
+  static void SetMayHaveFormRadioStateChangeListeners() {
+    sMayHaveFormRadioStateChangeListeners = true;
+  }
+
+  static bool MayHaveFormRadioStateChangeListeners() {
+    return sMayHaveFormRadioStateChangeListeners;
+  }
+
   /**
    * Returns the closest link element in the flat tree of aContent if there's
    * one, otherwise returns nullptr.
@@ -3832,6 +3848,9 @@ class nsContentUtils {
 
   static int32_t sInnerOrOuterWindowCount;
   static uint32_t sInnerOrOuterWindowSerialCounter;
+
+  static bool sMayHaveFormCheckboxStateChangeListeners;
+  static bool sMayHaveFormRadioStateChangeListeners;
 };
 
 /* static */ inline ExtContentPolicyType

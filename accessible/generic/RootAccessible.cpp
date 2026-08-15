@@ -130,7 +130,13 @@ const char* const kEventTypes[] = {
     "ValueChange", "AlertActive", "TreeRowCountChanged", "TreeInvalidated",
     // add ourself as a OpenStateChange listener (custom event fired in
     // tree.xml)
-    "OpenStateChange", "popupshown", "popuphiding", "DOMMenuInactive",
+    "OpenStateChange",
+    // add ourself as a CheckboxStateChange listener (custom event fired in
+    // HTMLInputElement.cpp)
+    "CheckboxStateChange",
+    // add ourself as a RadioStateChange Listener (custom event fired in in
+    // HTMLInputElement.cpp & radio.js)
+    "RadioStateChange", "popupshown", "popuphiding", "DOMMenuInactive",
     "DOMMenuItemActive", "DOMMenuItemInactive", "DOMMenuBarActive",
     "DOMMenuBarInactive", "scroll", "DOMTitleChanged"};
 
@@ -308,6 +314,41 @@ void RootAccessible::ProcessDOMEvent(Event* aDOMEvent, nsINode* aTarget) {
       return;
     }
   }
+
+  if (eventType.EqualsLiteral("RadioStateChange")) {
+    uint64_t state = accessible->State();
+    bool isEnabled = (state & (states::CHECKED | states::SELECTED)) != 0;
+
+    if (accessible->NeedsDOMUIEvent()) {
+      RefPtr<AccEvent> accEvent =
+          new AccStateChangeEvent(accessible, states::CHECKED, isEnabled);
+      nsEventShell::FireEvent(accEvent);
+    }
+
+    if (isEnabled) {
+      FocusMgr()->ActiveItemChanged(accessible);
+#ifdef A11Y_LOG
+      if (logging::IsEnabled(logging::eFocus)) {
+        logging::ActiveItemChangeCausedBy("RadioStateChange", accessible);
+      }
+#endif
+    }
+
+    return;
+  }
+
+  if (eventType.EqualsLiteral("CheckboxStateChange")) {
+    if (accessible->NeedsDOMUIEvent()) {
+      uint64_t state = accessible->State();
+      bool isEnabled = !!(state & states::CHECKED);
+
+      RefPtr<AccEvent> accEvent =
+          new AccStateChangeEvent(accessible, states::CHECKED, isEnabled);
+      nsEventShell::FireEvent(accEvent);
+    }
+    return;
+  }
+
   LocalAccessible* treeItemAcc = nullptr;
   // If it's a tree element, need the currently selected item.
   if (treeAcc) {
