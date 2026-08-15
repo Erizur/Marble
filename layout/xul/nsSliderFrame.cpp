@@ -1343,6 +1343,7 @@ void nsSliderFrame::PageScroll(bool aClickAndHold) {
   }
 
   if (nsIScrollbarMediator* m = sb->GetScrollbarMediator()) {
+    sb->SetButtonScrollDirectionAndUnit(changeDirection, ScrollUnit::PAGES);
     m->ScrollByPage(sb, changeDirection, scrollSnapFlags);
   }
 }
