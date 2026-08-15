@@ -1,3 +1,5 @@
+<!-- -*- mode: Markdown; fill-column: 72; -*- -->
+
 (layout-overview)=
 
 # Layout Overview
