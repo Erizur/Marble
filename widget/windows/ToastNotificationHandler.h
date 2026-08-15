@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef ToastNotificationHandler_h_
-#define ToastNotificationHandler_h_
+#ifndef ToastNotificationHandler_h__
+#define ToastNotificationHandler_h__
 
 #include <windows.ui.notifications.h>
 #include <windows.data.xml.dom.h>

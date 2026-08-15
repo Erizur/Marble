@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsGUIEventIPC_h_
-#define nsGUIEventIPC_h_
+#ifndef nsGUIEventIPC_h__
+#define nsGUIEventIPC_h__
 
 #include <fmt/format.h>
 
@@ -1596,4 +1596,4 @@ struct ParamTraits<mozilla::KeyboardInput> {
 
 }  // namespace IPC
 
-#endif  // nsGUIEventIPC_h_
+#endif  // nsGUIEventIPC_h__

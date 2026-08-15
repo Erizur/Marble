@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsBaseFilePicker_h_
-#define nsBaseFilePicker_h_
+#ifndef nsBaseFilePicker_h__
+#define nsBaseFilePicker_h__
 
 #include "mozilla/TimeStamp.h"
 #include "nsISupports.h"
@@ -103,4 +103,4 @@ class nsBaseFilePicker : public nsIFilePicker {
   mozilla::TimeStamp mShowTime;
 };
 
-#endif  // nsBaseFilePicker_h_
+#endif  // nsBaseFilePicker_h__

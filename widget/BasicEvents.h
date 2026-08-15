@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef mozilla_BasicEvents_h_
-#define mozilla_BasicEvents_h_
+#ifndef mozilla_BasicEvents_h__
+#define mozilla_BasicEvents_h__
 
 #include <stdint.h>
 
@@ -1480,4 +1480,4 @@ class InternalUIEvent : public WidgetGUIEvent {
 
 }  // namespace mozilla
 
-#endif  // mozilla_BasicEvents_h_
+#endif  // mozilla_BasicEvents_h__

@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _nsBidiKeyboard
-#define _nsBidiKeyboard
+#ifndef __nsBidiKeyboard
+#define __nsBidiKeyboard
 #include "nsIBidiKeyboard.h"
 
 class nsBidiKeyboard : public nsIBidiKeyboard {
@@ -22,4 +22,4 @@ class nsBidiKeyboard : public nsIBidiKeyboard {
   bool mHaveBidiKeyboards;
 };
 
-#endif  // _nsBidiKeyboard
+#endif  // __nsBidiKeyboard

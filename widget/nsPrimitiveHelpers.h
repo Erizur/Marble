@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsPrimitiveHelpers_h_
-#define nsPrimitiveHelpers_h_
+#ifndef nsPrimitiveHelpers_h___
+#define nsPrimitiveHelpers_h___
 
 #include "nsError.h"
 #include "nscore.h"
@@ -51,4 +51,4 @@ class nsLinebreakHelpers {
 
 };  // class nsLinebreakHelpers
 
-#endif  // nsPrimitiveHelpers_h_
+#endif  // nsPrimitiveHelpers_h___

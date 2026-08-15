@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef WinGesture_h_
-#define WinGesture_h_
+#ifndef WinGesture_h__
+#define WinGesture_h__
 
 /*
  * nsWinGesture - Touch input handling for tablet displays.
@@ -88,4 +88,4 @@ class nsWinGesture {
   double mRotateIntermediate;
 };
 
-#endif /* WinGesture_h_ */
+#endif /* WinGesture_h__ */

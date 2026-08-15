@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _nsSound_h_
-#define _nsSound_h_
+#ifndef __nsSound_h__
+#define __nsSound_h__
 
 #include "nsISound.h"
 #include "nsIObserver.h"
@@ -41,4 +41,4 @@ class nsSound : public nsISound,
   static mozilla::StaticRefPtr<nsISound> sInstance;
 };
 
-#endif /* _nsSound_h_ */
+#endif /* __nsSound_h__ */

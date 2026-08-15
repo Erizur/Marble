@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef MOZ_CONTAINER_H_
-#define MOZ_CONTAINER_H_
+#ifndef __MOZ_CONTAINER_H__
+#define __MOZ_CONTAINER_H__
 
 #ifdef MOZ_WAYLAND
 #  include "mozilla/widget/MozContainerWayland.h"
@@ -83,4 +83,4 @@ GtkWidget* moz_container_entry_set(MozContainer* container, GtkWidget* widget);
 void moz_container_entry_position(MozContainer* container, int x, int y,
                                   int height);
 
-#endif /* MOZ_CONTAINER_H_ */
+#endif /* __MOZ_CONTAINER_H__ */

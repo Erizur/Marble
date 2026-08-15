@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef MOZ_CONTAINER_WAYLAND_H_
-#define MOZ_CONTAINER_WAYLAND_H_
+#ifndef __MOZ_CONTAINER_WAYLAND_H__
+#define __MOZ_CONTAINER_WAYLAND_H__
 
 #include <gtk/gtk.h>
 #include "mozilla/Mutex.h"
@@ -51,4 +51,4 @@ void moz_container_wayland_unmap(GtkWidget*);
 wl_surface* moz_gtk_widget_get_wl_surface(GtkWidget* aWidget);
 double moz_container_wayland_get_scale(MozContainer* container);
 
-#endif /* MOZ_CONTAINER_WAYLAND_H_ */
+#endif /* __MOZ_CONTAINER_WAYLAND_H__ */

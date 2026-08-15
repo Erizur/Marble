@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef WakeLockListener_h_
-#define WakeLockListener_h_
+#ifndef __WakeLockListener_h__
+#define __WakeLockListener_h__
 
 #include "nsHashKeys.h"
 #include "nsRefPtrHashtable.h"
@@ -37,4 +37,4 @@ class WakeLockListener final : public nsIDOMMozWakeLockListener {
   nsRefPtrHashtable<nsStringHashKey, WakeLockTopic> mBackgroundTopics;
 };
 
-#endif  // WakeLockListener_h_
+#endif  // __WakeLockListener_h__

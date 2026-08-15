@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef widget_windows_filedialog_WinFileDialogCommands_h_
-#define widget_windows_filedialog_WinFileDialogCommands_h_
+#ifndef widget_windows_filedialog_WinFileDialogCommands_h__
+#define widget_windows_filedialog_WinFileDialogCommands_h__
 
 #include "ipc/EnumSerializer.h"
 #include "mozilla/Logging.h"
@@ -284,4 +284,4 @@ struct ParamTraits<mozilla::widget::filedialog::FileDialogType>
           mozilla::widget::filedialog::FileDialogType::Save> {};
 }  // namespace IPC
 
-#endif  // widget_windows_filedialog_WinFileDialogCommands_h_
+#endif  // widget_windows_filedialog_WinFileDialogCommands_h__

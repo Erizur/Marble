@@ -9,8 +9,8 @@
    wayland-1.2 and Gtk+ 3.10.
 */
 
-#ifndef MozWayland_h_
-#define MozWayland_h_
+#ifndef __MozWayland_h_
+#define __MozWayland_h_
 
 #include "mozilla/Types.h"
 #include <gtk/gtk.h>
@@ -729,4 +729,4 @@ static inline void wl_output_release(struct wl_output* wl_output) {
 }
 #endif
 
-#endif /* MozWayland_h_ */
+#endif /* __MozWayland_h_ */

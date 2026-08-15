@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsTransferable_h_
-#define nsTransferable_h_
+#ifndef nsTransferable_h__
+#define nsTransferable_h__
 
 #include "nsICookieJarSettings.h"
 #include "nsIFormatConverter.h"
@@ -88,4 +88,4 @@ class nsTransferable : public nsITransferable {
 #endif
 };
 
-#endif  // nsTransferable_h_
+#endif  // nsTransferable_h__

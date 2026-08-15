@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsBaseClipboard_h_
-#define nsBaseClipboard_h_
+#ifndef nsBaseClipboard_h__
+#define nsBaseClipboard_h__
 
 #include "mozilla/Array.h"
 #include "mozilla/dom/PContent.h"
@@ -282,4 +282,4 @@ class nsBaseClipboard : public nsIClipboard {
   bool mIgnoreEmptyNotification = false;
 };
 
-#endif  // nsBaseClipboard_h_
+#endif  // nsBaseClipboard_h__

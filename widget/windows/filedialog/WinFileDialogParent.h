@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef widget_windows_filedialog_WinFileDialogParent_h_
-#define widget_windows_filedialog_WinFileDialogParent_h_
+#ifndef widget_windows_filedialog_WinFileDialogParent_h__
+#define widget_windows_filedialog_WinFileDialogParent_h__
 
 #include "mozilla/Maybe.h"
 #include "mozilla/MozPromise.h"
@@ -100,4 +100,4 @@ class ProcessProxy {
 
 }  // namespace mozilla::widget::filedialog
 
-#endif  // widget_windows_filedialog_WinFileDialogParent_h_
+#endif  // widget_windows_filedialog_WinFileDialogParent_h__

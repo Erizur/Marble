@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _mozilla_WindowHook_h_
-#define _mozilla_WindowHook_h_
+#ifndef __mozilla_WindowHook_h__
+#define __mozilla_WindowHook_h__
 
 #include <windows.h>
 
@@ -73,4 +73,4 @@ class WindowHook {
 }  // namespace widget
 }  // namespace mozilla
 
-#endif  // _mozilla_WindowHook_h_
+#endif  // __mozilla_WindowHook_h__

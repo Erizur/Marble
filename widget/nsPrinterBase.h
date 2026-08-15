@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsPrinterBase_h_
-#define nsPrinterBase_h_
+#ifndef nsPrinterBase_h__
+#define nsPrinterBase_h__
 
 #include "mozilla/gfx/Rect.h"
 #include "nsIPrinter.h"

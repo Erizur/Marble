@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef GTK_NSNATIVETHEMEGTK_H_
-#define GTK_NSNATIVETHEMEGTK_H_
+#ifndef _GTK_NSNATIVETHEMEGTK_H_
+#define _GTK_NSNATIVETHEMEGTK_H_
 
 #include "Theme.h"
 

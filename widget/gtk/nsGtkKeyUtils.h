@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _nsGdkKeyUtils_h_
-#define _nsGdkKeyUtils_h_
+#ifndef __nsGdkKeyUtils_h__
+#define __nsGdkKeyUtils_h__
 
 #include "mozilla/EventForwards.h"
 #include "nsIWidget.h"
@@ -543,4 +543,4 @@ class KeymapWrapper {
 }  // namespace widget
 }  // namespace mozilla
 
-#endif /* _nsGdkKeyUtils_h_ */
+#endif /* __nsGdkKeyUtils_h__ */

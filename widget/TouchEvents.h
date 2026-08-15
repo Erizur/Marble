@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef mozilla_TouchEvents_h_
-#define mozilla_TouchEvents_h_
+#ifndef mozilla_TouchEvents_h__
+#define mozilla_TouchEvents_h__
 
 #include <stdint.h>
 
@@ -259,4 +259,4 @@ class WidgetTouchEvent final : public WidgetInputEvent {
 
 }  // namespace mozilla
 
-#endif  // mozilla_TouchEvents_h_
+#endif  // mozilla_TouchEvents_h__

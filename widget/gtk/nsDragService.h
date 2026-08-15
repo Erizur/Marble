@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef nsDragService_h_
-#define nsDragService_h_
+#ifndef nsDragService_h__
+#define nsDragService_h__
 
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
@@ -388,4 +388,4 @@ class nsDragService : public nsBaseDragService {
 #endif
 };
 
-#endif  // nsDragService_h_
+#endif  // nsDragService_h__

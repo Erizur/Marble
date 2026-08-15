@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef MOZILLA_WIDGET_GTK_WAYLAND_BUFFER_H
-#define MOZILLA_WIDGET_GTK_WAYLAND_BUFFER_H
+#ifndef _MOZILLA_WIDGET_GTK_WAYLAND_BUFFER_H
+#define _MOZILLA_WIDGET_GTK_WAYLAND_BUFFER_H
 
 #include "DMABufSurface.h"
 #include "GLContext.h"
@@ -236,4 +236,4 @@ class BufferTransaction {
 
 }  // namespace mozilla::widget
 
-#endif  // MOZILLA_WIDGET_GTK_WAYLAND_BUFFER_H
+#endif  // _MOZILLA_WIDGET_GTK_WAYLAND_BUFFER_H

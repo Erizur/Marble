@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _mozilla_widget_GfxDriverInfo_h_
-#define _mozilla_widget_GfxDriverInfo_h_
+#ifndef __mozilla_widget_GfxDriverInfo_h__
+#define __mozilla_widget_GfxDriverInfo_h__
 
 #include "nsString.h"
 #include "nsTArray.h"
@@ -588,4 +588,4 @@ inline bool ParseDriverVersion(const nsAString& aVersion,
 }  // namespace widget
 }  // namespace mozilla
 
-#endif /*_mozilla_widget_GfxDriverInfo_h_ */
+#endif /*__mozilla_widget_GfxDriverInfo_h__ */

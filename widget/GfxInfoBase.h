@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _mozilla_widget_GfxInfoBase_h_
-#define _mozilla_widget_GfxInfoBase_h_
+#ifndef __mozilla_widget_GfxInfoBase_h__
+#define __mozilla_widget_GfxInfoBase_h__
 
 #include "GfxDriverInfo.h"
 #include "GfxInfoCollector.h"
@@ -256,4 +256,4 @@ class GfxInfoBase : public nsIGfxInfo,
 }  // namespace widget
 }  // namespace mozilla
 
-#endif /* _mozilla_widget_GfxInfoBase_h_ */
+#endif /* __mozilla_widget_GfxInfoBase_h__ */

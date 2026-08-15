@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef WinPointerEvents_h_
-#define WinPointerEvents_h_
+#ifndef WinPointerEvents_h__
+#define WinPointerEvents_h__
 
 #include "mozilla/MouseEvents.h"
 #include "touchinjection_sdk80.h"
@@ -74,4 +74,4 @@ class WinPointerEvents final {
   WinPointerInfo mPenPointerUpdateInfo;
 };
 
-#endif  // #ifndef WinPointerEvents_h_
+#endif  // #ifndef WinPointerEvents_h__
