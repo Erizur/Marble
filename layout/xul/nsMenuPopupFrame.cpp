@@ -184,10 +184,20 @@ void nsMenuPopupFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
     mPopupType = PopupType::Tooltip;
   }
 
-  // Support escapecontentshell attribute to allow popups to be displayed
-  // outside of the content shell.
-  mInContentShell = !PresContext()->IsChrome() &&
-                    !el.GetBoolAttr(nsGkAtoms::escapecontentshell);
+  if (PresContext()->IsChrome()) {
+    mInContentShell = false;
+  }
+
+  // Support incontentshell=false attribute to allow popups to be displayed
+  // outside of the content shell. Chrome only.
+  if (el.NodePrincipal()->IsSystemPrincipal()) {
+    if (el.GetXULBoolAttr(nsGkAtoms::incontentshell)) {
+      mInContentShell = true;
+    } else if (el.AttrValueIs(kNameSpaceID_None, nsGkAtoms::incontentshell,
+                              nsGkAtoms::_false, eCaseMatters)) {
+      mInContentShell = false;
+    }
+  }
 
   // To improve performance, create the widget for the popup if needed. Popups
   // such as menus will create their widgets later when the popup opens.

@@ -1774,7 +1774,8 @@ void nsXULPopupManager::BeginShowingPopup(const PendingPopup& aPendingPopup,
   // Using noautofocus="true" will disable this behaviour, which is needed for
   // the autocomplete widget as it manages focus itself.
   if (popupType == PopupType::Panel &&
-      !popup->GetBoolAttr(nsGkAtoms::noautofocus)) {
+      !popup->AttrValueIs(kNameSpaceID_None, nsGkAtoms::noautofocus,
+                          nsGkAtoms::_true, eCaseMatters)) {
     if (RefPtr<nsFocusManager> fm = nsFocusManager::GetFocusManager()) {
       Document* doc = popup->GetUncomposedDoc();
 
@@ -1839,7 +1840,8 @@ void nsXULPopupManager::FirePopupHidingEvent(Element* aPopup,
 
   // when a panel is closed, blur whatever has focus inside the popup
   if (aPopupType == PopupType::Panel &&
-      !aPopup->GetBoolAttr(nsGkAtoms::noautofocus)) {
+      (!aPopup->AttrValueIs(kNameSpaceID_None, nsGkAtoms::noautofocus,
+                            nsGkAtoms::_true, eCaseMatters))) {
     if (RefPtr<nsFocusManager> fm = nsFocusManager::GetFocusManager()) {
       Document* doc = aPopup->GetUncomposedDoc();
 

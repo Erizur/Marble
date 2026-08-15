@@ -38,18 +38,20 @@ class XULPopupElement : public XULMenuParentElement {
   explicit XULPopupElement(already_AddRefed<mozilla::dom::NodeInfo> aNodeInfo)
       : XULMenuParentElement(std::move(aNodeInfo)) {}
 
-  void GetLabel(DOMString& aValue) const { GetAttr(nsGkAtoms::label, aValue); }
+  void GetLabel(DOMString& aValue) const {
+    GetXULAttr(nsGkAtoms::label, aValue);
+  }
   void SetLabel(const nsAString& aValue, ErrorResult& rv) {
-    SetAttr(nsGkAtoms::label, aValue, rv);
+    SetXULAttr(nsGkAtoms::label, aValue, rv);
   }
 
   bool IsMenu() const { return IsXULElement(nsGkAtoms::menupopup); }
 
   void GetPosition(DOMString& aValue) const {
-    GetAttr(nsGkAtoms::position, aValue);
+    GetXULAttr(nsGkAtoms::position, aValue);
   }
   void SetPosition(const nsAString& aValue, ErrorResult& rv) {
-    SetAttr(nsGkAtoms::position, aValue, rv);
+    SetXULAttr(nsGkAtoms::position, aValue, rv);
   }
 
   void OpenPopup(Element* aAnchorElement,

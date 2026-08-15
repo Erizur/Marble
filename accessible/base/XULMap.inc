@@ -94,7 +94,8 @@ XULMAP(panel,
            return nullptr;
          }
 
-         if (aElement->GetBoolAttr(nsGkAtoms::noautofocus)) {
+         if (aElement->AttrValueIs(kNameSpaceID_None, nsGkAtoms::noautofocus,
+                                   nsGkAtoms::_true, eCaseMatters)) {
            return MakeAndAddRef<XULAlertAccessible>(aElement, aContext->Document());
          }
 

@@ -130,7 +130,7 @@ class Menu extends EventEmitter {
     const popup = doc.createXULElement("menupopup");
     popup.setAttribute("menu-api", "true");
     popup.setAttribute("consumeoutsideclicks", "false");
-    popup.setAttribute("escapecontentshell", "true");
+    popup.setAttribute("incontentshell", "false");
 
     if (this.id) {
       popup.id = this.id;
@@ -187,7 +187,7 @@ class Menu extends EventEmitter {
 
       if (item.submenu) {
         const menupopup = doc.createXULElement("menupopup");
-        menupopup.setAttribute("escapecontentshell", "true");
+        menupopup.setAttribute("incontentshell", "false");
 
         item.submenu.#createMenuItems(menupopup, signal);
 

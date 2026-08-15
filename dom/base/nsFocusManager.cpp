@@ -1688,8 +1688,9 @@ static bool IsEmeddededInNoautofocusPopup(BrowsingContext& aBc) {
   nsIFrame* menuPopup =
       nsLayoutUtils::GetClosestFrameOfType(f, LayoutFrameType::MenuPopup);
   MOZ_ASSERT(menuPopup, "NS_FRAME_IN_POPUP lied?");
-  return static_cast<nsMenuPopupFrame*>(menuPopup)->PopupElement().GetBoolAttr(
-      nsGkAtoms::noautofocus);
+  return static_cast<nsMenuPopupFrame*>(menuPopup)
+      ->PopupElement()
+      .GetXULBoolAttr(nsGkAtoms::noautofocus);
 }
 
 Maybe<uint64_t> nsFocusManager::SetFocusInner(Element* aNewContent,

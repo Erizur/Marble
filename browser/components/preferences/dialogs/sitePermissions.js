@@ -679,7 +679,7 @@ var gSitePermissionsManager = {
       SitePermissions.setDefault("autoplay-media", Number(menulist.value));
     });
 
-    menulist.menupopup.setAttribute("escapecontentshell", true);
+    menulist.menupopup.setAttribute("incontentshell", "false");
 
     menulist.disabled = Services.prefs.prefIsLocked(AUTOPLAY_PREF);
 
