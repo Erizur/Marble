@@ -1614,7 +1614,7 @@ class StorageUI extends EventEmitter {
 
   onVariableViewPopupShowing() {
     const item = this.view.getFocusedItem();
-    this._variableViewPopupCopy.toggleAttribute("disabled", !item);
+    this._variableViewPopupCopy.setAttribute("disabled", !item);
   }
 
   /**

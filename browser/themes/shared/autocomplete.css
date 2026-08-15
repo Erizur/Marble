@@ -313,7 +313,7 @@
 
 /* Popup states */
 .autocomplete-richlistitem {
-  &:not([disabled]):is(:hover, [selected]) {
+  &:not([disabled="true"]):is(:hover, [selected]) {
     background-color: var(--button-background-color-hover);
     color: var(--button-text-color-hover);
   }

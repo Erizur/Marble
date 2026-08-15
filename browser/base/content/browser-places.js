@@ -1569,7 +1569,7 @@ var BookmarkingUI = {
       menuItem.setAttribute("type", "radio");
       // The persisted state of the PersonalToolbar is stored in
       // "browser.toolbars.bookmarks.visibility".
-      menuItem.toggleAttribute(
+      menuItem.setAttribute(
         "checked",
         gBookmarksToolbarVisibility == visibilityEnum
       );
@@ -2274,9 +2274,9 @@ var BookmarkingUI = {
     menuItem.setAttribute("id", "show-other-bookmarks_PersonalToolbar");
     menuItem.setAttribute("toolbarId", "PersonalToolbar");
     menuItem.setAttribute("type", "checkbox");
+    menuItem.setAttribute("checked", SHOW_OTHER_BOOKMARKS);
     menuItem.setAttribute("selection-type", "none|single");
     menuItem.setAttribute("start-disabled", "true");
-    menuItem.toggleAttribute("checked", SHOW_OTHER_BOOKMARKS);
 
     MozXULElement.insertFTLIfNeeded("browser/toolbarContextMenu.ftl");
     document.l10n.setAttributes(

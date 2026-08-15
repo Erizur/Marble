@@ -51,7 +51,7 @@ var CustomizationHandler = {
     // Re-enable parts of the UI we disabled during the dialog
     let menubar = document.getElementById("main-menubar");
     for (let childNode of menubar.children) {
-      childNode.removeAttribute("disabled");
+      childNode.setAttribute("disabled", false);
     }
 
     gBrowser.selectedBrowser.focus();

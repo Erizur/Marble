@@ -1278,12 +1278,15 @@ PopupNotifications.prototype = {
 
   _setNotificationUIState(notification, state = {}) {
     let mainAction = notification.notification.mainAction;
-    notification.toggleAttribute(
-      "mainactiondisabled",
+    if (
       (mainAction && mainAction.disabled) ||
-        state.disableMainAction ||
-        notification.hasAttribute("invalidselection")
-    );
+      state.disableMainAction ||
+      notification.hasAttribute("invalidselection")
+    ) {
+      notification.setAttribute("mainactiondisabled", "true");
+    } else {
+      notification.removeAttribute("mainactiondisabled");
+    }
     if (state.warningLabel) {
       notification.setAttribute("warninglabel", state.warningLabel);
       notification.removeAttribute("warninghidden");

@@ -310,7 +310,11 @@ nsLDBBrowserContentListener.prototype = {
 
   // non-interface methods
   setButtonEnabled: function (aButtonElement, aEnabled) {
-    aButtonElement.toggleAttribute("disabled", !aEnabled);
+    if (aEnabled) {
+      aButtonElement.setAttribute("disabled", "false");
+    } else {
+      aButtonElement.setAttribute("disabled", "true");
+    }
   },
 
   mStatusText: null,
@@ -566,7 +570,7 @@ function OnLDBLoad() {
 
 function checkPersistentMenu(item) {
   var menuitem = document.getElementById("menu_" + item);
-  menuitem.toggleAttribute("checked", gDebugger[item]);
+  menuitem.setAttribute("checked", gDebugger[item] ? "true" : "false");
 }
 
 function checkPersistentMenus() {
@@ -628,7 +632,7 @@ function OnLDBUnload() {
 function toggle(menuitem) {
   // trim the initial "menu_"
   var feature = menuitem.id.substring(5);
-  gDebugger[feature] = menuitem.hasAttribute("checked");
+  gDebugger[feature] = menuitem.getAttribute("checked") == "true";
 }
 
 function openFile() {

@@ -445,7 +445,7 @@ add_task(async function checkContextMenu() {
   info("Check context menu");
   await openContextMenu(button);
   is(checkbox.hidden, false, "Auto-hide checkbox is visible");
-  ok(checkbox.hasAttribute("checked"), "Auto-hide is enabled");
+  is(checkbox.getAttribute("checked"), "true", "Auto-hide is enabled");
 
   info("Disable auto-hide via context menu");
   clickCheckbox(checkbox);
@@ -504,7 +504,7 @@ function promiseCustomizeEnd(aWindow = window) {
 
 function clickCheckbox(checkbox) {
   // Clicking a checkbox toggles its checkedness first.
-  if (checkbox.hasAttribute("checked")) {
+  if (checkbox.getAttribute("checked") == "true") {
     checkbox.removeAttribute("checked");
   } else {
     checkbox.setAttribute("checked", "true");

@@ -250,7 +250,7 @@ panelview {
   border-radius: var(--button-border-radius);
   flex-shrink: 0;
 
-  &[disabled] {
+  &[disabled="true"] {
     visibility: hidden;
   }
 
@@ -1197,7 +1197,7 @@ panelview .toolbarbutton-1,
     color: var(--text-color-deemphasized);
   }
 
-  &[checked] {
+  &[checked="true"] {
     list-style-image: url(chrome://global/skin/icons/check.svg);
     -moz-context-properties: fill;
     fill: currentColor;
@@ -1223,7 +1223,7 @@ panelview .toolbarbutton-1,
 .subviewbutton[image] > .toolbarbutton-text,
 .subviewbutton[targetURI] > .toolbarbutton-text,
 .subviewbutton.bookmark-item > .toolbarbutton-text,
-.subviewbutton[checked] > .toolbarbutton-text {
+.subviewbutton[checked="true"] > .toolbarbutton-text {
   padding-inline-start: 8px;
 }
 
@@ -1508,7 +1508,7 @@ panelview .toolbarbutton-1 {
     min-width: 0;
     display: flex;
 
-    &[disabled] {
+    &[disabled="true"] {
       pointer-events: none;
     }
   }
@@ -1982,7 +1982,7 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 #PanelUI-profiler-presets {
   margin: 8px 0;
 
-  &[disabled]::part(label-box) {
+  &[disabled="true"]::part(label-box) {
     opacity: 0.5;
   }
 }

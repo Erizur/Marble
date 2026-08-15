@@ -596,7 +596,7 @@ a[is="moz-support-link"]:not([hidden]) {
   margin-bottom: 0;
 }
 
-.text-link[disabled] {
+.text-link[disabled="true"] {
   pointer-events: none;
 }
 

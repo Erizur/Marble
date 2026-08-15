@@ -159,14 +159,19 @@ function checkPasswords() {
     // The default password for the internal key token is the empty string. It
     // makes no sense to change the password from the empty string to the empty
     // string.
-    ok.toggleAttribute("disabled", true);
+    ok.setAttribute("disabled", "true");
     return;
   }
 
-  let enabled =
+
+  if (
     pw1 == pw2 &&
-    (pw1 != "" || Services.policies.isAllowed("removeMasterPassword"));
-  ok.toggleAttribute("disabled", !enabled);
+    (pw1 != "" || Services.policies.isAllowed("removeMasterPassword"))
+  ) {
+    ok.setAttribute("disabled", "false");
+  } else {
+    ok.setAttribute("disabled", "true");
+  }
 }
 
 window.addEventListener("load", init);

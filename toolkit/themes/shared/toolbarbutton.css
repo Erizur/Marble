@@ -18,12 +18,12 @@ toolbarbutton {
     &:where(:hover) {
       color: -moz-buttonhovertext;
     }
-    &:where(:hover:active, [checked], [open]) {
+    &:where(:hover:active, [checked="true"], [open="true"]) {
       color: -moz-buttonactivetext;
     }
   }
 
-  &:where([disabled]) {
+  &:where([disabled="true"]) {
     color: GrayText;
     text-shadow: none;
   }

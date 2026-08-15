@@ -231,7 +231,7 @@ xul|description {
   margin-bottom: var(--space-xsmall);
 }
 
-xul|label[disabled] {
+xul|label[disabled="true"] {
   color: var(--text-color-disabled);
 }
 

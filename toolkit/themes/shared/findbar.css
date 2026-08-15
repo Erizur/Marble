@@ -136,7 +136,7 @@ xul|findbar {
     background-color: var(--toolbarbutton-background-color-active, rgba(190, 190, 190, 0.4));
   }
 
-  &[disabled] > .toolbarbutton-icon {
+  &[disabled="true"] > .toolbarbutton-icon {
     opacity: var(--toolbarbutton-opacity-disabled);
   }
 }
