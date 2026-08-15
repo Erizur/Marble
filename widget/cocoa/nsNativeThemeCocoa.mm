@@ -1720,6 +1720,22 @@ bool nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext,
   return false;
 }
 
+bool nsNativeThemeCocoa::WidgetIsContainer(StyleAppearance aAppearance) {
+  // flesh this out at some point
+  switch (aAppearance) {
+    case StyleAppearance::MozMenulistArrowButton:
+    case StyleAppearance::Radio:
+    case StyleAppearance::Checkbox:
+    case StyleAppearance::MozMacHelpButton:
+    case StyleAppearance::MozMacDisclosureButtonOpen:
+    case StyleAppearance::MozMacDisclosureButtonClosed:
+      return false;
+    default:
+      break;
+  }
+  return true;
+}
+
 bool nsNativeThemeCocoa::ThemeDrawsFocusForWidget(nsIFrame*,
                                                   StyleAppearance aAppearance) {
   switch (aAppearance) {

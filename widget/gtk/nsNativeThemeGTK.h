@@ -53,6 +53,7 @@ class nsNativeThemeGTK final : public mozilla::widget::Theme {
                                                     StyleAppearance) override;
 
   bool ThemeSupportsWidget(nsPresContext*, nsIFrame*, StyleAppearance) override;
+  bool WidgetIsContainer(StyleAppearance) override;
   bool ThemeDrawsFocusForWidget(nsIFrame*, StyleAppearance) override;
   Transparency GetWidgetTransparency(nsIFrame*, StyleAppearance) override;
 
