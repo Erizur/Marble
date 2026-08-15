@@ -75,7 +75,7 @@
 }
 
 @media -moz-pref("widget.macos.native-popovers") and (-moz-platform: macos) {
-  panel:not([nonnative]) {
+  panel:not([native="false"]) {
     background-color: transparent;
     --panel-background: transparent;
     --panel-box-shadow: none;

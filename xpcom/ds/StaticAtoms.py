@@ -770,7 +770,6 @@ STATIC_ATOMS = [
     Atom("nomodule", "nomodule"),
     Atom("nonce", "nonce"),
     Atom("none", "none"),
-    Atom("nonnative", "nonnative"),
     Atom("noresize", "noresize"),
     Atom("normal", "normal"),
     Atom("normalizeSpace", "normalize-space"),

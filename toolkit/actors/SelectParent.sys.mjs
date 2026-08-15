@@ -823,7 +823,7 @@ export class SelectParent extends JSWindowActorParent {
       popup.setAttribute("consumeoutsideclicks", "false");
       popup.setAttribute("ignorekeys", "shortcuts");
     } else if (SelectParentHelper.disableMacNativeMenu()) {
-      popup.toggleAttribute("nonnative", true);
+      popup.setAttribute("native", "false");
     }
 
     let container =
@@ -844,10 +844,11 @@ export class SelectParent extends JSWindowActorParent {
 
         if (prefsChanged) {
           if (AppConstants.platform == "macosx") {
-            menulist.menupopup.toggleAttribute(
-              "nonnative",
-              SelectParentHelper.disableMacNativeMenu()
-            );
+            if (SelectParentHelper.disableMacNativeMenu()) {
+              menulist.menupopup.setAttribute("native", "false");
+            } else {
+              menulist.menupopup.removeAttribute("native");
+            }
           }
           prefsChanged = false;
         }

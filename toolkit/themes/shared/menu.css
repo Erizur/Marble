@@ -63,7 +63,7 @@ menupopup {
        whenever possible so that the OS can manage the icon color, as the OS
        theme may differ from our theme. */
     menubar[native] &,
-    &:not([nonnative]) {
+    &:not([native="false"]) {
       --menuitem-icon-fill: black;
     }
   }

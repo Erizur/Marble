@@ -783,7 +783,9 @@ bool nsXULPopupManager::ShowNativeMenuInternal(
     return false;
   }
 
-  if (aPopup->GetBoolAttr(nsGkAtoms::nonnative)) {
+  bool disallowsNative = aPopup->AttrValueIs(
+      kNameSpaceID_None, nsGkAtoms::native, nsGkAtoms::_false, eCaseMatters);
+  if (disallowsNative) {
     return false;
   }
 
@@ -893,9 +895,9 @@ bool nsXULPopupManager::ShowPopupAtAnchorAsNativeMenu(
     bool aAttributesOverride, Event* aTriggerEvent) {
   if (!ShouldUseNativeAnchoredMenus()) {
 #ifdef XP_MACOSX
-    // When native menus are disabled, add the nonnative attribute so that
+    // When native menus are disabled, add the native="false" attribute so that
     // CSS can be conditionally applied where necessary.
-    aPopup->SetBoolAttr(nsGkAtoms::nonnative, true);
+    aPopup->SetAttr(kNameSpaceID_None, nsGkAtoms::native, u"false"_ns, true);
 #endif
     return false;
   }

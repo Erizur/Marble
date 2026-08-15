@@ -2895,7 +2895,7 @@ static void LoadNativeMenus(Document* aDoc, nsIWidget* aParentWindow) {
   // Find the menubar tag (if there is more than one, we ignore all but
   // the first).
   RefPtr<Element> menubar =
-      aDoc->QuerySelector("menubar:not([nonnative])"_ns, IgnoreErrors());
+      aDoc->QuerySelector("menubar:not([native=\"false\"])"_ns, IgnoreErrors());
   widget::NativeMenuSupport::CreateNativeMenuBar(aParentWindow, menubar);
 
   if (sWaitingForHiddenWindowToLoadNativeMenus) {
