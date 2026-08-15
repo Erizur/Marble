@@ -1122,7 +1122,7 @@ def check_places_and_geckoview_history(places, geckoview_history):
 
 option(
     env="MOZ_TELEMETRY_REPORTING",
-    default=mozilla_official,
+    default=False,
     help="Enable telemetry reporting",
 )
 
@@ -2034,7 +2034,7 @@ set_define("A11Y_LOG", True, when=a11y_log)
 # ==============================================================
 @depends(milestone)
 def require_signing(milestone):
-    return milestone.is_release_or_beta and not milestone.is_esr
+    return False
 
 
 option(

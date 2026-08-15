@@ -2,34 +2,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-@media not ((prefers-contrast) and (prefers-color-scheme: light)) {
-  #aboutDialogContainer {
-    background-color: #20123a;
-    color: #fff;
-    color-scheme: dark;
-  }
-
-  #bottomBox {
-    background-color: hsla(235, 43%, 10%, 0.5);
-  }
-
-  #trademark {
-    color: #999999;
-  }
+#aboutDialogContainer {
+  background: #000000 no-repeat url("chrome://branding/content/about-background.png");
+  object-fit: contain;
+  color: #fff;
+  color-scheme: dark;
 }
 
 #rightBox {
-  background-size: auto 44px;
+  background-size: auto 64px;
   margin-inline: 30px;
-  padding-top: 76px;
+  padding-top: 64px;
 }
 
 #bottomBox {
-  padding: 15px 10px;
-}
-
-#trademark {
-  font-size: xx-small;
-  text-align: center;
-  margin-block: 10px;
+  background-color: hsla(235, 43%, 10%, .5);
+  padding: 15px 10px 15px;
 }
