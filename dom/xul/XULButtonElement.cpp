@@ -642,11 +642,6 @@ bool XULButtonElement::OnPointerClicked(WidgetGUIEvent& aEvent) {
     return false;
   }
 
-  if (NodeInfo()->Equals(nsGkAtoms::checkbox)) {
-    // Toggle `checked` now so that command handling sees the right state.
-    SetBoolAttr(nsGkAtoms::checked, !GetBoolAttr(nsGkAtoms::checked));
-  }
-
   // Have the content handle the event, propagating it according to normal DOM
   // rules.
   RefPtr<mozilla::PresShell> presShell = OwnerDoc()->GetPresShell();

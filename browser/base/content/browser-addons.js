@@ -820,6 +820,7 @@ customElements.define(
   class MozAddonInstalledNotification extends customElements.get(
     "popupnotification"
   ) {
+    #shouldIgnoreCheckboxStateChangeEvent = false;
     #browserActionWidgetObserver;
     connectedCallback() {
       this.descriptionEl = this.querySelector("#addon-install-description");
@@ -828,13 +829,13 @@ customElements.define(
       );
 
       this.addEventListener("click", this);
-      this.pinExtensionEl.addEventListener("command", this);
+      this.pinExtensionEl.addEventListener("CheckboxStateChange", this);
       this.#browserActionWidgetObserver?.startObserving();
     }
 
     disconnectedCallback() {
       this.removeEventListener("click", this);
-      this.pinExtensionEl.removeEventListener("command", this);
+      this.pinExtensionEl.removeEventListener("CheckboxStateChange", this);
       this.#browserActionWidgetObserver?.stopObserving();
     }
 
@@ -862,8 +863,10 @@ customElements.define(
           }
           break;
         }
-        case "command":
-          if (target == this.pinExtensionEl) {
+        case "CheckboxStateChange":
+          // CheckboxStateChange fires whenever the checked value changes.
+          // Ignore the event if triggered by us instead of the user.
+          if (!this.#shouldIgnoreCheckboxStateChangeEvent) {
             this.#handlePinnedCheckboxStateChange();
           }
           break;
@@ -947,7 +950,9 @@ customElements.define(
         // We only support AREA_ADDONS and AREA_NAVBAR for now.
         return;
       }
+      this.#shouldIgnoreCheckboxStateChangeEvent = true;
       this.pinExtensionEl.checked = shouldPinToToolbar;
+      this.#shouldIgnoreCheckboxStateChangeEvent = false;
       this.pinExtensionEl.hidden = false;
     }
 
