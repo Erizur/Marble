@@ -38,8 +38,7 @@ XULButtonElement::XULButtonElement(
     : nsXULElement(std::move(aNodeInfo)),
       mIsAlwaysMenu(IsAnyOfXULElements(nsGkAtoms::menu, nsGkAtoms::menulist,
                                        nsGkAtoms::menuitem)),
-      mCheckable(IsAnyOfXULElements(nsGkAtoms::menuitem,
-                                    nsGkAtoms::richlistitem, nsGkAtoms::radio,
+      mCheckable(IsAnyOfXULElements(nsGkAtoms::menuitem, nsGkAtoms::radio,
                                     nsGkAtoms::checkbox)) {}
 
 XULButtonElement::~XULButtonElement() {
@@ -717,24 +716,6 @@ void XULButtonElement::UncheckRadioSiblings() {
   }
 }
 
-nsAtom* XULButtonElement::GetCheckedStateAttribute() const {
-  // <menuitem> uses checked for type=radio / type=checkbox, and selected for
-  // <menulist>.
-  //
-  // <richlistitem> uses checked, and <radio> uses selected. Note that
-  // <richlistitem> uses selected with a different meaning as well (for the
-  // currently selected / focused item), so this code needs to deal with that.
-  MOZ_ASSERT(mCheckable);
-  if (auto menuType = GetMenuType()) {
-    return *menuType == MenuType::Normal ? nsGkAtoms::selected
-                                         : nsGkAtoms::checked;
-  }
-  if (NodeInfo()->Equals(nsGkAtoms::radio)) {
-    return nsGkAtoms::selected;
-  }
-  return nsGkAtoms::checked;
-}
-
 void XULButtonElement::AfterSetAttr(int32_t aNamespaceID, nsAtom* aName,
                                     const nsAttrValue* aValue,
                                     const nsAttrValue* aOldValue,
@@ -745,14 +726,15 @@ void XULButtonElement::AfterSetAttr(int32_t aNamespaceID, nsAtom* aName,
   if (aNamespaceID != kNameSpaceID_None) {
     return;
   }
-  if (mCheckable) {
-    if (aName == GetCheckedStateAttribute()) {
-      SetStates(ElementState::CHECKED, !!aValue, aNotify);
-    }
-    if (IsAlwaysMenu() && aName == nsGkAtoms::type) {
-      SetStates(ElementState::CHECKED, GetBoolAttr(GetCheckedStateAttribute()),
-                aNotify);
-    }
+  if (mCheckable &&
+      (aName == nsGkAtoms::checked || aName == nsGkAtoms::selected)) {
+    // <menuitem> uses checked for type=radio / type=checkbox and selected for
+    // menulists. <radio> uses selected, but <checkbox> uses checked. We just
+    // make both work for simplicity (also matches historical behavior).
+    const bool checked =
+        aValue || GetBoolAttr(aName == nsGkAtoms::checked ? nsGkAtoms::selected
+                                                          : nsGkAtoms::checked);
+    SetStates(ElementState::CHECKED, checked, aNotify);
   }
   if (aName == nsGkAtoms::disabled) {
     SetStates(ElementState::DISABLED, !!aValue, aNotify);

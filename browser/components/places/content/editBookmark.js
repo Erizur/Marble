@@ -1102,13 +1102,15 @@ var gEditItemOverlay = {
       await this._rebuildTagsSelectorList();
 
       // This is a no-op if we've added the listener.
-      tagsSelector.addEventListener("command", this);
+      tagsSelector.addEventListener("mousedown", this);
+      tagsSelector.addEventListener("keypress", this);
     } else {
       document.l10n.setAttributes(expander, "bookmark-overlay-tags-expander2");
       tagsSelectorRow.hidden = true;
 
       // This is a no-op if we've removed the listener.
-      tagsSelector.removeEventListener("command", this);
+      tagsSelector.removeEventListener("mousedown", this);
+      tagsSelector.removeEventListener("keypress", this);
     }
   },
 
@@ -1159,6 +1161,23 @@ var gEditItemOverlay = {
   // EventListener
   handleEvent(event) {
     switch (event.type) {
+      case "mousedown":
+        if (event.button == 0) {
+          // Make sure the event is triggered on an item and not the empty space.
+          let item = event.target.closest("richlistbox,richlistitem");
+          if (item.localName == "richlistitem") {
+            this.toggleItemCheckbox(item);
+          }
+        }
+        break;
+      case "keypress":
+        if (event.key == " ") {
+          let item = event.target.currentItem;
+          if (item) {
+            this.toggleItemCheckbox(item);
+          }
+        }
+        break;
       case "unload":
         this.uninitPanel(false);
         break;
@@ -1185,14 +1204,11 @@ var gEditItemOverlay = {
         }
         break;
       case "command":
-        switch (event.currentTarget.id) {
-          case "editBMPanel_folderMenuList":
-            this.onFolderMenuListCommand(event).catch(console.error);
-            return;
-          case "editBMPanel_tagsSelector":
-            this.toggleTagsSelectorItem(event.target);
-            return;
+        if (event.currentTarget.id === "editBMPanel_folderMenuList") {
+          this.onFolderMenuListCommand(event).catch(console.error);
+          return;
         }
+
         switch (event.target.id) {
           case "editBMPanel_foldersExpander":
             this.toggleFolderTreeVisibility();
@@ -1221,16 +1237,24 @@ var gEditItemOverlay = {
     }
   },
 
-  toggleTagsSelectorItem(item) {
+  toggleItemCheckbox(item) {
     // Update the tags field when items are checked/unchecked in the listbox
     let tags = this._getTagsArrayFromTagsInputField();
+
     let curTagIndex = tags.indexOf(item.label);
-    if (item.toggleAttribute("checked")) {
+    let tagsSelector = this._element("tagsSelector");
+    tagsSelector.selectedItem = item;
+
+    if (!item.hasAttribute("checked")) {
+      item.setAttribute("checked", "true");
       if (curTagIndex == -1) {
         tags.push(item.label);
       }
-    } else if (curTagIndex != -1) {
-      tags.splice(curTagIndex, 1);
+    } else {
+      item.removeAttribute("checked");
+      if (curTagIndex != -1) {
+        tags.splice(curTagIndex, 1);
+      }
     }
     this._element("tagsField").value = tags.join(", ");
     this._updateTags();
