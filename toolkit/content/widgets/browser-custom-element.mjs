@@ -543,7 +543,7 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
   }
 
   get isRemoteBrowser() {
-    return this.hasAttribute("remote");
+    return this.getAttribute("remote") == "true";
   }
 
   get remoteType() {

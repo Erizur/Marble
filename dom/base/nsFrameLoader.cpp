@@ -199,6 +199,11 @@ nsFrameLoader::~nsFrameLoader() {
   MOZ_RELEASE_ASSERT(mDestroyCalled);
 }
 
+static nsAtom* TypeAttrName(Element* aOwnerContent) {
+  return aOwnerContent->IsXULElement() ? nsGkAtoms::type
+                                       : nsGkAtoms::mozframetype;
+}
+
 static void GetFrameName(Element* aOwnerContent, nsAString& aFrameName) {
   int32_t namespaceID = aOwnerContent->GetNameSpaceID();
   if (namespaceID == kNameSpaceID_XHTML && !aOwnerContent->IsInHTMLDocument()) {
@@ -248,12 +253,14 @@ static bool IsTopContent(BrowsingContext* aParent, Element* aOwner) {
     // If we're already in content, we may still want to create a new
     // BrowsingContext tree if our element is a xul browser element with a
     // `remote="true"` marker.
-    return aOwner->IsXULElement() && aOwner->GetBoolAttr(nsGkAtoms::remote);
+    return aOwner->IsXULElement() &&
+           aOwner->AttrValueIs(kNameSpaceID_None, nsGkAtoms::remote,
+                               nsGkAtoms::_true, eCaseMatters);
   }
 
   // If we're in a chrome context, we want to start a new tree if we are an
   // element with a `type="content"` marker.
-  return aOwner->AttrValueIs(kNameSpaceID_None, nsGkAtoms::type,
+  return aOwner->AttrValueIs(kNameSpaceID_None, TypeAttrName(aOwner),
                              nsGkAtoms::content, eIgnoreCase);
 }
 
@@ -347,7 +354,9 @@ static bool InitialLoadIsRemote(Element* aOwner) {
   }
 
   // Otherwise, we're remote if we have "remote=true" and we're a XUL element.
-  return aOwner->IsXULElement() && aOwner->GetBoolAttr(nsGkAtoms::remote);
+  return (aOwner->GetNameSpaceID() == kNameSpaceID_XUL) &&
+         aOwner->AttrValueIs(kNameSpaceID_None, nsGkAtoms::remote,
+                             nsGkAtoms::_true, eCaseMatters);
 }
 
 static already_AddRefed<BrowsingContextGroup> InitialBrowsingContextGroup(
@@ -501,7 +510,8 @@ void nsFrameLoader::LoadFrame(bool aOriginalSrc,
       // then we will not use 'about:blank' as fallback but return early without
       // starting a load if no 'src' attribute is given (or it's empty).
       if (mOwnerContent->IsXULElement() &&
-          mOwnerContent->GetBoolAttr(nsGkAtoms::nodefaultsrc)) {
+          mOwnerContent->AttrValueIs(kNameSpaceID_None, nsGkAtoms::nodefaultsrc,
+                                     nsGkAtoms::_true, eCaseMatters)) {
         return;
       }
       src.AssignLiteral("about:blank");
@@ -854,9 +864,9 @@ static void SetTreeOwnerAndChromeEventHandlerOnDocshellTree(
 
 #if defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
 static bool CheckDocShellType(mozilla::dom::Element* aOwnerContent,
-                              nsIDocShellTreeItem* aDocShell) {
-  bool isContent = aOwnerContent->AttrValueIs(
-      kNameSpaceID_None, nsGkAtoms::type, nsGkAtoms::content, eIgnoreCase);
+                              nsIDocShellTreeItem* aDocShell, nsAtom* aAtom) {
+  bool isContent = aOwnerContent->AttrValueIs(kNameSpaceID_None, aAtom,
+                                              nsGkAtoms::content, eIgnoreCase);
 
   if (isContent) {
     return aDocShell->ItemType() == nsIDocShellTreeItem::typeContent;
@@ -881,14 +891,17 @@ void nsFrameLoader::AddTreeItemToTreeOwner(nsIDocShellTreeItem* aItem,
   MOZ_ASSERT(mOwnerContent, "Must have owning content");
 
   MOZ_DIAGNOSTIC_ASSERT(
-      CheckDocShellType(mOwnerContent, aItem),
+      CheckDocShellType(mOwnerContent, aItem, TypeAttrName(mOwnerContent)),
       "Correct ItemType should be set when creating BrowsingContext");
 
-  if (mIsTopLevelContent && aOwner) {
-    mOwnerContent->AddMutationObserver(this);
-    mObservingOwnerContent = true;
-    aOwner->ContentShellAdded(aItem,
-                              mOwnerContent->GetBoolAttr(nsGkAtoms::primary));
+  if (mIsTopLevelContent) {
+    bool is_primary = mOwnerContent->AttrValueIs(
+        kNameSpaceID_None, nsGkAtoms::primary, nsGkAtoms::_true, eIgnoreCase);
+    if (aOwner) {
+      mOwnerContent->AddMutationObserver(this);
+      mObservingOwnerContent = true;
+      aOwner->ContentShellAdded(aItem, is_primary);
+    }
   }
 }
 
@@ -2224,7 +2237,9 @@ nsresult nsFrameLoader::MaybeCreateDocShell() {
 
   // Allow scripts to close the docshell if specified.
   if (mOwnerContent->IsXULElement(nsGkAtoms::browser) &&
-      mOwnerContent->GetBoolAttr(nsGkAtoms::allowscriptstoclose)) {
+      mOwnerContent->AttrValueIs(kNameSpaceID_None,
+                                 nsGkAtoms::allowscriptstoclose,
+                                 nsGkAtoms::_true, eCaseMatters)) {
     nsGlobalWindowOuter::Cast(newWindow)->AllowScriptsToClose();
   }
 
@@ -2745,7 +2760,9 @@ bool nsFrameLoader::TryRemoteBrowserInternal() {
       MOZ_ALWAYS_SUCCEEDS(mPendingBrowsingContext->SetName(frameName));
     }
     // Allow scripts to close the window if the browser specified so:
-    if (mOwnerContent->GetBoolAttr(nsGkAtoms::allowscriptstoclose)) {
+    if (mOwnerContent->AttrValueIs(kNameSpaceID_None,
+                                   nsGkAtoms::allowscriptstoclose,
+                                   nsGkAtoms::_true, eCaseMatters)) {
       (void)browserParent->SendAllowScriptsToClose();
     }
   }
@@ -2972,7 +2989,9 @@ nsresult nsFrameLoader::EnsureMessageManager() {
 
   if (!mIsTopLevelContent && !IsRemoteFrame() &&
       !(mOwnerContent->IsXULElement() &&
-        mOwnerContent->GetBoolAttr(nsGkAtoms::forcemessagemanager))) {
+        mOwnerContent->AttrValueIs(kNameSpaceID_None,
+                                   nsGkAtoms::forcemessagemanager,
+                                   nsGkAtoms::_true, eCaseMatters))) {
     return NS_OK;
   }
 
@@ -3087,7 +3106,8 @@ void nsFrameLoader::AttributeChanged(mozilla::dom::Element* aElement,
   }
 
   if (aNameSpaceID != kNameSpaceID_None ||
-      (aAttribute != nsGkAtoms::type && aAttribute != nsGkAtoms::primary)) {
+      (aAttribute != TypeAttrName(aElement) &&
+       aAttribute != nsGkAtoms::primary)) {
     return;
   }
 
@@ -3118,18 +3138,21 @@ void nsFrameLoader::AttributeChanged(mozilla::dom::Element* aElement,
     return;
   }
 
-  const bool isPrimary = aElement->GetBoolAttr(nsGkAtoms::primary);
+  bool is_primary = aElement->AttrValueIs(kNameSpaceID_None, nsGkAtoms::primary,
+                                          nsGkAtoms::_true, eIgnoreCase);
+
   // when a content panel is no longer primary, hide any open popups it may have
-  if (!isPrimary) {
-    if (nsXULPopupManager* pm = nsXULPopupManager::GetInstance()) {
+  if (!is_primary) {
+    nsXULPopupManager* pm = nsXULPopupManager::GetInstance();
+    if (pm) {
       pm->HidePopupsInDocShell(GetDocShell());
     }
   }
 
   parentTreeOwner->ContentShellRemoved(GetDocShell());
-  if (aElement->AttrValueIs(kNameSpaceID_None, nsGkAtoms::type,
+  if (aElement->AttrValueIs(kNameSpaceID_None, TypeAttrName(aElement),
                             nsGkAtoms::content, eIgnoreCase)) {
-    parentTreeOwner->ContentShellAdded(GetDocShell(), isPrimary);
+    parentTreeOwner->ContentShellAdded(GetDocShell(), is_primary);
   }
 }
 
@@ -3515,7 +3538,8 @@ void nsFrameLoader::MaybeUpdatePrimaryBrowserParent(
 
   parentTreeOwner->RemoteTabRemoved(browserHost);
   if (aChange == eBrowserParentChanged) {
-    bool isPrimary = mOwnerContent->GetBoolAttr(nsGkAtoms::primary);
+    bool isPrimary = mOwnerContent->AttrValueIs(
+        kNameSpaceID_None, nsGkAtoms::primary, nsGkAtoms::_true, eIgnoreCase);
     parentTreeOwner->RemoteTabAdded(browserHost, isPrimary);
   }
 }

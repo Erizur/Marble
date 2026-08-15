@@ -247,7 +247,7 @@ var listener = {
     browser.setAttribute("disableglobalhistory", "true");
 
     let remoteBrowser = Services.appinfo.browserTabsRemoteAutostart;
-    browser.toggleAttribute("remote", remoteBrowser);
+    browser.setAttribute("remote", remoteBrowser);
 
     browser.style.width = PAGE_WIDTH + "px";
     browser.style.height = PAGE_HEIGHT + "px";

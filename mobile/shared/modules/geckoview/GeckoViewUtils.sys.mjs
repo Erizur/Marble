@@ -487,7 +487,7 @@ export var GeckoViewUtils = {
               aSubject.browser.hasAttribute("remote")
             ) {
               // We cannot start in remote mode when we have an opener.
-              aSubject.browser.removeAttribute("remote");
+              aSubject.browser.setAttribute("remote", "false");
               aSubject.browser.removeAttribute("remoteType");
             }
             Services.obs.removeObserver(handler, "geckoview-window-created");

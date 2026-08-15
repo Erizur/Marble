@@ -1580,7 +1580,7 @@ class HiddenXULWindow {
 
     let awaitFrameLoader;
 
-    if (browser.hasAttribute("remote")) {
+    if (browser.getAttribute("remote") === "true") {
       awaitFrameLoader = promiseEvent(browser, "XULFrameLoaderCreated");
     }
 

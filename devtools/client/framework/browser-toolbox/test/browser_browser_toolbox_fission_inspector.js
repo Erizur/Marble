@@ -48,7 +48,7 @@ add_task(async function () {
     await inspector.sidebar.select("computedview");
 
     await selectNodeInFrames(
-      ["browser[remote][test-tab]", "#my-div"],
+      ['browser[remote="true"][test-tab]', "#my-div"],
       inspector
     );
 

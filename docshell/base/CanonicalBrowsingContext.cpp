@@ -2213,7 +2213,9 @@ nsresult CanonicalBrowsingContext::PendingRemotenessChange::FinishTopContent() {
 
   // Some frontend code checks the value of the `remote` attribute on the
   // browser to determine if it is remote, so update the value.
-  browserElement->SetBoolAttr(nsGkAtoms::remote, !!mContentParentKeepAlive);
+  browserElement->SetAttr(kNameSpaceID_None, nsGkAtoms::remote,
+                          mContentParentKeepAlive ? u"true"_ns : u"false"_ns,
+                          /* notify */ true);
 
   // The process has been created, hand off to nsFrameLoaderOwner to finish
   // the process switch.

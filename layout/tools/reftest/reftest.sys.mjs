@@ -188,7 +188,7 @@ export function OnRefTestLoad(win) {
   // sometimes the window is occluded / hidden, which causes some crashtests
   // to time out. Bug 1864255 might be able to help here.
   g.browser.setAttribute("manualactiveness", "true");
-  g.browser.toggleAttribute("remote", g.browserIsRemote);
+  g.browser.setAttribute("remote", g.browserIsRemote ? "true" : "false");
   // Make sure the browser element is exactly 800x1000, no matter
   // what size our window is
   g.browser.style.setProperty("padding", "0px");
