@@ -1390,11 +1390,7 @@ void WindowsUIUtils::SetIsTitlebarCollapsed(HWND aWnd, bool aIsCollapsed) {
              static_cast<uint32_t>(hr)));
     return;
   }
-  if (aIsCollapsed) {
-    hr = titleBar->put_ExtendsContentIntoTitleBar(aIsCollapsed);
-  } else {
-    hr = titleBar->ResetToDefault();
-  }
+  hr = titleBar->put_ExtendsContentIntoTitleBar(aIsCollapsed);
   if (FAILED(hr)) {
     MOZ_LOG(gWindowsLog, LogLevel::Error,
             ("Skipping SetIsTitlebarCollapsed() because "
