@@ -297,7 +297,6 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
     return IsVisible() || mPopupState == ePopupHiding;
   }
   bool IsNativeMenu() const { return mIsNativeMenu; }
-  bool CanSkipLayout() const;
   bool IsMouseTransparent() const;
 
   // Return true if the popup is for a menulist.
