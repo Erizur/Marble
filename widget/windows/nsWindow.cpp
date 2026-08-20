@@ -1080,6 +1080,9 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
 
       mBounds = mLastPaintBounds = GetBounds();
 
+      // Skeleton ui is disabled when custom titlebar is off, see bug 1673092.
+      SetCustomTitlebar(true);
+
       // Reset the WNDPROC for this window and its whole class, as we had
       // to use our own WNDPROC when creating the skeleton UI window.
       ::SetWindowLongPtrW(mWnd, GWLP_WNDPROC,
@@ -1524,23 +1527,10 @@ DWORD nsWindow::WindowExStyle() {
  *
  **************************************************************/
 
-bool nsWindow::ShouldAssociateWithWinAppSDK() const {
-  return IsTopLevelWidget();
-}
-
 bool nsWindow::AssociateWithNativeWindow() {
   if (!mWnd || !IsWindow(mWnd)) {
     NS_ERROR("Invalid window handle");
     return false;
-  }
-
-  if (ShouldAssociateWithWinAppSDK()) {
-    // Make sure to call this here to associate our window with the
-    // Windows App SDK _before_ setting our WNDPROC, if needed.
-    // This is important because the SDKs WNDPROC might handle messages like
-    // WM_NCCALCSIZE without calling into us, and that can cause sizing issues,
-    // see bug 1993474.
-    WindowsUIUtils::SetIsTitlebarCollapsed(mWnd, mCustomNonClient);
   }
 
   // Connect the this pointer to the native window handle.
@@ -2840,15 +2830,41 @@ void nsWindow::SetCustomTitlebar(bool aCustomTitlebar) {
 
   mCustomNonClient = aCustomTitlebar;
 
+  const LONG_PTR style = GetWindowLongPtrW(mWnd, GWL_STYLE);
   // Force a reflow of content based on the new client dimensions.
   if (mCustomNonClient) {
+    if (style & WS_SYSMENU) {
+      // Remove the WS_SYSMENU style, so that DWM doesn't draw the caption
+      // buttons. Note that we still need WS_MAXIMIZEBOX at least to
+      // support Snap Layouts / Aero Snap.
+      //
+      // This behavior is not documented: per MSDN, WS_MAXIMIZEBOX simply
+      // requires WS_SYSMENU, and is not valid without it. However, omitting it
+      // doesn't seem to have negative side-effects on any version of Windows
+      // tested (other than losing the default system menu handling, which we
+      // implement ourselves in DisplaySystemMenu()).
+      //
+      // Since the system menu is lazily initialized (see [1]), we have to call
+      // GetSystemMenu() here in order to get it created before it is too late.
+      // An alternative would be to play with window styles later to force it
+      // to be created, but that seems a bit more finicky.
+      //
+      // [1]: https://devblogs.microsoft.com/oldnewthing/20100528-00/?p=13893
+      ::GetSystemMenu(mWnd, FALSE);
+      ::SetWindowLongPtrW(mWnd, GWL_STYLE, style & ~WS_SYSMENU);
+    }
     UpdateNonClientMargins();
   } else {
+    if (WindowStyle() & WS_SYSMENU) {
+      // Restore the WS_SYSMENU style if appropriate.
+      ::SetWindowLongPtrW(mWnd, GWL_STYLE, style | WS_SYSMENU);
+      // Reset the small icon as a workaround for a dwm bug, see bug 1935542.
+      HICON icon =
+          (HICON)::SendMessageW(mWnd, WM_SETICON, (WPARAM)ICON_SMALL, 0);
+      ::SendMessageW(mWnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)icon);
+    }
     mCustomNonClientMetrics = {};
     ResetLayout();
-  }
-  if (ShouldAssociateWithWinAppSDK()) {
-    WindowsUIUtils::SetIsTitlebarCollapsed(mWnd, mCustomNonClient);
   }
 }
 
@@ -4610,7 +4626,7 @@ static bool DisplaySystemMenu(HWND hWnd, nsSizeMode sizeMode, bool isRtl,
       NS_ASSERTION(false, "Did the argument come from invalid IPC?");
       break;
     default:
-      MOZ_ASSERT_UNREACHABLE("Unhandled nsSizeMode value detected");
+      MOZ_ASSERT_UNREACHABLE("Unhnalded nsSizeMode value detected");
       break;
   }
   LPARAM cmd = TrackPopupMenu(hMenu,
@@ -5846,9 +5862,9 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
 
       if (filteredWParam == SC_KEYMENU && lParam == VK_SPACE) {
         const auto sizeMode = mFrameState->GetSizeMode();
-        // Handle the system menu manually when we're in full screen mode
-        // so we can set the appropriate options.
-        if (sizeMode == nsSizeMode_Fullscreen) {
+        // Handle the system menu manually when we're in full screen mode or
+        // with custom titlebar so we can set the appropriate options.
+        if (sizeMode == nsSizeMode_Fullscreen || mCustomNonClient) {
           // Historically on fullscreen windows we've used this offset from the
           // top left as our context menu position. Note that if the point we
           // supply is offscreen, Windows will still try to put our menu in the
