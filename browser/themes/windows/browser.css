@@ -26,14 +26,7 @@
   }
 }
 
-:root[customtitlebar]:not([lwtheme], [builtintheme]) {
-  @media (-moz-windows-mica) or ((-moz-windows-accent-color-in-titlebar) and -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled")) {
-    --toolbox-background-color: ActiveCaption;
-    --toolbox-text-color: CaptionText;
-    --toolbox-background-color-inactive: InactiveCaption;
-    --toolbox-text-color-inactive: InactiveCaptionText;
-  }
-
+:root[customtitlebar]:not([lwtheme]) {
   @media (-moz-windows-mica) {
     background-color: transparent;
     @media -moz-pref("widget.windows.mica.toplevel-backdrop", 2) {

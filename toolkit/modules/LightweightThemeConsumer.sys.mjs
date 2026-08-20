@@ -530,7 +530,6 @@ LightweightThemeConsumer.prototype = {
       );
     }
     root.toggleAttribute("lwtheme", hasTheme);
-    root.toggleAttribute("builtintheme", !!builtinThemeConfig);
 
     let contentThemeData = _getContentProperties(this._doc, hasTheme, theme);
     Services.ppmm.sharedData.set(`theme/${this._winId}`, contentThemeData);
