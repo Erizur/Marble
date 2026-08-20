@@ -1540,7 +1540,7 @@ bool nsWindow::AssociateWithNativeWindow() {
     // This is important because the SDKs WNDPROC might handle messages like
     // WM_NCCALCSIZE without calling into us, and that can cause sizing issues,
     // see bug 1993474.
-    WindowsUIUtils::AssociateWithWinAppSDK(mWnd);
+    WindowsUIUtils::SetIsTitlebarCollapsed(mWnd, mCustomNonClient);
   }
 
   // Connect the this pointer to the native window handle.
