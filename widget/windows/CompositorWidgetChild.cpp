@@ -31,13 +31,7 @@ CompositorWidgetChild::CompositorWidgetChild(
 
 CompositorWidgetChild::~CompositorWidgetChild() {}
 
-bool CompositorWidgetChild::Initialize(
-    const layers::CompositorOptions& aOptions) {
-  // We only use remote_backbuffer::Provider with software WebRender.
-  if (!aOptions.UseSoftwareWebRender()) {
-    return true;
-  }
-
+bool CompositorWidgetChild::Initialize() {
   mRemoteBackbufferProvider = std::make_unique<remote_backbuffer::Provider>();
   if (!mRemoteBackbufferProvider->Initialize(mWnd, OtherPid())) {
     return false;

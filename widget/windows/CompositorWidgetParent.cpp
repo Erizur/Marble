@@ -70,19 +70,12 @@ LayoutDeviceIntSize CompositorWidgetParent::GetClientSize() {
 already_AddRefed<gfx::DrawTarget>
 CompositorWidgetParent::StartRemoteDrawingInRegion(
     const LayoutDeviceIntRegion& aInvalidRegion) {
-  if (!mRemoteBackbufferClient) {
-    MOZ_DIAGNOSTIC_CRASH("Missing mRemoteBackbufferClient for SW compositing!");
-    return nullptr;
-  }
+  MOZ_ASSERT(mRemoteBackbufferClient);
   return mRemoteBackbufferClient->BorrowDrawTarget();
 }
 
 void CompositorWidgetParent::EndRemoteDrawingInRegion(
     gfx::DrawTarget* aDrawTarget, const LayoutDeviceIntRegion& aInvalidRegion) {
-  if (!mRemoteBackbufferClient) {
-    MOZ_DIAGNOSTIC_CRASH("Missing mRemoteBackbufferClient for SW compositing!");
-    return;
-  }
   (void)mRemoteBackbufferClient->PresentDrawTarget(
       aInvalidRegion.ToUnknownRegion());
 }

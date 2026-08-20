@@ -22,7 +22,7 @@ class CompositorWidgetChild final : public PCompositorWidgetChild,
                         RefPtr<CompositorWidgetVsyncObserver> aVsyncObserver,
                         const CompositorWidgetInitData&);
 
-  bool Initialize(const layers::CompositorOptions& aOptions);
+  bool Initialize();
   void Shutdown();
 
   mozilla::ipc::IPCResult RecvObserveVsync() override;

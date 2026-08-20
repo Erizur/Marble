@@ -21,10 +21,7 @@ CompositorWidgetChild::CompositorWidgetChild(
 
 CompositorWidgetChild::~CompositorWidgetChild() = default;
 
-bool CompositorWidgetChild::Initialize(
-    const layers::CompositorOptions& aOptions) {
-  return true;
-}
+bool CompositorWidgetChild::Initialize() { return true; }
 
 mozilla::ipc::IPCResult CompositorWidgetChild::RecvObserveVsync() {
   mVsyncDispatcher->SetCompositorVsyncObserver(mVsyncObserver);

@@ -28,7 +28,7 @@ class CompositorWidgetChild final : public PCompositorWidgetChild,
                         RefPtr<CompositorWidgetVsyncObserver> aVsyncObserver,
                         const CompositorWidgetInitData& aInitData);
 
-  bool Initialize(const layers::CompositorOptions& aOptions);
+  bool Initialize();
 
   void EnterPresentLock() override;
   void LeavePresentLock() override;
