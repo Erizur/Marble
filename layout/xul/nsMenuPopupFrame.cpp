@@ -1764,6 +1764,17 @@ auto nsMenuPopupFrame::GetRects(const nsSize& aPrefSize) const -> Rects {
   // determine the x and y position of the view by subtracting the desired
   // screen position from the screen position of the root frame.
   result.mViewPoint = result.mUsedRect.TopLeft() - rootScreenRect.TopLeft();
+
+  // Offset the position by the width and height of the borders and titlebar.
+  // Even though GetClientOffset should return (0, 0) when there is no titlebar
+  // or borders, we skip these calculations anyway for non-panels to save time
+  // since they will never have a titlebar.
+  if (mPopupType == PopupType::Panel && widget) {
+    result.mClientOffset = widget->GetClientOffset();
+    result.mViewPoint +=
+        LayoutDeviceIntPoint::ToAppUnits(result.mClientOffset, a2d);
+  }
+
   return result;
 }
 
@@ -1814,6 +1825,7 @@ void nsMenuPopupFrame::PerformMove(const Rects& aRects) {
   }
 
   mAlignmentOffset = aRects.mAlignmentOffset;
+  mLastClientOffset = aRects.mClientOffset;
   mHFlip = aRects.mHFlip;
   mVFlip = aRects.mVFlip;
   mConstrainedByLayout = aRects.mConstrainedByLayout;
@@ -2277,6 +2289,7 @@ void nsMenuPopupFrame::DestroyWidgetIfNeeded() {
 
 void nsMenuPopupFrame::MoveTo(const CSSPoint& aPos, bool aUpdateAttrs,
                               bool aByMoveToRect) {
+  nsIWidget* widget = GetWidget();
   nsPoint appUnitsPos = CSSPixel::ToAppUnits(aPos);
 
   const bool rtl = IsDirectionRTL();
@@ -2297,7 +2310,8 @@ void nsMenuPopupFrame::MoveTo(const CSSPoint& aPos, bool aUpdateAttrs,
     appUnitsPos.y -= margin.top;
   }
 
-  if (mScreenRect.TopLeft() == appUnitsPos) {
+  if (mScreenRect.TopLeft() == appUnitsPos &&
+      (!widget || widget->GetClientOffset() == mLastClientOffset)) {
     return;
   }
 
@@ -2516,7 +2530,8 @@ void nsMenuPopupFrame::WindowMoved(nsIWidget* aWidget,
   // Don't do anything if the popup is already at the specified location. This
   // prevents recursive calls when a popup is positioned.
   LayoutDeviceIntRect curDevBounds = CalcWidgetBounds();
-  if (curDevBounds.TopLeft() == aPoint) {
+  if (curDevBounds.TopLeft() == aPoint &&
+      aWidget->GetClientOffset() == GetLastClientOffset()) {
     return;
   }
 
