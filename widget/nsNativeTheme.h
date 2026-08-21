@@ -122,6 +122,8 @@ class nsNativeTheme : public nsITimerCallback, public nsINamed {
   bool IsBottomTab(nsIFrame* aFrame);
   bool IsFirstTab(nsIFrame* aFrame);
 
+  bool IsHorizontal(nsIFrame* aFrame);
+
   // progressbar:
   bool IsVerticalProgress(nsIFrame* aFrame);
 

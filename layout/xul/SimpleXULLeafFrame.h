@@ -25,11 +25,12 @@ class SimpleXULLeafFrame : public nsLeafFrame {
   void Reflow(nsPresContext* aPresContext, ReflowOutput& aDesiredSize,
               const ReflowInput& aReflowInput,
               nsReflowStatus& aStatus) override;
-  SimpleXULLeafFrame(ComputedStyle* aStyle, nsPresContext* aPresContext,
-                     ClassID aClassID)
+  explicit SimpleXULLeafFrame(ComputedStyle* aStyle,
+                              nsPresContext* aPresContext, ClassID aClassID)
       : nsLeafFrame(aStyle, aPresContext, aClassID) {}
 
-  SimpleXULLeafFrame(ComputedStyle* aStyle, nsPresContext* aPresContext)
+  explicit SimpleXULLeafFrame(ComputedStyle* aStyle,
+                              nsPresContext* aPresContext)
       : SimpleXULLeafFrame(aStyle, aPresContext, kClassID) {}
 
   friend nsIFrame* NS_NewSimpleXULLeafFrame(mozilla::PresShell* aPresShell,

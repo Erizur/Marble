@@ -634,7 +634,9 @@
       <stack class="tree-stack" flex="1">
         <hbox class="tree-rows" flex="1">
           <html:slot name="treechildren"></html:slot>
-          <scrollbar vertical="true" class="scrollbar-topmost" />
+          <scrollbar height="0" minwidth="0" minheight="0" orient="vertical"
+                     class="hidevscroll-scrollbar scrollbar-topmost"
+                     ></scrollbar>
         </hbox>
         <html:input class="tree-input" type="text" hidden="true"/>
       </stack>
@@ -666,7 +668,7 @@
 
     static get inheritedAttributes() {
       return {
-        scrollbar: "collapsed=hidevscroll",
+        ".hidevscroll-scrollbar": "collapsed=hidevscroll",
       };
     }
 

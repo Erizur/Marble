@@ -113,7 +113,7 @@ thumb {
   appearance: auto;
   -moz-default-appearance: scrollbarthumb-horizontal;
 
-  scrollbar[vertical] & {
+  &[orient="vertical"] {
     -moz-default-appearance: scrollbarthumb-vertical;
   }
 
@@ -147,7 +147,7 @@ scrollbar {
     }
   }
 
-  &[vertical] {
+  &[orient="vertical"] {
     -moz-default-appearance: scrollbar-vertical;
   }
 
@@ -161,14 +161,14 @@ scrollbarbutton {
   appearance: auto;
   -moz-default-appearance: scrollbarbutton-right;
 
-  scrollbar[vertical] > & {
+  scrollbar[orient="vertical"] > & {
     -moz-default-appearance: scrollbarbutton-down;
   }
 
   &[type="decrement"] {
     -moz-default-appearance: scrollbarbutton-left;
 
-    scrollbar[vertical] > & {
+    scrollbar[orient="vertical"] > & {
       -moz-default-appearance: scrollbarbutton-up;
     }
   }
