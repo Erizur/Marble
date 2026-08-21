@@ -153,6 +153,10 @@ int32_t nsSliderFrame::GetMaxPosition(nsIContent* content) {
   return GetIntegerAttribute(content, nsGkAtoms::maxpos, 100);
 }
 
+int32_t nsSliderFrame::GetIncrement(nsIContent* content) {
+  return GetIntegerAttribute(content, nsGkAtoms::increment, 1);
+}
+
 int32_t nsSliderFrame::GetPageIncrement(nsIContent* content) {
   return GetIntegerAttribute(content, nsGkAtoms::pageincrement, 10);
 }
