@@ -19,7 +19,6 @@
 #include "nsAtom.h"
 #include "nsBlockFrame.h"
 #include "nsCOMPtr.h"
-#include "nsExpirationState.h"
 #include "nsIDOMEventListener.h"
 #include "nsIWidgetListener.h"
 #include "nsXULPopupManager.h"
@@ -221,8 +220,8 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
 
   bool HasRemoteContent() const;
 
-  // Whether we should have a widget even when we're not shown.
-  bool ShouldHaveWidgetWhenHidden() const;
+  // Whether we should create a widget on Init().
+  bool ShouldCreateWidgetUpfront() const;
 
   // Whether we should expand the menu to take the size of the parent menulist.
   bool ShouldExpandToInflowParentOrAnchor() const;
@@ -577,9 +576,6 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
     mAPZFocusSequenceNumber = aNewNumber;
   }
 
-  void DestroyWidgetIfNeeded();
-  nsExpirationState* GetExpirationState() { return &mExpirationState; }
-
  protected:
   nsString mIncrementalString;  // for incremental typing navigation
 
@@ -685,7 +681,6 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
 
   nsRect mOverrideConstraintRect;
 
-  nsExpirationState mExpirationState;
   static mozilla::TimeStamp sLastKeyTime;
 };  // class nsMenuPopupFrame
 

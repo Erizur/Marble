@@ -39,7 +39,6 @@
 #include "nsCSSRendering.h"
 #include "nsContentUtils.h"
 #include "nsDisplayList.h"
-#include "nsExpirationTracker.h"
 #include "nsFrameManager.h"
 #include "nsGkAtoms.h"
 #include "nsIBaseWindow.h"
@@ -90,6 +89,10 @@ extern mozilla::LazyLogModule gWidgetPopupLog;
 #  define LOG_WAYLAND_VERBOSE(...)
 #endif
 
+// NS_NewMenuPopupFrame
+//
+// Wrapper for creating a new menu popup container
+//
 nsIFrame* NS_NewMenuPopupFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
   return new (aPresShell)
       nsMenuPopupFrame(aStyle, aPresShell->GetPresContext());
@@ -100,32 +103,6 @@ NS_IMPL_FRAMEARENA_HELPERS(nsMenuPopupFrame)
 NS_QUERYFRAME_HEAD(nsMenuPopupFrame)
   NS_QUERYFRAME_ENTRY(nsMenuPopupFrame)
 NS_QUERYFRAME_TAIL_INHERITING(nsBlockFrame)
-
-// Three generations of 5000ms (so 15s to get rid of all the closed popups).
-class PopupExpirationTracker final
-    : public nsExpirationTracker<nsMenuPopupFrame, 3> {
-  static StaticAutoPtr<PopupExpirationTracker> sInstance;
-
-  void NotifyExpired(nsMenuPopupFrame* aPopup) override {
-    // printf_stderr("PopupExpirationTracker::NotifyExpired(%s)\n",
-    //               aPopup->ListTag().get());
-    RemoveObject(aPopup);
-    aPopup->DestroyWidgetIfNeeded();
-  }
-
- public:
-  PopupExpirationTracker()
-      : nsExpirationTracker(5000 /* ms */, "PopupExpirationTracker"_ns) {}
-  static PopupExpirationTracker* Get() { return sInstance.get(); }
-  static PopupExpirationTracker& GetOrCreate() {
-    if (!sInstance) {
-      sInstance = new PopupExpirationTracker();
-      ClearOnShutdown(&sInstance);
-    }
-    return *sInstance;
-  }
-};
-StaticAutoPtr<PopupExpirationTracker> PopupExpirationTracker::sInstance;
 
 nsMenuPopupFrame::nsMenuPopupFrame(ComputedStyle* aStyle,
                                    nsPresContext* aPresContext)
@@ -147,7 +124,7 @@ static nsIWidget::InputRegion ComputeInputRegion(const ComputedStyle& aStyle,
               .Truncated()};
 }
 
-bool nsMenuPopupFrame::ShouldHaveWidgetWhenHidden() const {
+bool nsMenuPopupFrame::ShouldCreateWidgetUpfront() const {
   // Create a widget upfront for panels that never hide frames for their
   // contents (like web extension popups). These, for now, need to create the
   // widgets upfront, so that the frames inside the popup don't get "reparented"
@@ -188,7 +165,7 @@ void nsMenuPopupFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
 
   // To improve performance, create the widget for the popup if needed. Popups
   // such as menus will create their widgets later when the popup opens.
-  if (!mWidget && ShouldHaveWidgetWhenHidden()) {
+  if (!mWidget && ShouldCreateWidgetUpfront()) {
     CreateWidget();
   }
 
@@ -249,9 +226,6 @@ widget::PopupLevel nsMenuPopupFrame::GetPopupLevel(bool aIsNoAutoHide) const {
 }
 
 void nsMenuPopupFrame::PrepareWidget(bool aForceRecreate) {
-  if (mExpirationState.IsTracked()) {
-    PopupExpirationTracker::Get()->RemoveObject(this);
-  }
   if (auto* widget = GetWidget()) {
     nsCOMPtr<nsIWidget> parent = ComputeParentWidget();
     if (aForceRecreate || widget->GetParent() != parent ||
@@ -962,9 +936,6 @@ void nsMenuPopupFrame::InitializePopup(nsIContent* aAnchorContent,
     // already (which generally should only be possible on tests, since
     // otherwise we shouldn't ever mix native / non-native for the same popup)
     // we should destroy it now.
-    if (mExpirationState.IsTracked()) {
-      PopupExpirationTracker::Get()->RemoveObject(this);
-    }
     DestroyWidget();
   }
 }
@@ -998,9 +969,6 @@ void nsMenuPopupFrame::InitializePopupAtScreen(
     // already (which generally should only be possible on tests, since
     // otherwise we shouldn't ever mix native / non-native for the same popup)
     // we should destroy it now.
-    if (mExpirationState.IsTracked()) {
-      PopupExpirationTracker::Get()->RemoveObject(this);
-    }
     DestroyWidget();
   }
 }
@@ -1113,9 +1081,6 @@ void nsMenuPopupFrame::HidePopup(bool aDeselectMenu, nsPopupState aNewState,
   RefPtr widget = GetWidget();
   if (widget) {
     widget->ClearCachedWebrenderResources();
-    if (!aFromFrameDestruction && !ShouldHaveWidgetWhenHidden()) {
-      PopupExpirationTracker::GetOrCreate().AddObject(this);
-    }
   }
 
   ClearPendingWidgetMoveResize();
@@ -2224,10 +2189,6 @@ void nsMenuPopupFrame::Destroy(DestroyContext& aContext) {
   // but alas, also pre-existing.
   HidePopup(/* aDeselectMenu = */ false, ePopupClosed,
             /* aFromFrameDestruction = */ true);
-  if (mExpirationState.IsTracked()) {
-    PopupExpirationTracker::Get()->RemoveObject(this);
-  }
-
   if (RefPtr<nsXULPopupManager> pm = nsXULPopupManager::GetInstance()) {
     pm->PopupDestroyed(this);
   }
@@ -2269,14 +2230,6 @@ nsMargin nsMenuPopupFrame::GetMargin() const {
     margin.right -= mExtraMargin.x;
   }
   return margin;
-}
-
-void nsMenuPopupFrame::DestroyWidgetIfNeeded() {
-  if (IsVisibleOrShowing()) {
-    MOZ_ASSERT_UNREACHABLE("Shouldn't be tracked while visible");
-    return;
-  }
-  DestroyWidget();
 }
 
 void nsMenuPopupFrame::MoveTo(const CSSPoint& aPos, bool aUpdateAttrs,
