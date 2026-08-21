@@ -79,7 +79,7 @@ class nsScrollbarFrame final : public nsContainerFrame,
               const ReflowInput& aReflowInput,
               nsReflowStatus& aStatus) override;
 
-  void SetOverrideScrollbarMediator(nsIScrollbarMediator*);
+  void SetScrollbarMediatorContent(nsIContent* aMediator);
   nsIScrollbarMediator* GetScrollbarMediator();
   void WillBecomeActive();
 
@@ -131,7 +131,7 @@ class nsScrollbarFrame final : public nsContainerFrame,
   bool mHasBeenHovered = false;
 
  private:
-  WeakFrame mOverriddenScrollbarMediator;
+  nsCOMPtr<nsIContent> mScrollbarMediator;
 
   nsCOMPtr<Element> mUpTopButton;
   nsCOMPtr<Element> mDownTopButton;
