@@ -171,8 +171,13 @@
                      data-l10n-id="places-forward-button"
                      disabled="true"/>
 
-      <menubar id="placesMenu" native="false">
+#ifdef XP_MACOSX
+        <toolbarbutton type="menu" class="tabbable" wantdropmarker="true"
+              data-l10n-id="places-organize-button-mac"
+#else
+      <menubar id="placesMenu">
         <menu class="menu-iconic" data-l10n-id="places-organize-button"
+#endif
               id="organizeButton">
           <menupopup id="organizeButtonPopup">
             <menuitem id="newbookmark"
@@ -241,8 +246,14 @@
                       data-l10n-id="places-file-close"/>
 #endif
           </menupopup>
+#ifdef XP_MACOSX
+        </toolbarbutton>
+        <toolbarbutton type="menu" class="tabbable" wantdropmarker="true"
+        data-l10n-id="places-view-button-mac"
+#else
         </menu>
         <menu class="menu-iconic" data-l10n-id="places-view-button"
+#endif
               id="viewMenu">
           <menupopup id="viewMenuPopup">
 
@@ -263,8 +274,14 @@
               </menupopup>
             </menu>
           </menupopup>
+#ifdef XP_MACOSX
+        </toolbarbutton>
+        <toolbarbutton type="menu" class="tabbable" wantdropmarker="true"
+        data-l10n-id="places-maintenance-button-mac"
+#else
         </menu>
         <menu class="menu-iconic" data-l10n-id="places-maintenance-button"
+#endif
               id="maintenanceButton">
           <menupopup id="maintenanceButtonPopup">
             <menuitem id="backupBookmarks"
@@ -289,8 +306,13 @@
                       command="OrganizerCommand_browserImport"
                       data-l10n-id="places-import-other-browser"/>
           </menupopup>
+#ifdef XP_MACOSX
+        </toolbarbutton>
+#else
         </menu>
       </menubar>
+#endif
+
       <toolbarbutton id="clearDownloadsButton"
                           data-l10n-id="downloads-clear-downloads-button"
                           class="tabbable"

@@ -152,6 +152,10 @@ places-organize-button =
   .tooltiptext = Organize your bookmarks
   .accesskey = O
 
+places-organize-button-mac =
+  .label = Organize
+  .tooltiptext = Organize your bookmarks
+
 places-file-close =
   .label = Close
   .accesskey = C
@@ -163,6 +167,10 @@ places-view-button =
   .label = Views
   .tooltiptext = Change your view
   .accesskey = V
+
+places-view-button-mac =
+  .label = Views
+  .tooltiptext = Change your view
 
 places-view-menu-columns =
   .label = Show Columns
@@ -188,6 +196,10 @@ places-maintenance-button =
   .label = Import and Backup
   .tooltiptext = Import and backup your bookmarks
   .accesskey = I
+
+places-maintenance-button-mac =
+  .label = Import and Backup
+  .tooltiptext = Import and backup your bookmarks
 
 places-cmd-backup =
   .label = Backup…
