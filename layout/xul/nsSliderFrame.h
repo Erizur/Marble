@@ -84,7 +84,7 @@ class nsSliderFrame final : public nsContainerFrame {
                                 const nsDisplayListSet& aLists);
 
   nsresult AttributeChanged(int32_t aNameSpaceID, nsAtom* aAttribute,
-                            int32_t aModType) override;
+                            AttrModType aModType) override;
 
   void Init(nsIContent* aContent, nsContainerFrame* aParent,
             nsIFrame* aPrevInFlow) override;
@@ -165,6 +165,7 @@ class nsSliderFrame final : public nsContainerFrame {
   bool ShouldScrollToClickForEvent(mozilla::WidgetGUIEvent* aEvent);
   bool IsEventOverThumb(mozilla::WidgetGUIEvent* aEvent);
 
+  void PageUpDown(nscoord change);
   void SetCurrentThumbPosition(nsIContent* aScrollbar, nscoord aNewPos,
                                bool aIsSmooth, bool aMaySnap);
   void SetCurrentPosition(nsIContent* aScrollbar, int32_t aNewPos,

@@ -19,9 +19,6 @@
 #include "nsLeafFrame.h"
 #include "nsRepeatService.h"
 
-class nsScrollbarFrame;
-class nsIScrollbarMediator;
-
 namespace mozilla {
 class PresShell;
 }  // namespace mozilla
@@ -30,7 +27,8 @@ class nsScrollbarButtonFrame final : public mozilla::SimpleXULLeafFrame {
  public:
   NS_DECL_FRAMEARENA_HELPERS(nsScrollbarButtonFrame)
 
-  nsScrollbarButtonFrame(ComputedStyle* aStyle, nsPresContext* aPresContext)
+  explicit nsScrollbarButtonFrame(ComputedStyle* aStyle,
+                                  nsPresContext* aPresContext)
       : mozilla::SimpleXULLeafFrame(aStyle, aPresContext, kClassID) {}
 
   // Overrides
@@ -43,8 +41,10 @@ class nsScrollbarButtonFrame final : public mozilla::SimpleXULLeafFrame {
                        mozilla::WidgetGUIEvent* aEvent,
                        nsEventStatus* aEventStatus) override;
 
-  nsScrollbarFrame* GetScrollbar();
-  nsIScrollbarMediator* GetMediator();
+  static nsresult GetChildWithTag(nsAtom* atom, nsIFrame* start,
+                                  nsIFrame*& result);
+  static nsresult GetParentWithTag(nsAtom* atom, nsIFrame* start,
+                                   nsIFrame*& result);
 
   bool HandleButtonPress(nsPresContext* aPresContext,
                          mozilla::WidgetGUIEvent* aEvent,
