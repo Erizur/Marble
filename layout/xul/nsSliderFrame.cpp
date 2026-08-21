@@ -968,22 +968,33 @@ void nsSliderFrame::SetCurrentPositionInternal(nsIContent* aScrollbar,
   nsScrollbarFrame* scrollbarBox = Scrollbar();
   AutoWeakFrame weakFrame(this);
 
-  nsIScrollbarMediator* mediator = scrollbarBox->GetScrollbarMediator();
-  if (!mediator) {
+  mUserChanged = true;
+
+  // See if we have a mediator.
+  if (nsIScrollbarMediator* mediator = scrollbarBox->GetScrollbarMediator()) {
+    nscoord oldPos =
+        nsPresContext::CSSPixelsToAppUnits(GetCurrentPosition(scrollbar));
+    nscoord newPos = nsPresContext::CSSPixelsToAppUnits(aNewPos);
+    mediator->ThumbMoved(scrollbarBox, oldPos, newPos);
+    if (!weakFrame.IsAlive()) {
+      return;
+    }
+    UpdateAttribute(scrollbar->AsElement(), aNewPos, /* aNotify */ false,
+                    aIsSmooth);
+    CurrentPositionChanged();
+    mUserChanged = false;
     return;
   }
-  mUserChanged = true;
-  nscoord oldPos =
-      nsPresContext::CSSPixelsToAppUnits(GetCurrentPosition(scrollbar));
-  nscoord newPos = nsPresContext::CSSPixelsToAppUnits(aNewPos);
-  mediator->ThumbMoved(scrollbarBox, oldPos, newPos);
+
+  UpdateAttribute(scrollbar->AsElement(), aNewPos, true, aIsSmooth);
   if (!weakFrame.IsAlive()) {
     return;
   }
-  UpdateAttribute(scrollbar->AsElement(), aNewPos, /* aNotify */ false,
-                  aIsSmooth);
-  CurrentPositionChanged();
   mUserChanged = false;
+
+#ifdef DEBUG_SLIDER
+  printf("Current Pos=%d\n", aNewPos);
+#endif
 }
 
 void nsSliderFrame::SetInitialChildList(ChildListID aListID,
