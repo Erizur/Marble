@@ -1401,6 +1401,13 @@ wr::WrSpatialId DisplayListBuilder::DefineScrollLayer(
   return space;
 }
 
+void DisplayListBuilder::PushClearRect(const wr::LayoutRect& aBounds,
+                                       const wr::LayoutRect& aClip) {
+  WRDL_LOG("PushClearRect b=%s cl=%s\n", mWrState, ToString(aBounds).c_str(),
+           ToString(aClip).c_str());
+  wr_dp_push_clear_rect(mWrState, aBounds, aClip, &mCurrentSpaceAndClipChain);
+}
+
 void DisplayListBuilder::PushRect(const wr::LayoutRect& aBounds,
                                   const wr::LayoutRect& aClip,
                                   bool aIsBackfaceVisible,

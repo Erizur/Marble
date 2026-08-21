@@ -3411,6 +3411,27 @@ fn common_item_properties_for_rect(
 }
 
 #[no_mangle]
+pub extern "C" fn wr_dp_push_clear_rect(
+    state: &mut WrState,
+    rect: LayoutRect,
+    clip_rect: LayoutRect,
+    parent: &WrSpaceAndClipChain,
+) {
+    debug_assert!(unsafe { !is_in_render_thread() });
+
+    let space_and_clip = parent.to_webrender(state.pipeline_id);
+
+    let prim_info = CommonItemProperties {
+        clip_rect,
+        clip_chain_id: space_and_clip.clip_chain_id,
+        spatial_id: space_and_clip.spatial_id,
+        flags: prim_flags(true, /* prefer_compositor_surface */ false),
+    };
+
+    state.frame_builder.dl_builder.push_clear_rect(&prim_info, rect);
+}
+
+#[no_mangle]
 pub extern "C" fn wr_dp_push_rect(
     state: &mut WrState,
     rect: LayoutRect,

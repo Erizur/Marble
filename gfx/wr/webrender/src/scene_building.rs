@@ -69,6 +69,7 @@ use crate::prim_store::{PrimitiveInstance, PrimitiveStoreStats};
 use crate::prim_store::{PrimitiveKind, NinePatchDescriptor, PrimitiveStore};
 use crate::prim_store::{InternablePrimitive, PictureIndex};
 use crate::prim_store::PolygonKey;
+use crate::prim_store::clear::ClearPrim;
 use crate::prim_store::rectangle::RectanglePrim;
 use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
 use crate::prim_store::borders::{ImageBorder, NormalBorderPrim};
@@ -1483,6 +1484,20 @@ impl<'a> SceneBuilder<'a> {
                     info.glyph_options,
                 );
             }
+            DisplayItem::ClearRectangle(ref info) => {
+                profile_scope!("clear");
+
+                let (layout, _, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
+                    &info.common,
+                    info.bounds,
+                );
+
+                self.add_clear_rectangle(
+                    spatial_node_index,
+                    clip_node_id,
+                    &layout,
+                );
+            }
             DisplayItem::Rectangle(ref info) => {
                 profile_scope!("rect");
 
@@ -2025,6 +2040,25 @@ impl<'a> SceneBuilder<'a> {
                 prim,
             );
         }
+    }
+
+    pub fn add_clear_rectangle(
+        &mut self,
+        spatial_node_index: SpatialNodeIndex,
+        clip_node_id: ClipNodeId,
+        info: &LayoutPrimitiveInfo,
+    ) {
+        self.add_tile_cache_barrier_if_needed(SliceFlags::empty());
+
+        self.add_primitive(
+            spatial_node_index,
+            clip_node_id,
+            info,
+            Vec::new(),
+            ClearPrim,
+        );
+
+        self.add_tile_cache_barrier_if_needed(SliceFlags::empty());
     }
 
     pub fn add_primitive<P>(
@@ -3122,6 +3156,11 @@ impl<'a> SceneBuilder<'a> {
                     )
                 },
                 ShadowItem::Primitive(pending_primitive) => {
+                    self.add_shadow_prim_to_draw_list(
+                        pending_primitive,
+                    )
+                },
+                ShadowItem::ClearPrimitive(pending_primitive) => {
                     self.add_shadow_prim_to_draw_list(
                         pending_primitive,
                     )
@@ -4591,6 +4630,7 @@ pub enum ShadowItem {
     LineDecoration(PendingPrimitive<LineDecoration>),
     NormalBorder(PendingPrimitive<NormalBorderPrim>),
     Primitive(PendingPrimitive<RectanglePrim>),
+    ClearPrimitive(PendingPrimitive<ClearPrim>),
     TextRun(PendingPrimitive<TextRun>),
 }
 
@@ -4615,6 +4655,12 @@ impl From<PendingPrimitive<NormalBorderPrim>> for ShadowItem {
 impl From<PendingPrimitive<RectanglePrim>> for ShadowItem {
     fn from(container: PendingPrimitive<RectanglePrim>) -> Self {
         ShadowItem::Primitive(container)
+    }
+}
+
+impl From<PendingPrimitive<ClearPrim>> for ShadowItem {
+    fn from(container: PendingPrimitive<ClearPrim>) -> Self {
+        ShadowItem::ClearPrimitive(container)
     }
 }
 

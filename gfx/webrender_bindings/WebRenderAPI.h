@@ -649,6 +649,9 @@ class DisplayListBuilder final {
       wr::APZScrollGeneration aScrollOffsetGeneration,
       wr::HasScrollLinkedEffect aHasScrollLinkedEffect);
 
+  void PushClearRect(const wr::LayoutRect& aBounds,
+                     const wr::LayoutRect& aClip);
+
   void PushRect(const wr::LayoutRect& aBounds, const wr::LayoutRect& aClip,
                 bool aIsBackfaceVisible, bool aForceAntiAliasing,
                 bool aIsCheckerboard, const wr::ColorF& aColor);

@@ -310,6 +310,7 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                 Debug::RoundedRectClip(v) => Real::RoundedRectClip(v),
                 Debug::ImageMaskClip(v) => Real::ImageMaskClip(v),
                 Debug::Rectangle(v) => Real::Rectangle(v),
+                Debug::ClearRectangle(v) => Real::ClearRectangle(v),
                 Debug::HitTest(v) => Real::HitTest(v),
                 Debug::Line(v) => Real::Line(v),
                 Debug::Image(v) => Real::Image(v),
@@ -597,6 +598,7 @@ impl BuiltDisplayList {
                 Real::RoundedRectClip(v) => Debug::RoundedRectClip(v),
                 Real::ImageMaskClip(v) => Debug::ImageMaskClip(v),
                 Real::Rectangle(v) => Debug::Rectangle(v),
+                Real::ClearRectangle(v) => Debug::ClearRectangle(v),
                 Real::HitTest(v) => Debug::HitTest(v),
                 Real::Line(v) => Debug::Line(v),
                 Real::Image(v) => Debug::Image(v),
@@ -1146,6 +1148,19 @@ impl DisplayListBuilder {
 
         let buffer = self.buffer_from_section(self.default_section());
         Self::push_iter_impl(buffer, iter);
+    }
+
+    pub fn push_clear_rect(
+        &mut self,
+        common: &di::CommonItemProperties,
+        bounds: LayoutRect,
+    ) {
+        let (common, offset) = self.normalize_common(common);
+        let item = di::DisplayItem::ClearRectangle(di::ClearRectangleDisplayItem {
+            common,
+            bounds: bounds.translate(offset),
+        });
+        self.push_item(&item);
     }
 
     pub fn push_rect(
