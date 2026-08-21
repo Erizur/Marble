@@ -740,12 +740,12 @@ nsresult nsSliderFrame::HandleEvent(nsPresContext* aPresContext,
           *aEventStatus = nsEventStatus_eConsumeNoDefault;
         }
         if (isMouseOutsideThumb) {
-          SetCurrentThumbPosition(scrollbar, mThumbStart, false);
+          SetCurrentThumbPosition(scrollbar, mThumbStart, false, false);
           return NS_OK;
         }
 
         // set it
-        SetCurrentThumbPosition(scrollbar, pos, false);
+        SetCurrentThumbPosition(scrollbar, pos, false, true);  // with snapping
       } break;
 
       case eTouchEnd:
@@ -783,7 +783,8 @@ nsresult nsSliderFrame::HandleEvent(nsPresContext* aPresContext,
 
     // set it
     AutoWeakFrame weakFrame(this);
-    SetCurrentThumbPosition(scrollbar, pos - thumbLength / 2, false);
+    // should aMaySnap be true here?
+    SetCurrentThumbPosition(scrollbar, pos - thumbLength / 2, false, false);
     NS_ENSURE_TRUE(weakFrame.IsAlive(), NS_OK);
 
     DragThumb(true);
@@ -930,8 +931,17 @@ static void UpdateAttribute(dom::Element* aScrollbar, nscoord aNewPos,
 // the content in such a way that thumbRect.x/.y becomes aNewThumbPos.
 void nsSliderFrame::SetCurrentThumbPosition(nsIContent* aScrollbar,
                                             nscoord aNewThumbPos,
-                                            bool aIsSmooth) {
+                                            bool aIsSmooth, bool aMaySnap) {
   int32_t newPos = NSToIntRound(aNewThumbPos / mRatio);
+  if (aMaySnap &&
+      mContent->AsElement()->AttrValueIs(kNameSpaceID_None, nsGkAtoms::snap,
+                                         nsGkAtoms::_true, eCaseMatters)) {
+    // If snap="true", then the slider may only be set to min + (increment * x).
+    // Otherwise, the slider may be set to any positive integer.
+    int32_t increment = GetIncrement(aScrollbar);
+    newPos = NSToIntRound(newPos / float(increment)) * increment;
+  }
+
   SetCurrentPosition(aScrollbar, newPos, aIsSmooth);
 }
 
@@ -1171,7 +1181,7 @@ nsresult nsSliderFrame::StartDrag(Event* aEvent) {
 
   if (scrollToClick) {
     // should aMaySnap be true here?
-    SetCurrentThumbPosition(scrollbar, newpos, false);
+    SetCurrentThumbPosition(scrollbar, newpos, false, false);
   }
 
   nsIFrame* thumbFrame = mFrames.FirstChild();

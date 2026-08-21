@@ -166,7 +166,7 @@ class nsSliderFrame final : public nsContainerFrame {
   bool IsEventOverThumb(mozilla::WidgetGUIEvent* aEvent);
 
   void SetCurrentThumbPosition(nsIContent* aScrollbar, nscoord aNewPos,
-                               bool aIsSmooth);
+                               bool aIsSmooth, bool aMaySnap);
   void SetCurrentPosition(nsIContent* aScrollbar, int32_t aNewPos,
                           bool aIsSmooth);
   void SetCurrentPositionInternal(nsIContent* aScrollbar, int32_t pos,
