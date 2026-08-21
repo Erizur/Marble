@@ -577,7 +577,9 @@ class ScrollContainerFrame : public nsContainerFrame,
    * Internal method used by scrollbars to notify their scrolling
    * container of changes.
    */
-  void ScrollbarCurPosChanged(bool aDoScroll = true);
+  void CurPosAttributeChanged(nsIContent* aChild) {
+    return CurPosAttributeChangedInternal(aChild);
+  }
 
   void DisableOverlayScrollbars();
   void EnableOverlayScrollbars();
@@ -751,7 +753,7 @@ class ScrollContainerFrame : public nsContainerFrame,
 
   /**
    * @note This method might destroy the frame, pres shell and other objects.
-   * Update scrollbar to reflect current scroll position
+   * Update scrollbar curpos attributes to reflect current scroll position
    */
   void UpdateScrollbarPosition();
 
@@ -1193,15 +1195,35 @@ class ScrollContainerFrame : public nsContainerFrame,
                            const nsDisplayListSet& aLists, bool aCreateLayer,
                            bool aPositioned);
 
+  /**
+   * @note This method might destroy the frame, pres shell and other objects.
+   * Called when the 'curpos' attribute on one of the scrollbars changes.
+   */
+  void CurPosAttributeChangedInternal(nsIContent*, bool aDoScroll = true);
+
   void PostScrollEvent();
   MOZ_CAN_RUN_SCRIPT void FireScrollEvent();
   void PostScrolledAreaEvent();
   MOZ_CAN_RUN_SCRIPT void FireScrolledAreaEvent();
 
-  void FinishReflowForScrollbar(nsScrollbarFrame*, nscoord aMinXY,
+  /**
+   * @note This method might destroy the frame, pres shell and other objects.
+   */
+  void FinishReflowForScrollbar(Element* aElement, nscoord aMinXY,
                                 nscoord aMaxXY, nscoord aCurPosXY,
-                                nscoord aPageIncrement);
-  void ActivityOccurred();
+                                nscoord aPageIncrement, nscoord aIncrement);
+  /**
+   * @note This method might destroy the frame, pres shell and other objects.
+   */
+  void SetScrollbarEnabled(Element* aElement, nscoord aMaxPos);
+  /**
+   * @note This method might destroy the frame, pres shell and other objects.
+   */
+  void SetCoordAttribute(Element* aElement, nsAtom* aAtom, nscoord aSize);
+
+  nscoord GetCoordAttribute(nsIFrame* aFrame, nsAtom* aAtom,
+                            nscoord aDefaultValue, nscoord* aRangeStart,
+                            nscoord* aRangeLength);
 
   nsRect GetLayoutScrollRange() const;
   // Get the scroll range assuming the viewport has size (aWidth, aHeight).
