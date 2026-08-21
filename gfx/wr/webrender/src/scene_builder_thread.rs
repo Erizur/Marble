@@ -10,6 +10,7 @@ use api::channel::{unbounded_channel, single_msg_channel, Receiver, Sender};
 use api::units::*;
 use crate::render_api::{ApiMsg, FrameMsg, SceneMsg, ResourceUpdate, TransactionMsg, MemoryReport};
 use crate::box_shadow::BoxShadow;
+use crate::prim_store::clear::ClearPrim;
 use crate::prim_store::rectangle::RectanglePrim;
 #[cfg(feature = "capture")]
 use crate::capture::CaptureConfig;

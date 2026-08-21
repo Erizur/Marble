@@ -412,6 +412,15 @@ fn prepare_interned_prim_for_render(
     let unsnapped_prim_rect_min = prim_instance.unsnapped_prim_rect.min;
 
     match &mut prim_instance.kind {
+        PrimitiveKind::Clear { data_handle, .. } => {
+            profile_scope!("Clear");
+            let prim_data = &mut data_stores.clear[*data_handle];
+
+            prim_data.update(
+                frame_state,
+                frame_context.scene_properties,
+            );
+        }
         PrimitiveKind::BoxShadow { data_handle, .. } => {
             profile_scope!("BoxShadow");
 
@@ -1786,6 +1795,7 @@ fn update_clip_task_for_brush(
         PrimitiveKind::BoxShadow { .. } => {
             unreachable!("BUG: box-shadows should not hit legacy brush clip path");
         }
+        PrimitiveKind::Clear { .. } |
         PrimitiveKind::Picture { .. } |
         PrimitiveKind::TextRun { .. } |
         PrimitiveKind::LineDecoration { .. } |
@@ -2173,6 +2183,7 @@ fn build_segments_if_needed(
                 return;
             }
         }
+        PrimitiveKind::Clear { .. } |
         PrimitiveKind::Picture { .. } |
         PrimitiveKind::TextRun { .. } |
         PrimitiveKind::NormalBorder { .. } |

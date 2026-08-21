@@ -210,12 +210,14 @@ pub enum TileSurface {
     Color {
         color: ColorF,
     },
+    Clear,
 }
 
 impl TileSurface {
     pub fn kind(&self) -> &'static str {
         match *self {
             TileSurface::Color { .. } => "Color",
+            TileSurface::Clear => "Clear",
             TileSurface::Texture { .. } => "Texture",
         }
     }
@@ -557,6 +559,9 @@ impl Tile {
                         color,
                     }
                 }
+                Some(BackdropKind::Clear) => {
+                    TileSurface::Clear
+                }
                 None => {
                     // This should be prevented by the is_simple_prim check above.
                     unreachable!();
@@ -574,7 +579,7 @@ impl Tile {
                         descriptor,
                     }
                 }
-                Some(TileSurface::Color { .. }) | None => {
+                Some(TileSurface::Color { .. }) | Some(TileSurface::Clear) | None => {
                     // This is the case where we are constructing a tile surface that
                     // involves drawing to a texture. Create the correct surface
                     // descriptor depending on the compositing mode that will read
@@ -616,6 +621,7 @@ pub enum BackdropKind {
     Color {
         color: ColorF,
     },
+    Clear,
 }
 
 /// Stores information about the calculated opaque backdrop of this slice.
@@ -2327,6 +2333,14 @@ impl TileCacheInstance {
                     prim_info.opacity_bindings.push(binding.into());
                 }
             }
+            PrimitiveKind::Clear { .. } => {
+                backdrop_candidate = Some(BackdropInfo {
+                    opaque_rect: pic_coverage_rect,
+                    spanning_opaque_color: None,
+                    kind: Some(BackdropKind::Clear),
+                    backdrop_rect: pic_coverage_rect,
+                });
+            }
             PrimitiveKind::Rectangle { data_handle, .. } => {
                 // Rectangles can only form a backdrop candidate if they are known opaque.
                 // TODO(gw): We could resolve the opacity binding here, but the common
@@ -2698,6 +2712,7 @@ impl TileCacheInstance {
             // a clear primitive (e.g. color, gradient, image) can be
             // considered.
             match backdrop_candidate.kind {
+                Some(BackdropKind::Clear) => {}
                 Some(BackdropKind::Color { .. }) | None => {
                     let surface = &mut surfaces[prim_surface_index.0];
 
@@ -2772,10 +2787,11 @@ impl TileCacheInstance {
                         // (and also clears any previous primitives). Additionally, update our
                         // background color to match the backdrop color, which will ensure that
                         // our tiles are cleared to this color.
-                        let BackdropKind::Color { color } = kind;
-                        if backdrop_candidate.opaque_rect.contains_box(&self.local_rect) {
-                            vis_flags |= PrimitiveVisibilityFlags::IS_BACKDROP;
-                            self.backdrop.spanning_opaque_color = Some(color);
+                        if let BackdropKind::Color { color } = kind {
+                            if backdrop_candidate.opaque_rect.contains_box(&self.local_rect) {
+                                vis_flags |= PrimitiveVisibilityFlags::IS_BACKDROP;
+                                self.backdrop.spanning_opaque_color = Some(color);
+                            }
                         }
                     }
                 }

@@ -109,6 +109,7 @@ pub enum CompositeTileSurface {
     ExternalSurface {
         external_surface_index: ResolvedExternalSurfaceIndex,
     },
+    Clear,
 }
 
 /// The surface format for a tile being composited.
@@ -139,6 +140,7 @@ bitflags! {
 pub enum TileKind {
     Opaque,
     Alpha,
+    Clear,
 }
 
 // Index in to the compositor transforms stored in `CompositeState`
@@ -179,6 +181,7 @@ pub fn tile_kind(surface: &CompositeTileSurface, is_opaque: bool) -> TileKind {
         // Color tiles are, by definition, opaque. We might support non-opaque color
         // tiles if we ever find pages that have a lot of these.
         CompositeTileSurface::Color { .. } => TileKind::Opaque,
+        CompositeTileSurface::Clear => TileKind::Clear,
         CompositeTileSurface::Texture { .. }
         | CompositeTileSurface::ExternalSurface { .. } => {
             // Texture surfaces get bucketed by opaque/alpha, for z-rejection
@@ -462,6 +465,7 @@ pub enum TileSurfaceKind {
     Color {
         color: ColorF,
     },
+    Clear,
 }
 
 impl From<&TileSurface> for TileSurfaceKind {
@@ -469,6 +473,7 @@ impl From<&TileSurface> for TileSurfaceKind {
         match surface {
             TileSurface::Texture { .. } => TileSurfaceKind::Texture,
             TileSurface::Color { color } => TileSurfaceKind::Color { color: *color },
+            TileSurface::Clear => TileSurfaceKind::Clear,
         }
     }
 }

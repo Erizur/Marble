@@ -32,6 +32,7 @@ pub mod gradient;
 pub mod image;
 pub mod line_dec;
 pub mod picture;
+pub mod clear;
 pub mod rectangle;
 pub mod text_run;
 pub mod interned;
@@ -44,6 +45,7 @@ use gradient::{LinearGradientDataHandle, RadialGradientDataHandle, ConicGradient
 use image::{ImageDataHandle, ImageScratch, VisibleImageTile, YuvImageDataHandle};
 use line_dec::LineDecorationDataHandle;
 use picture::PictureDataHandle;
+use clear::ClearDataHandle;
 use rectangle::RectangleDataHandle;
 use text_run::{TextRunDataHandle, TextRunScratch};
 use crate::box_shadow::BoxShadowDataHandle;
@@ -782,6 +784,9 @@ pub enum PrimitiveKind {
     BoxShadow {
         data_handle: BoxShadowDataHandle,
     },
+    Clear {
+        data_handle: ClearDataHandle,
+    },
 }
 
 impl PrimitiveKind {
@@ -838,6 +843,9 @@ impl PrimitiveInstance {
 
     pub fn uid(&self) -> intern::ItemUid {
         match &self.kind {
+            PrimitiveKind::Clear { data_handle, .. } => {
+                data_handle.uid()
+            }
             PrimitiveKind::Rectangle { data_handle, .. } => {
                 data_handle.uid()
             }

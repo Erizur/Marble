@@ -2018,6 +2018,38 @@ impl BatchBuilder {
                     },
                 );
             }
+            PrimitiveKind::Clear { .. } => {
+                let batch_params = BrushBatchParameters::shared(
+                    BrushBatchKind::Solid,
+                    TextureSet::UNTEXTURED,
+                    [get_shader_opacity(1.0), 0, 0, 0],
+                    0,
+                );
+
+                let prim_header = PrimitiveHeader {
+                    specific_prim_address: prim_cache_address.as_int(),
+                    user_data: batch_params.prim_user_data,
+                    ..base_prim_header
+                };
+                let prim_header_index = prim_headers.push(&prim_header);
+
+                self.add_segmented_prim_to_batch(
+                    None,
+                    common_data.opacity,
+                    &batch_params,
+                    BlendMode::PremultipliedDestOut,
+                    batch_features,
+                    brush_flags,
+                    common_data.transformed_aa_edges,
+                    prim_header_index,
+                    bounding_rect,
+                    transform_metadata,
+                    z_id,
+                    prim_info.clip_task_index,
+                    ctx,
+                    render_tasks,
+                );
+            }
             PrimitiveKind::Rectangle { .. } => {
                 let batch_params = BrushBatchParameters::shared(
                     BrushBatchKind::Solid,

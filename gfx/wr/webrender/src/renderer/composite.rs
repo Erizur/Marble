@@ -41,6 +41,7 @@ pub(super) struct OcclusionItemKey {
 
 pub(super) struct SwapChainLayer {
     pub occlusion: occlusion::FrontToBackBuilder<OcclusionItemKey>,
+    pub clear_tiles: Vec<occlusion::Item<OcclusionItemKey>>,
 }
 
 pub(super) struct CompositeTileState {
@@ -263,6 +264,23 @@ impl Renderer {
 
             // Work out the draw params based on the tile surface
             let (instance, textures, shader_params) = match tile.surface {
+                CompositeTileSurface::Clear => {
+                    let dummy = TextureSource::Dummy;
+                    let image_buffer_kind = dummy.image_buffer_kind();
+                    let instance = CompositeInstance::new(
+                        tile_rect,
+                        clip_rect,
+                        PremultipliedColorF::BLACK,
+                        flip,
+                        clip,
+                    );
+                    let features = instance.get_rgb_features();
+                    (
+                        instance,
+                        BatchTextures::composite_rgb(dummy),
+                        (CompositeSurfaceFormat::Rgba, image_buffer_kind, features, None),
+                    )
+                }
                 CompositeTileSurface::Color { color } => {
                     let dummy = TextureSource::Dummy;
                     let image_buffer_kind = dummy.image_buffer_kind();
@@ -501,6 +519,20 @@ impl Renderer {
             self.gpu_profiler.finish_sampler(opaque_sampler);
         }
 
+        if !layer.clear_tiles.is_empty() {
+            let transparent_sampler = self.gpu_profiler.start_sampler(GPU_SAMPLER_TAG_TRANSPARENT);
+            self.set_blend(true, FramebufferKind::Main);
+            self.device.set_blend_mode_premultiplied_dest_out();
+            self.draw_tile_list(
+                layer.clear_tiles.iter(),
+                &composite_state,
+                &composite_state.external_surfaces,
+                projection,
+                &mut results.stats,
+            );
+            self.gpu_profiler.finish_sampler(transparent_sampler);
+        }
+
         // Draw alpha tiles
         let alpha_items = layer.occlusion.alpha_items();
         if !alpha_items.is_empty() {
@@ -574,6 +606,7 @@ impl Renderer {
 
             swapchain_layers.push(SwapChainLayer {
                 occlusion: occlusion::FrontToBackBuilder::with_capacity(cap, cap),
+                clear_tiles: Vec::new(),
             });
         }
 
@@ -633,6 +666,7 @@ impl Renderer {
             // Determine if the tile is an external surface or content
             let usage = match tile.surface {
                 CompositeTileSurface::Texture { .. } |
+                CompositeTileSurface::Clear |
                 CompositeTileSurface::Color { .. } => {
                     CompositorSurfaceUsage::Content
                 }
@@ -785,6 +819,7 @@ impl Renderer {
 
                 swapchain_layers.push(SwapChainLayer {
                     occlusion: occlusion::FrontToBackBuilder::with_capacity(cap, cap),
+                    clear_tiles: Vec::new(),
                 })
             }
             tile_index_to_layer_index[idx] = Some(input_layers.len() - 1);
@@ -819,10 +854,21 @@ impl Renderer {
                     });
                 }
                 None => {
-                    full_render_occlusion.add(&rect, is_opaque, OcclusionItemKey {
-                        tile_index: idx,
-                        needs_mask: false,
-                    });
+                    if tile.kind == TileKind::Clear {
+                        swapchain_layers
+                            .last_mut()
+                            .unwrap()
+                            .clear_tiles
+                            .push(occlusion::Item {
+                                rectangle: rect,
+                                key: OcclusionItemKey { tile_index: idx, needs_mask: false },
+                            });
+                    } else {
+                        full_render_occlusion.add(&rect, is_opaque, OcclusionItemKey {
+                            tile_index: idx,
+                            needs_mask: false,
+                        });
+                    }
                 }
             }
         }
@@ -854,6 +900,7 @@ impl Renderer {
 
                     swapchain_layers.push(SwapChainLayer {
                         occlusion: occlusion::FrontToBackBuilder::with_capacity(cap, cap),
+                        clear_tiles: Vec::new(),
                     });
                 }
             }
@@ -911,6 +958,7 @@ impl Renderer {
                         match tile.surface {
                             CompositeTileSurface::ExternalSurface { .. } => {}
                             CompositeTileSurface::Texture { .. }  |
+                            CompositeTileSurface::Clear |
                             CompositeTileSurface::Color { .. } => {
                                 unreachable!();
                             },

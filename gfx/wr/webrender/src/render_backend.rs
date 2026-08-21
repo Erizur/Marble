@@ -18,6 +18,7 @@ use api::channel::{single_msg_channel, Sender, Receiver};
 use crate::bump_allocator::ChunkPool;
 use crate::AsyncPropertySampler;
 use crate::box_shadow::BoxShadow;
+use crate::prim_store::clear::ClearPrim;
 use crate::prim_store::rectangle::RectanglePrim;
 #[cfg(any(feature = "capture", feature = "replay"))]
 use crate::render_api::CaptureBits;
@@ -221,6 +222,10 @@ impl DataStores {
         match prim_inst.kind {
             PrimitiveKind::Rectangle { data_handle, .. } => {
                 let prim_data = &self.prim[data_handle];
+                &prim_data.common
+            }
+            PrimitiveKind::Clear { data_handle, .. } => {
+                let prim_data = &self.clear[data_handle];
                 &prim_data.common
             }
             PrimitiveKind::Image { data_handle, .. } => {
