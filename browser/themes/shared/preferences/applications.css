@@ -8,7 +8,7 @@ richlistitem[appHandlerIcon] .actionsMenu::part(icon) {
 }
 
 menuitem[appHandlerIcon] {
-  --menuitem-icon: var(--app-handler-icon);
+  list-style-image: var(--app-handler-icon);
 }
 
 :is(richlistitem, menuitem)[appHandlerIcon="handleInternally"] {

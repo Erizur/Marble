@@ -311,14 +311,14 @@ xul|menu {
   }
 
   #webRTC-sharingCamera-menu {
-    --menuitem-icon: url("chrome://browser/skin/notification-icons/camera.png");
+    list-style-image: url("chrome://browser/skin/notification-icons/camera.png");
   }
 
   #webRTC-sharingMicrophone-menu {
-    --menuitem-icon: url("chrome://browser/skin/notification-icons/microphone.png");
+    list-style-image: url("chrome://browser/skin/notification-icons/microphone.png");
   }
 
   #webRTC-sharingScreen-menu {
-    --menuitem-icon: url("chrome://browser/skin/notification-icons/screen.png");
+    list-style-image: url("chrome://browser/skin/notification-icons/screen.png");
   }
 }

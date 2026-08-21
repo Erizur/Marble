@@ -369,15 +369,15 @@ toolbarpaletteitem {
 }
 
 #customization-uidensity-menuitem-normal {
-  --menuitem-icon: url("chrome://browser/skin/customizableui/density-normal.svg");
+  list-style-image: url("chrome://browser/skin/customizableui/density-normal.svg");
 }
 
 #customization-uidensity-menuitem-compact {
-  --menuitem-icon: url("chrome://browser/skin/customizableui/density-compact.svg");
+  list-style-image: url("chrome://browser/skin/customizableui/density-compact.svg");
 }
 
 #customization-uidensity-menuitem-touch {
-  --menuitem-icon: url("chrome://browser/skin/customizableui/density-touch.svg");
+  list-style-image: url("chrome://browser/skin/customizableui/density-touch.svg");
 }
 
 #customization-uidensity-button > .box-inherit > .box-inherit > .button-icon:-moz-locale-dir(rtl) {

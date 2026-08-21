@@ -109,13 +109,13 @@
 }
 
 #organizeButton {
-  --menuitem-icon: url("chrome://global/skin/icons/settings.svg");
+  list-style-image: url("chrome://global/skin/icons/settings.svg");
 }
 
 #viewMenu {
-  --menuitem-icon: url("chrome://browser/skin/sort.svg");
+  list-style-image: url("chrome://browser/skin/sort.svg");
 }
 
 #maintenanceButton {
-  --menuitem-icon: url("chrome://global/skin/icons/arrows-updown.svg");
+  list-style-image: url("chrome://global/skin/icons/arrows-updown.svg");
 }

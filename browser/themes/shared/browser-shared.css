@@ -489,7 +489,7 @@ body {
 /* Profiles menu */
 
 #menu_newProfile {
-  --menuitem-icon: url(chrome://global/skin/icons/plus.svg);
+  list-style-image: url(chrome://global/skin/icons/plus.svg);
 }
 
 .menuitem-iconic-profile {
@@ -548,7 +548,7 @@ body {
 
 /* Share Button */
 .share-more-button {
-  --menuitem-icon: url("chrome://global/skin/icons/more.svg");
+  list-style-image: url("chrome://global/skin/icons/more.svg");
 }
 
 /* Bookmarks toolbar */
@@ -703,12 +703,12 @@ menupopup::part(drop-indicator) {
 
 .unified-nav-back[_moz-menuactive]:-moz-locale-dir(ltr),
 .unified-nav-forward[_moz-menuactive]:-moz-locale-dir(rtl) {
-  --menuitem-icon: url("chrome://browser/skin/back.svg") !important;
+  list-style-image: url("chrome://browser/skin/back.svg") !important;
 }
 
 .unified-nav-forward[_moz-menuactive]:-moz-locale-dir(ltr),
 .unified-nav-back[_moz-menuactive]:-moz-locale-dir(rtl) {
-  --menuitem-icon: url("chrome://browser/skin/forward.svg") !important;
+  list-style-image: url("chrome://browser/skin/forward.svg") !important;
 }
 
 /* Find bar */
@@ -1718,11 +1718,4 @@ popupnotificationcontent {
       pointer-events: none;
     }
   }
-}
-
-/* Bookmarks roots menu-items */
-
-#BMB_bookmarksToolbar,
-#bookmarksToolbarFolderMenu {
-  --menuitem-icon: url("chrome://browser/skin/places/bookmarksToolbar.svg");
 }
