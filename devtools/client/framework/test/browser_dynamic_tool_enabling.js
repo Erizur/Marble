@@ -11,19 +11,19 @@ var gItemsToTest = {
 };
 
 function expectedAttributeValueFromPrefs(prefs) {
-  return prefs.every(pref => Services.prefs.getBoolPref(pref));
+  return prefs.every(pref => Services.prefs.getBoolPref(pref)) ? null : "true";
 }
 
 function checkItem(el, prefs) {
   const expectedValue = expectedAttributeValueFromPrefs(prefs);
   is(
-    el.hasAttribute("disabled"),
-    !expectedValue,
+    el.getAttribute("disabled"),
+    expectedValue,
     "disabled attribute should match current pref state"
   );
   is(
-    el.hasAttribute("hidden"),
-    !expectedValue,
+    el.getAttribute("hidden"),
+    expectedValue,
     "hidden attribute should match current pref state"
   );
 }

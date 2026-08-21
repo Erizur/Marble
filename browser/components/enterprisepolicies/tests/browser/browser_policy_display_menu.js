@@ -14,7 +14,11 @@ add_task(async function test_menu_shown_boolean() {
   // we will need to open a new window to actually see the menu bar
   let newWin = await BrowserTestUtils.openNewBrowserWindow();
   let menubar = newWin.document.getElementById("toolbar-menubar");
-  ok(!menubar.hasAttribute("autohide"), "The menu bar should not be hidden");
+  is(
+    menubar.getAttribute("autohide"),
+    "false",
+    "The menu bar should not be hidden"
+  );
 
   await BrowserTestUtils.closeWindow(newWin);
 });
@@ -37,9 +41,17 @@ add_task(async function test_menu_shown_string() {
   {
     let newWin = await BrowserTestUtils.openNewBrowserWindow();
     let menubar = newWin.document.getElementById("toolbar-menubar");
-    ok(!menubar.hasAttribute("autohide"), "The menu bar should not be hidden");
+    is(
+      menubar.getAttribute("autohide"),
+      "false",
+      "The menu bar should not be hidden"
+    );
     setToolbarVisibility(menubar, false);
-    ok(menubar.hasAttribute("autohide"), "The menu bar should be hidden");
+    is(
+      menubar.getAttribute("autohide"),
+      "true",
+      "The menu bar should be hidden"
+    );
     await BrowserTestUtils.closeWindow(newWin);
   }
 
@@ -47,7 +59,11 @@ add_task(async function test_menu_shown_string() {
     // Make sure the menubar autohide persists even tho it's default-on.
     let newWin = await BrowserTestUtils.openNewBrowserWindow();
     let menubar = newWin.document.getElementById("toolbar-menubar");
-    ok(menubar.hasAttribute("autohide"), "The menu bar should be hidden");
+    is(
+      menubar.getAttribute("autohide"),
+      "true",
+      "The menu bar should be hidden"
+    );
     await BrowserTestUtils.closeWindow(newWin);
   }
 });

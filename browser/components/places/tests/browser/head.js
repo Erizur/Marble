@@ -155,7 +155,7 @@ async function synthesizeClickOnSelectedTreeCell(aTree, aOptions) {
 function promiseSetToolbarVisibility(aToolbar, aVisible) {
   if (isToolbarVisible(aToolbar) != aVisible) {
     let visibilityChanged = TestUtils.waitForCondition(
-      () => isToolbarVisible(aToolbar) == aVisible
+      () => aToolbar.collapsed != aVisible
     );
     setToolbarVisibility(aToolbar, aVisible, undefined, false);
     return visibilityChanged;
@@ -175,7 +175,9 @@ function promiseSetToolbarVisibility(aToolbar, aVisible) {
 function isToolbarVisible(aToolbar) {
   let hidingAttribute =
     aToolbar.getAttribute("type") == "menubar" ? "autohide" : "collapsed";
-  return !aToolbar.hasAttribute(hidingAttribute);
+  let hidingValue = aToolbar.getAttribute(hidingAttribute)?.toLowerCase();
+  // Check for both collapsed="true" and collapsed="collapsed"
+  return hidingValue !== "true" && hidingValue !== hidingAttribute;
 }
 
 /**

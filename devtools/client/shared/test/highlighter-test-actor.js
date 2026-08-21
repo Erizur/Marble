@@ -421,9 +421,9 @@ class HighlighterTestActor extends protocol.Actor {
     const toolbar = pauseOverlay.getElement("paused-dbg-toolbar");
 
     return (
-      !root.hasAttribute("hidden") &&
+      root.getAttribute("hidden") !== "true" &&
       root.getAttribute("overlay") == "true" &&
-      !toolbar.hasAttribute("hidden") &&
+      toolbar.getAttribute("hidden") !== "true" &&
       !!toolbar.getTextContent()
     );
   }
@@ -539,7 +539,10 @@ class HighlighterTestActor extends protocol.Actor {
 
     const nodeTabbingOrderHighlighters = [
       ...highlighter._highlighter._highlighters.values(),
-    ].filter(h => !h.getElement("tabbing-order-root").hasAttribute("hidden"));
+    ].filter(
+      h =>
+        h.getElement("tabbing-order-root").getAttribute("hidden") !== "true"
+    );
 
     return nodeTabbingOrderHighlighters.map(h => {
       let nodeStr = h.currentNode.nodeName.toLowerCase();

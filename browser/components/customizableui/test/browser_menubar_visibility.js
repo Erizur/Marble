@@ -8,7 +8,7 @@
  */
 add_task(async function test_menubar_visbility() {
   let menubar = document.getElementById("toolbar-menubar");
-  ok(menubar.hasAttribute("autohide"), "Menubar should be autohiding");
+  is(menubar.getAttribute("autohide"), "true", "Menubar should be autohiding");
   registerCleanupFunction(() => {
     Services.xulStore.removeValue(
       AppConstants.BROWSER_CHROME_URL,
@@ -30,9 +30,10 @@ add_task(async function test_menubar_visbility() {
     }
   );
   await shownPromise;
-  let attrChanged = BrowserTestUtils.waitForAttributeRemoval(
+  let attrChanged = BrowserTestUtils.waitForAttribute(
     "autohide",
-    menubar
+    menubar,
+    "false"
   );
   EventUtils.synthesizeMouseAtCenter(
     document.getElementById("toggle_toolbar-menubar"),
@@ -41,8 +42,9 @@ add_task(async function test_menubar_visbility() {
   await attrChanged;
   contextMenu.hidePopup(); // to be safe.
 
-  ok(
-    !menubar.hasAttribute("autohide"),
+  is(
+    menubar.getAttribute("autohide"),
+    "false",
     "Menubar should now be permanently visible."
   );
   let persistedValue = Services.xulStore.getValue(
@@ -50,12 +52,13 @@ add_task(async function test_menubar_visbility() {
     menubar.id,
     "autohide"
   );
-  is(persistedValue, "-moz-missing\n", "New value should be persisted");
+  is(persistedValue, "false", "New value should be persisted");
 
   let win = await BrowserTestUtils.openNewBrowserWindow();
 
-  ok(
-    !win.document.getElementById("toolbar-menubar").hasAttribute("autohide"),
+  is(
+    win.document.getElementById("toolbar-menubar").getAttribute("autohide"),
+    "false",
     "Menubar should also be permanently visible in the new window."
   );
 

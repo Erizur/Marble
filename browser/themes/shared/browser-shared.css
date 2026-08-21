@@ -367,7 +367,7 @@ body {
     }
   }
 
-  #toolbar-menubar[autohide]:not([inactive]) ~ :is(#TabsToolbar, #nav-bar) > & {
+  #toolbar-menubar[autohide="true"]:not([inactive]) ~ :is(#TabsToolbar, #nav-bar) > & {
     visibility: hidden;
   }
 
@@ -423,7 +423,7 @@ body {
  * (That is, if the menu bar doesn't autohide, and we're not in a fullscreen or
  * popup window.) */
 :root:not([chromehidden~="menubar"], [inFullscreen])
-  #toolbar-menubar:not([autohide])
+  #toolbar-menubar[autohide="false"]
   ~ :is(#TabsToolbar, #nav-bar)
   > :is(.titlebar-buttonbox-container, .titlebar-spacer) {
   display: none;
@@ -452,7 +452,7 @@ body {
 /* Menu bar */
 
 #toolbar-menubar {
-  &[autohide] {
+  &[autohide="true"] {
     overflow: hidden;
 
     /* For linux and windows, when temporarily showing the menu bar, make it at least
@@ -478,6 +478,10 @@ body {
       padding: 0 !important;
       appearance: none !important;
     }
+  }
+
+  &:not([autohide]) {
+    visibility: collapse;
   }
 }
 
@@ -584,7 +588,7 @@ body {
       max-height 170ms ease-out,
       var(--ext-theme-background-transition);
 
-    &[collapsed] {
+    &[collapsed="true"] {
       transition:
         min-height 170ms ease-out,
         max-height 170ms ease-out,
@@ -592,7 +596,7 @@ body {
     }
   }
 
-  &[collapsed] {
+  &[collapsed="true"] {
     max-height: 0;
 
     &.instant {
@@ -603,7 +607,7 @@ body {
   /* Bookmarks toolbar empty message */
 
   /* If the toolbar is not initialized set a zero width, but retain height. */
-  &:not([collapsed], [initialized]) > #personal-toolbar-empty {
+  &[collapsed="false"]:not([initialized]) > #personal-toolbar-empty {
     visibility: hidden;
     width: 0;
     overflow-x: hidden;

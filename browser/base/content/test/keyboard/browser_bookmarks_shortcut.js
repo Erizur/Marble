@@ -23,14 +23,15 @@ add_task(async function testBookmarksToolbarShortcut() {
 
   info("Toggle toolbar visibility on");
   let toolbar = document.getElementById("PersonalToolbar");
-  ok(
-    toolbar.hasAttribute("collapsed"),
+  is(
+    toolbar.getAttribute("collapsed"),
+    "true",
     "Toolbar bar should already be collapsed"
   );
 
   EventUtils.synthesizeKey("b", { shiftKey: true, accelKey: true });
   toolbar = document.getElementById("PersonalToolbar");
-  await BrowserTestUtils.waitForAttributeRemoval("collapsed", toolbar);
+  await BrowserTestUtils.waitForAttribute("collapsed", toolbar, "false");
   ok(true, "bookmarks toolbar is visible");
 
   await testIsBookmarksMenuItemStateChecked("always");
@@ -38,7 +39,7 @@ add_task(async function testBookmarksToolbarShortcut() {
   info("Toggle toolbar visibility off");
   EventUtils.synthesizeKey("b", { shiftKey: true, accelKey: true });
   toolbar = document.getElementById("PersonalToolbar");
-  await BrowserTestUtils.waitForAttribute("collapsed", toolbar, "");
+  await BrowserTestUtils.waitForAttribute("collapsed", toolbar, "true");
   ok(true, "bookmarks toolbar is not visible");
 
   await testIsBookmarksMenuItemStateChecked("never");
