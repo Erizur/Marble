@@ -221,9 +221,6 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
 
   bool HasRemoteContent() const;
 
-  // Whether this is a drag popup to show drag feedback.
-  bool IsDragPopup() const;
-
   // Whether we should have a widget even when we're not shown.
   bool ShouldHaveWidgetWhenHidden() const;
 
