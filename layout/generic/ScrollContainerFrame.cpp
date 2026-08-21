@@ -5542,8 +5542,8 @@ nsresult ScrollContainerFrame::FireScrollPortEvent() {
 
 void ScrollContainerFrame::PostOrDeferScrollEndEvent() {
   bool isInScrollbarButtonClickAndHold =
-      (mVScrollbarBox ? mVScrollbarBox->GetButtonScrollDirection() : false) ||
-      (mHScrollbarBox ? mHScrollbarBox->GetButtonScrollDirection() : false);
+      (mVScrollbarBox ? mVScrollbarBox->IsButtonScrollInProgress() : false) ||
+      (mHScrollbarBox ? mHScrollbarBox->IsButtonScrollInProgress() : false);
   bool isInScrollbarClickAndHold =
       SliderFrameInClickAndHold() || isInScrollbarButtonClickAndHold;
 
@@ -6969,6 +6969,30 @@ void ScrollContainerFrame::LayoutScrollbars(ScrollReflowInput& aState,
         LogicalSize(mVScrollbarBox->GetWritingMode(), vRect.Size()));
     LayoutScrollbarPartAtRect(aState, vScrollbarRI, vRect);
   }
+  if (mHScrollbarBox) {
+    ReflowInput hScrollbarRI(
+        pc, aState.mReflowInput, mHScrollbarBox,
+        LogicalSize(mHScrollbarBox->GetWritingMode(), hRect.Size()));
+    LayoutScrollbarPartAtRect(aState, hScrollbarRI, hRect);
+  }
+
+  // may need to update fixed position children of the viewport,
+  // if the client area changed size because of an incremental
+  // reflow of a descendant.  (If the outer frame is dirty, the fixed
+  // children will be re-laid out anyway)
+  if (aOldScrollPort.Size() != mScrollPort.Size() &&
+      !HasAnyStateBits(NS_FRAME_IS_DIRTY) && mIsRoot) {
+    mMayHaveDirtyFixedChildren = true;
+  }
+
+  // post reflow callback to modify scrollbar attributes
+  mUpdateScrollbarAttributes = true;
+  if (!mPostedReflowCallback) {
+    PresShell()->PostReflowCallback(this);
+    mPostedReflowCallback = true;
+  }
+}
+
 #if DEBUG
 static bool ShellIsAlive(nsWeakPtr& aWeakPtr) {
   RefPtr<PresShell> presShell = do_QueryReferent(aWeakPtr);
@@ -7018,30 +7042,6 @@ void ScrollContainerFrame::SetCoordAttribute(Element* aElement, nsAtom* aAtom,
       (mHasHorizontalScrollbar || mHasVerticalScrollbar)) {
     RefPtr<ScrollbarActivity> scrollbarActivity(mScrollbarActivity);
     scrollbarActivity->ActivityOccurred();
-  }
-}
-
-  if (mHScrollbarBox) {
-    ReflowInput hScrollbarRI(
-        pc, aState.mReflowInput, mHScrollbarBox,
-        LogicalSize(mHScrollbarBox->GetWritingMode(), hRect.Size()));
-    LayoutScrollbarPartAtRect(aState, hScrollbarRI, hRect);
-  }
-
-  // may need to update fixed position children of the viewport,
-  // if the client area changed size because of an incremental
-  // reflow of a descendant.  (If the outer frame is dirty, the fixed
-  // children will be re-laid out anyway)
-  if (aOldScrollPort.Size() != mScrollPort.Size() &&
-      !HasAnyStateBits(NS_FRAME_IS_DIRTY) && mIsRoot) {
-    mMayHaveDirtyFixedChildren = true;
-  }
-
-  // post reflow callback to modify scrollbar attributes
-  mUpdateScrollbarAttributes = true;
-  if (!mPostedReflowCallback) {
-    PresShell()->PostReflowCallback(this);
-    mPostedReflowCallback = true;
   }
 }
 

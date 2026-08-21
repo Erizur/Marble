@@ -108,6 +108,11 @@ class nsScrollbarFrame final : public nsContainerFrame,
   int32_t MoveToNewPosition(ImplementsScrollByUnit aImplementsScrollByUnit);
   int32_t GetIncrement() const { return mIncrement; }
 
+  bool IsButtonScrollInProgress() const { return mButtonScrollInProgress; }
+  void SetButtonScrollInProgress(bool aInProgress) {
+    mButtonScrollInProgress = aInProgress;
+  }
+
   // nsIAnonymousContentCreator
   nsresult CreateAnonymousContent(nsTArray<ContentInfo>& aElements) override;
   void AppendAnonymousContentTo(nsTArray<nsIContent*>& aElements,
@@ -132,6 +137,7 @@ class nsScrollbarFrame final : public nsContainerFrame,
   int32_t mIncrement = 0;
   mozilla::ScrollUnit mScrollUnit = mozilla::ScrollUnit::DEVICE_PIXELS;
   bool mSmoothScroll = false;
+  bool mButtonScrollInProgress = false;
   // On macOS, overlay scrollbar hover state should be sticky (remain hovered
   // while we've been hovered at least once).
   bool mHasBeenHovered = false;

@@ -169,6 +169,9 @@ bool nsScrollbarButtonFrame::HandleButtonPress(nsPresContext* aPresContext,
         return false;
       }
     }
+    if (repeat) {
+      sb->SetButtonScrollInProgress(true);
+    }
   }
   if (repeat) {
     StartRepeat();
@@ -186,6 +189,7 @@ nsScrollbarButtonFrame::HandleRelease(nsPresContext* aPresContext,
   GetParentWithTag(nsGkAtoms::scrollbar, this, scrollbar);
   nsScrollbarFrame* sb = do_QueryFrame(scrollbar);
   if (sb) {
+    sb->SetButtonScrollInProgress(false);
     nsIScrollbarMediator* m = sb->GetScrollbarMediator();
     if (m) {
       m->ScrollbarReleased(sb);
@@ -269,5 +273,10 @@ void nsScrollbarButtonFrame::Destroy(DestroyContext& aContext) {
   // Ensure our repeat service isn't going... it's possible that a scrollbar can
   // disappear out from under you while you're in the process of scrolling.
   StopRepeat();
+  nsIFrame* scrollbar;
+  GetParentWithTag(nsGkAtoms::scrollbar, this, scrollbar);
+  if (nsScrollbarFrame* sb = do_QueryFrame(scrollbar)) {
+    sb->SetButtonScrollInProgress(false);
+  }
   SimpleXULLeafFrame::Destroy(aContext);
 }

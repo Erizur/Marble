@@ -17,6 +17,7 @@
 #include "mozilla/PresShell.h"
 #include "mozilla/ReflowInput.h"
 #include "mozilla/ScrollContainerFrame.h"
+#include "mozilla/StaticPrefs_apz.h"
 #include "mozilla/dom/Element.h"
 #include "nsContentCreatorFunctions.h"
 #include "nsGkAtoms.h"
@@ -654,12 +655,4 @@ void nsScrollbarFrame::AppendAnonymousContentTo(
   if (mDownBottomButton) {
     aElements.AppendElement(mDownBottomButton);
   }
-}
-
-void nsScrollbarFrame::SetButtonScrollDirectionAndUnit(
-    int32_t aDirection, mozilla::ScrollUnit aUnit) {
-  SCROLLBAR_LOG("nsScrollbarFrame(%p) setting button scroll direction=%d", this,
-                aDirection);
-  mButtonScrollDirection = aDirection;
-  mButtonScrollUnit = aUnit;
 }
