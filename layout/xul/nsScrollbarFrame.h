@@ -95,6 +95,7 @@ class nsScrollbarFrame final : public nsContainerFrame,
   void AppendAnonymousContentTo(nsTArray<nsIContent*>& aElements,
                                 uint32_t aFilter) override;
 
+  void UpdateChildrenAttributeValue(nsAtom* aAttribute, bool aNotify);
   void ElementStateChanged(mozilla::dom::ElementState) override;
   bool HasBeenHovered() const { return mHasBeenHovered; }
 
