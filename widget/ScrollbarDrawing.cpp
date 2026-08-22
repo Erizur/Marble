@@ -8,6 +8,7 @@
 
 #include "mozilla/RelativeLuminanceUtils.h"
 #include "mozilla/StaticPrefs_widget.h"
+#include "nsContainerFrame.h"
 #include "nsDeviceContext.h"
 #include "nsIFrame.h"
 #include "nsLayoutUtils.h"
@@ -111,12 +112,14 @@ LayoutDeviceIntCoord ScrollbarDrawing::GetScrollbarSize(
 bool ScrollbarDrawing::IsScrollbarTrackOpaque(nsIFrame* aFrame) {
   auto trackColor = ComputeScrollbarTrackColor(
       aFrame, *nsLayoutUtils::StyleForScrollbar(aFrame),
+      aFrame->PresContext()->Document()->State(),
       Colors(aFrame, StyleAppearance::ScrollbarVertical));
   return trackColor.a == 1.0f;
 }
 
 sRGBColor ScrollbarDrawing::ComputeScrollbarTrackColor(
-    nsIFrame* aFrame, const ComputedStyle& aStyle, const Colors& aColors) {
+    nsIFrame* aFrame, const ComputedStyle& aStyle,
+    const DocumentState& aDocumentState, const Colors& aColors) {
   if (aColors.HighContrast()) {
     return aColors.System(StyleSystemColor::Window);
   }
@@ -130,7 +133,9 @@ sRGBColor ScrollbarDrawing::ComputeScrollbarTrackColor(
   static constexpr sRGBColor sDefaultTrackColor(
       gfx::sRGBColor::UnusualFromARGB(0xfff0f0f0));
 
-  auto systemColor = StyleSystemColor::ThemedScrollbar;
+  auto systemColor = aDocumentState.HasAllStates(DocumentState::WINDOW_INACTIVE)
+                         ? StyleSystemColor::ThemedScrollbarInactive
+                         : StyleSystemColor::ThemedScrollbar;
   return aColors.SystemOrElse(systemColor, [&] {
     return aColors.IsDark() ? sDefaultDarkTrackColor : sDefaultTrackColor;
   });
@@ -141,7 +146,8 @@ sRGBColor ScrollbarDrawing::ComputeScrollbarTrackColor(
 // by default anyways.
 sRGBColor ScrollbarDrawing::ComputeScrollbarThumbColor(
     nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors) {
   const nsStyleUI* ui = aStyle.StyleUI();
   if (ui->mScrollbarColor.IsColors()) {
     return sRGBColor::FromABGR(ThemeColors::AdjustUnthemedScrollbarThumbColor(
@@ -149,6 +155,9 @@ sRGBColor ScrollbarDrawing::ComputeScrollbarThumbColor(
   }
 
   auto systemColor = [&] {
+    if (aDocumentState.HasState(DocumentState::WINDOW_INACTIVE)) {
+      return StyleSystemColor::ThemedScrollbarThumbInactive;
+    }
     if (aElementState.HasState(ElementState::ACTIVE)) {
       if (aColors.HighContrast()) {
         return StyleSystemColor::Selecteditem;
@@ -180,15 +189,15 @@ template <typename PaintBackendData>
 bool ScrollbarDrawing::DoPaintDefaultScrollbar(
     PaintBackendData& aPaintData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   const bool overlay = nsLayoutUtils::UseOverlayScrollbars(aFrame);
   if (overlay && !aElementState.HasAtLeastOneOfStates(ElementState::HOVER |
                                                       ElementState::ACTIVE)) {
     return true;
   }
   const auto backgroundColor =
-      ComputeScrollbarTrackColor(aFrame, aStyle, aColors);
+      ComputeScrollbarTrackColor(aFrame, aStyle, aDocumentState, aColors);
   auto radius = [&]() -> CSSCoord {
     if (overlay && mKind == Kind::Win11 &&
         StaticPrefs::widget_non_native_theme_win11_scrollbar_round_track()) {
@@ -212,27 +221,31 @@ bool ScrollbarDrawing::DoPaintDefaultScrollbar(
 bool ScrollbarDrawing::PaintScrollbar(
     DrawTarget& aDrawTarget, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   return DoPaintDefaultScrollbar(aDrawTarget, aRect, aScrollbarKind, aFrame,
-                                 aStyle, aElementState, aColors, aDpiRatio);
+                                 aStyle, aElementState, aDocumentState, aColors,
+                                 aDpiRatio);
 }
 
 bool ScrollbarDrawing::PaintScrollbar(
     WebRenderBackendData& aWrData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   return DoPaintDefaultScrollbar(aWrData, aRect, aScrollbarKind, aFrame, aStyle,
-                                 aElementState, aColors, aDpiRatio);
+                                 aElementState, aDocumentState, aColors,
+                                 aDpiRatio);
 }
 
 template <typename PaintBackendData>
 bool ScrollbarDrawing::DoPaintDefaultScrollCorner(
     PaintBackendData& aPaintData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const Colors& aColors, const DPIRatio& aDpiRatio) {
-  auto scrollbarColor = ComputeScrollbarTrackColor(aFrame, aStyle, aColors);
+    const DocumentState& aDocumentState, const Colors& aColors,
+    const DPIRatio& aDpiRatio) {
+  auto scrollbarColor =
+      ComputeScrollbarTrackColor(aFrame, aStyle, aDocumentState, aColors);
   ThemeDrawing::FillRect(aPaintData, aRect, scrollbarColor);
   return true;
 }
@@ -240,17 +253,19 @@ bool ScrollbarDrawing::DoPaintDefaultScrollCorner(
 bool ScrollbarDrawing::PaintScrollCorner(
     DrawTarget& aDrawTarget, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const Colors& aColors, const DPIRatio& aDpiRatio) {
+    const DocumentState& aDocumentState, const Colors& aColors,
+    const DPIRatio& aDpiRatio) {
   return DoPaintDefaultScrollCorner(aDrawTarget, aRect, aScrollbarKind, aFrame,
-                                    aStyle, aColors, aDpiRatio);
+                                    aStyle, aDocumentState, aColors, aDpiRatio);
 }
 
 bool ScrollbarDrawing::PaintScrollCorner(
     WebRenderBackendData& aWrData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const Colors& aColors, const DPIRatio& aDpiRatio) {
+    const DocumentState& aDocumentState, const Colors& aColors,
+    const DPIRatio& aDpiRatio) {
   return DoPaintDefaultScrollCorner(aWrData, aRect, aScrollbarKind, aFrame,
-                                    aStyle, aColors, aDpiRatio);
+                                    aStyle, aDocumentState, aColors, aDpiRatio);
 }
 
 nscolor ScrollbarDrawing::GetScrollbarButtonColor(nscolor aTrackColor,
@@ -328,7 +343,8 @@ Maybe<nscolor> ScrollbarDrawing::GetScrollbarArrowColor(nscolor aButtonColor) {
 
 std::pair<sRGBColor, sRGBColor> ScrollbarDrawing::ComputeScrollbarButtonColors(
     nsIFrame* aFrame, StyleAppearance aAppearance, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors) {
   if (aColors.HighContrast()) {
     if (aElementState.HasAtLeastOneOfStates(ElementState::ACTIVE |
                                             ElementState::HOVER)) {
@@ -339,15 +355,17 @@ std::pair<sRGBColor, sRGBColor> ScrollbarDrawing::ComputeScrollbarButtonColors(
                               StyleSystemColor::Windowtext);
   }
 
-  auto trackColor = ComputeScrollbarTrackColor(aFrame, aStyle, aColors);
+  auto trackColor =
+      ComputeScrollbarTrackColor(aFrame, aStyle, aDocumentState, aColors);
   nscolor buttonColor =
       GetScrollbarButtonColor(trackColor.ToABGR(), aElementState);
-  auto arrowColor = GetScrollbarArrowColor(buttonColor)
-                        .map(sRGBColor::FromABGR)
-                        .valueOrFrom([&] {
-                          return ComputeScrollbarThumbColor(
-                              aFrame, aStyle, aElementState, aColors);
-                        });
+  auto arrowColor =
+      GetScrollbarArrowColor(buttonColor)
+          .map(sRGBColor::FromABGR)
+          .valueOrFrom([&] {
+            return ComputeScrollbarThumbColor(aFrame, aStyle, aElementState,
+                                              aDocumentState, aColors);
+          });
   return {sRGBColor::FromABGR(buttonColor), arrowColor};
 }
 
@@ -355,10 +373,10 @@ bool ScrollbarDrawing::PaintScrollbarButton(
     DrawTarget& aDrawTarget, StyleAppearance aAppearance,
     const LayoutDeviceRect& aRect, ScrollbarKind aScrollbarKind,
     nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   auto [buttonColor, arrowColor] = ComputeScrollbarButtonColors(
-      aFrame, aAppearance, aStyle, aElementState, aColors);
+      aFrame, aAppearance, aStyle, aElementState, aDocumentState, aColors);
   auto borderColor = aColors.System(StyleSystemColor::Buttontext);
   // Draw an outline around the scrollbar in high contrast mode
   auto borderWidth = aColors.HighContrast() ? CSSCoord(1.0f) : CSSCoord(0.0f);

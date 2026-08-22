@@ -71,10 +71,11 @@ LayoutDeviceIntSize ScrollbarDrawingWin11::GetMinimumWidgetSize(
 }
 
 sRGBColor ScrollbarDrawingWin11::ComputeScrollbarTrackColor(
-    nsIFrame* aFrame, const ComputedStyle& aStyle, const Colors& aColors) {
+    nsIFrame* aFrame, const ComputedStyle& aStyle,
+    const DocumentState& aDocumentState, const Colors& aColors) {
   if (aColors.HighContrast()) {
-    return ScrollbarDrawingWin::ComputeScrollbarTrackColor(aFrame, aStyle,
-                                                           aColors);
+    return ScrollbarDrawingWin::ComputeScrollbarTrackColor(
+        aFrame, aStyle, aDocumentState, aColors);
   }
   const nsStyleUI* ui = aStyle.StyleUI();
   if (ui->mScrollbarColor.IsColors()) {
@@ -87,10 +88,11 @@ sRGBColor ScrollbarDrawingWin11::ComputeScrollbarTrackColor(
 
 sRGBColor ScrollbarDrawingWin11::ComputeScrollbarThumbColor(
     nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors) {
   if (aColors.HighContrast()) {
     return ScrollbarDrawingWin::ComputeScrollbarThumbColor(
-        aFrame, aStyle, aElementState, aColors);
+        aFrame, aStyle, aElementState, aDocumentState, aColors);
   }
   const nscolor baseColor = [&] {
     const nsStyleUI* ui = aStyle.StyleUI();
@@ -118,15 +120,16 @@ sRGBColor ScrollbarDrawingWin11::ComputeScrollbarThumbColor(
 std::pair<sRGBColor, sRGBColor>
 ScrollbarDrawingWin11::ComputeScrollbarButtonColors(
     nsIFrame* aFrame, StyleAppearance aAppearance, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors) {
   if (aColors.HighContrast()) {
     return ScrollbarDrawingWin::ComputeScrollbarButtonColors(
-        aFrame, aAppearance, aStyle, aElementState, aColors);
+        aFrame, aAppearance, aStyle, aElementState, aDocumentState, aColors);
   }
   // The button always looks transparent (the track behind it is visible), so we
   // can hardcode it.
-  sRGBColor arrowColor =
-      ComputeScrollbarThumbColor(aFrame, aStyle, aElementState, aColors);
+  sRGBColor arrowColor = ComputeScrollbarThumbColor(
+      aFrame, aStyle, aElementState, aDocumentState, aColors);
   return {sRGBColor::White(0.0f), arrowColor};
 }
 
@@ -134,15 +137,15 @@ bool ScrollbarDrawingWin11::PaintScrollbarButton(
     DrawTarget& aDrawTarget, StyleAppearance aAppearance,
     const LayoutDeviceRect& aRect, ScrollbarKind aScrollbarKind,
     nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   if (!ScrollbarDrawing::IsParentScrollbarHoveredOrActive(aFrame)) {
     return true;
   }
 
   const auto style = ScrollbarStyle(aFrame);
   auto [buttonColor, arrowColor] = ComputeScrollbarButtonColors(
-      aFrame, aAppearance, aStyle, aElementState, aColors);
+      aFrame, aAppearance, aStyle, aElementState, aDocumentState, aColors);
   if (style != Style::Overlay) {
     auto borderColor = aColors.System(StyleSystemColor::Buttontext);
     // Draw an outline around the scrollbar in high contrast mode
@@ -235,10 +238,10 @@ template <typename PaintBackendData>
 bool ScrollbarDrawingWin11::DoPaintScrollbarThumb(
     PaintBackendData& aPaintData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
-  sRGBColor thumbColor =
-      ComputeScrollbarThumbColor(aFrame, aStyle, aElementState, aColors);
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
+  sRGBColor thumbColor = ComputeScrollbarThumbColor(
+      aFrame, aStyle, aElementState, aDocumentState, aColors);
 
   LayoutDeviceRect thumbRect(aRect);
 
@@ -331,19 +334,21 @@ bool ScrollbarDrawingWin11::DoPaintScrollbarThumb(
 bool ScrollbarDrawingWin11::PaintScrollbarThumb(
     DrawTarget& aDrawTarget, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   return DoPaintScrollbarThumb(aDrawTarget, aRect, aScrollbarKind, aFrame,
-                               aStyle, aElementState, aColors, aDpiRatio);
+                               aStyle, aElementState, aDocumentState, aColors,
+                               aDpiRatio);
 }
 
 bool ScrollbarDrawingWin11::PaintScrollbarThumb(
     WebRenderBackendData& aWrData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   return DoPaintScrollbarThumb(aWrData, aRect, aScrollbarKind, aFrame, aStyle,
-                               aElementState, aColors, aDpiRatio);
+                               aElementState, aDocumentState, aColors,
+                               aDpiRatio);
 }
 
 void ScrollbarDrawingWin11::RecomputeScrollbarParams() {

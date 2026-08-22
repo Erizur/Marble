@@ -55,10 +55,10 @@ template <typename PaintBackendData>
 bool ScrollbarDrawingGTK::DoPaintScrollbarThumb(
     PaintBackendData& aPaintData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
-  sRGBColor thumbColor =
-      ComputeScrollbarThumbColor(aFrame, aStyle, aElementState, aColors);
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
+  sRGBColor thumbColor = ComputeScrollbarThumbColor(
+      aFrame, aStyle, aElementState, aDocumentState, aColors);
 
   LayoutDeviceRect thumbRect(aRect);
 
@@ -98,19 +98,21 @@ bool ScrollbarDrawingGTK::DoPaintScrollbarThumb(
 bool ScrollbarDrawingGTK::PaintScrollbarThumb(
     DrawTarget& aDrawTarget, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   return DoPaintScrollbarThumb(aDrawTarget, aRect, aScrollbarKind, aFrame,
-                               aStyle, aElementState, aColors, aDpiRatio);
+                               aStyle, aElementState, aDocumentState, aColors,
+                               aDpiRatio);
 }
 
 bool ScrollbarDrawingGTK::PaintScrollbarThumb(
     WebRenderBackendData& aWrData, const LayoutDeviceRect& aRect,
     ScrollbarKind aScrollbarKind, nsIFrame* aFrame, const ComputedStyle& aStyle,
-    const ElementState& aElementState, const Colors& aColors,
-    const DPIRatio& aDpiRatio) {
+    const ElementState& aElementState, const DocumentState& aDocumentState,
+    const Colors& aColors, const DPIRatio& aDpiRatio) {
   return DoPaintScrollbarThumb(aWrData, aRect, aScrollbarKind, aFrame, aStyle,
-                               aElementState, aColors, aDpiRatio);
+                               aElementState, aDocumentState, aColors,
+                               aDpiRatio);
 }
 
 bool ScrollbarDrawingGTK::ShouldDrawScrollbarButtons() {

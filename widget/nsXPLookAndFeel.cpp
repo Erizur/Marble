@@ -287,9 +287,11 @@ static const char sColorPrefs[][41] = {
     "ui.IMESelectedConvertedTextUnderline",
     "ui.SpellCheckerUnderline",
     "ui.themedScrollbar",
+    "ui.themedScrollbarInactive",
     "ui.themedScrollbarThumb",
     "ui.themedScrollbarThumbHover",
     "ui.themedScrollbarThumbActive",
+    "ui.themedScrollbarThumbInactive",
 };
 
 static_assert(std::size(sColorPrefs) == size_t(LookAndFeel::ColorID::End),
@@ -1352,8 +1354,10 @@ static bool ColorIsCSSAccessible(LookAndFeel::ColorID aId) {
     case ColorID::TextHighlightBackground:
     case ColorID::TextHighlightForeground:
     case ColorID::ThemedScrollbar:
+    case ColorID::ThemedScrollbarInactive:
     case ColorID::ThemedScrollbarThumb:
     case ColorID::ThemedScrollbarThumbActive:
+    case ColorID::ThemedScrollbarThumbInactive:
     case ColorID::ThemedScrollbarThumbHover:
     case ColorID::IMERawInputBackground:
     case ColorID::IMERawInputForeground:

@@ -1115,6 +1115,7 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
   const nscoord twipsPerPixel = pc->AppUnitsPerDevPixel();
   const auto devPxRect = ToSnappedRect(aRect, twipsPerPixel, aPaintData);
 
+  const DocumentState docState = pc->Document()->State();
   ElementState elementState = GetContentState(aFrame, aAppearance);
   // Paint the outline iff we're asked to draw overflow and we have
   // outline-style: auto.
@@ -1216,8 +1217,8 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
       auto kind = ComputeScrollbarKind(aFrame, isHorizontal);
       return GetScrollbarDrawing().PaintScrollbarThumb(
           aPaintData, devPxRect, kind, aFrame,
-          *nsLayoutUtils::StyleForScrollbar(aFrame), elementState, colors,
-          dpiRatio);
+          *nsLayoutUtils::StyleForScrollbar(aFrame), elementState, docState,
+          colors, dpiRatio);
     }
     case StyleAppearance::ScrollbarHorizontal:
     case StyleAppearance::ScrollbarVertical: {
@@ -1225,14 +1226,15 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
       auto kind = ComputeScrollbarKind(aFrame, isHorizontal);
       return GetScrollbarDrawing().PaintScrollbar(
           aPaintData, devPxRect, kind, aFrame,
-          *nsLayoutUtils::StyleForScrollbar(aFrame), elementState, colors,
-          dpiRatio);
+          *nsLayoutUtils::StyleForScrollbar(aFrame), elementState, docState,
+          colors, dpiRatio);
     }
     case StyleAppearance::Scrollcorner: {
       auto kind = ComputeScrollbarKindForScrollCorner(aFrame);
       return GetScrollbarDrawing().PaintScrollCorner(
           aPaintData, devPxRect, kind, aFrame,
-          *nsLayoutUtils::StyleForScrollbar(aFrame), colors, dpiRatio);
+          *nsLayoutUtils::StyleForScrollbar(aFrame), docState, colors,
+          dpiRatio);
     }
     case StyleAppearance::ScrollbarbuttonUp:
     case StyleAppearance::ScrollbarbuttonDown:
@@ -1248,8 +1250,8 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
         auto kind = ComputeScrollbarKind(aFrame, isHorizontal);
         GetScrollbarDrawing().PaintScrollbarButton(
             aPaintData, aAppearance, devPxRect, kind, aFrame,
-            *nsLayoutUtils::StyleForScrollbar(aFrame), elementState, colors,
-            dpiRatio);
+            *nsLayoutUtils::StyleForScrollbar(aFrame), elementState, docState,
+            colors, dpiRatio);
       }
       break;
     }
