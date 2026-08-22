@@ -10,7 +10,7 @@
 #include <gtk/gtk.h>
 #include "gtkdrawing.h"
 
-GtkWidget* GetWidget(WidgetNodeType);
+GtkWidget* GetWidget(WidgetNodeType aNodeType);
 
 /*
  * Return a new style context based on aWidget, as a child of aParentStyle.
