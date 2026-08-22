@@ -30,42 +30,40 @@
  * `-moz-gtk-csd-titlebar-radius`) environment variable, and a window shadow
  * (which we can't read back from GTK).
  */
-@media (-moz-gtk-csd-transparency-available) {
-  :root[customtitlebar] {
-    background-color: transparent;
+:root[customtitlebar] {
+  background-color: transparent;
 
-    &[sizemode="normal"]:not([gtktiledwindow]) {
-      /* Firefox draws its contents to a child window, while GTK takes care of
-       * drawing the toplevel (which in most cases is just the window
-       * decorations).
-       *
-       * Due to how X11 child windows work, pixels painted by a child window will
-       * never be drawn by its toplevel, even in compositing window managers.
-       * That means that we need to draw the part of the decorations that fall
-       * into our client area ourselves, which is what this does.
-       *
-       * Alternatives to this would be:
-       *  * Using the XComposite extension
-       *  * Drawing to the toplevel window buffer directly
-       *  * Approximating the corners with gdk_window_shape_combine_region
-       *
-       * None of them being particularly appealing.
-       *
-       * On Wayland we render to a subsurface which gets properly composited
-       * atop our toplevel, so there's no issue there (MozWindowDecorations
-       * does nothing).
-       */
-      -moz-default-appearance: -moz-window-decorations;
-      appearance: auto;
+  &[sizemode="normal"]:not([gtktiledwindow]) {
+    /* Firefox draws its contents to a child window, while GTK takes care of
+     * drawing the toplevel (which in most cases is just the window
+     * decorations).
+     *
+     * Due to how X11 child windows work, pixels painted by a child window will
+     * never be drawn by its toplevel, even in compositing window managers.
+     * That means that we need to draw the part of the decorations that fall
+     * into our client area ourselves, which is what this does.
+     *
+     * Alternatives to this would be:
+     *  * Using the XComposite extension
+     *  * Drawing to the toplevel window buffer directly
+     *  * Approximating the corners with gdk_window_shape_combine_region
+     *
+     * None of them being particularly appealing.
+     *
+     * On Wayland we render to a subsurface which gets properly composited
+     * atop our toplevel, so there's no issue there (MozWindowDecorations
+     * does nothing).
+     */
+    -moz-default-appearance: -moz-window-decorations;
+    appearance: auto;
 
-      body,
-      dialog::backdrop {
-        border-top-left-radius: env(-moz-gtk-csd-titlebar-radius);
-        border-top-right-radius: env(-moz-gtk-csd-titlebar-radius);
-        @media -moz-pref("widget.gtk.rounded-bottom-corners.enabled") {
-          /* Use an uniform clip to allow WebRender to optimize it better */
-          border-radius: env(-moz-gtk-csd-titlebar-radius);
-        }
+    body,
+    dialog::backdrop {
+      border-top-left-radius: env(-moz-gtk-csd-titlebar-radius);
+      border-top-right-radius: env(-moz-gtk-csd-titlebar-radius);
+      @media -moz-pref("widget.gtk.rounded-bottom-corners.enabled") {
+        /* Use an uniform clip to allow WebRender to optimize it better */
+        border-radius: env(-moz-gtk-csd-titlebar-radius);
       }
     }
   }

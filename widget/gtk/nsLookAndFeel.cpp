@@ -439,51 +439,6 @@ static void DumpStyleContext(GtkStyleContext* aStyle) {
 }
 #endif
 
-static gint GetBorderRadius(GtkStyleContext* aStyle) {
-  GValue value = G_VALUE_INIT;
-  // NOTE(emilio): In an ideal world, we'd query the two longhands
-  // (border-top-left-radius and border-top-right-radius) separately. However,
-  // that doesn't work (GTK rejects the query with:
-  //
-  //   Style property "border-top-left-radius" is not gettable
-  //
-  // However! Getting border-radius does work, and it does return the
-  // border-top-left-radius as a gint:
-  //
-  //   https://docs.gtk.org/gtk3/const.STYLE_PROPERTY_BORDER_RADIUS.html
-  //   https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-20/gtk/gtkcssshorthandpropertyimpl.c#L961-977
-  //
-  // So we abuse this fact, and make the assumption here that the
-  // border-top-{left,right}-radius are the same, and roll with it.
-  gtk_style_context_get_property(aStyle, "border-radius", GTK_STATE_FLAG_NORMAL,
-                                 &value);
-  gint result = 0;
-  auto type = G_VALUE_TYPE(&value);
-  if (type == G_TYPE_INT) {
-    result = g_value_get_int(&value);
-  } else {
-    NS_WARNING(nsPrintfCString("Unknown value type %lu for border-radius", type)
-                   .get());
-  }
-  g_value_unset(&value);
-  return result;
-}
-
-static bool HasBackground(GtkStyleContext* aStyle) {
-  GdkRGBA gdkColor;
-  gtk_style_context_get_background_color(aStyle, GTK_STATE_FLAG_NORMAL,
-                                         &gdkColor);
-  if (gdkColor.alpha != 0.0) {
-    return true;
-  }
-
-  GValue value = G_VALUE_INIT;
-  gtk_style_context_get_property(aStyle, "background-image",
-                                 GTK_STATE_FLAG_NORMAL, &value);
-  auto cleanup = mozilla::MakeScopeExit([&] { g_value_unset(&value); });
-  return g_value_get_boxed(&value);
-}
-
 // Modifies color |*aDest| as if a pattern of color |aSource| was painted with
 // CAIRO_OPERATOR_OVER to a surface with color |*aDest|.
 static void ApplyColorOver(const GdkRGBA& aSource, GdkRGBA* aDest) {
@@ -1820,6 +1775,7 @@ void nsLookAndFeel::Initialize() {
   RecordTelemetry();
 }
 
+
 /* ButtonLayout represents a GTK CSD button and whether its on the left or
  * right side of the tab bar */
 enum class HeaderBarButtonType { None = 0, Close, Minimize, Maximize };
@@ -1850,7 +1806,7 @@ HeaderBarButtonLayout GetGtkHeaderBarButtonLayout() {
   const char* closeButton = strstr(decorationLayout, "close");
   const char* separator = strchr(decorationLayout, ':');
   result.mReversedPlacement =
-      closeButton && separator && closeButton < separator;
+        closeButton && separator && closeButton < separator;
 
   // We check what position a button string is stored in decorationLayout.
   //
@@ -2344,23 +2300,14 @@ void nsLookAndFeel::PerThemeData::Init() {
     g_object_unref(accelStyle);
   }
 
-  style = GetStyleContext(MOZ_GTK_HEADER_BAR);
-  {
-    const bool headerBarHasBackground = HasBackground(style);
-    if (!headerBarHasBackground || !GetBorderRadius(style)) {
-      // Some themes like Elementary's style the container of the headerbar
-      // rather than the header bar itself.
-      GtkStyleContext* fixedStyle = GetStyleContext(MOZ_GTK_HEADERBAR_FIXED);
-      if (HasBackground(fixedStyle) &&
-          (GetBorderRadius(fixedStyle) || !headerBarHasBackground)) {
-        style = fixedStyle;
-      }
-    }
-  }
+  const auto effectiveTitlebarStyle = HeaderBarShouldDrawContainer()
+                                          ? MOZ_GTK_HEADERBAR_FIXED
+                                          : MOZ_GTK_HEADER_BAR;
+  style = GetStyleContext(effectiveTitlebarStyle);
   {
     mTitlebar = GetColorPair(style, GTK_STATE_FLAG_NORMAL);
     mTitlebarInactive = GetColorPair(style, GTK_STATE_FLAG_BACKDROP);
-    mTitlebarRadius = GetBorderRadius(style);
+    mTitlebarRadius = IsSolidCSDStyleUsed() ? 0 : GetBorderRadius(style);
     mTitlebarButtonSpacing = [&] {
       // Account for the spacing property in the header bar.
       // Default to 6 pixels (gtk/gtkheaderbar.c)

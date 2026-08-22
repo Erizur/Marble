@@ -35,5 +35,8 @@ GtkStyleContext* GetStyleContext(
     GtkStateFlags aStateFlags = GTK_STATE_FLAG_NORMAL);
 
 void ResetWidgetCache();
+bool IsSolidCSDStyleUsed();
+gint GetBorderRadius(GtkStyleContext* aStyle);
+bool HeaderBarShouldDrawContainer();
 
 #endif  // WidgetStyleCache_h
