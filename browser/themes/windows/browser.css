@@ -50,6 +50,8 @@
        * is arbitrary, so the hardcoded brand colors from browser-colors.css
        * might not provide sufficient contrast. */
       --toolbarbutton-icon-fill: currentColor;
+      --toolbarbutton-background-color-hover: color-mix(in srgb, currentColor 17%, transparent);
+      --toolbarbutton-background-color-active: color-mix(in srgb, currentColor 30%, transparent);
       --toolbar-field-text-color: currentColor;
       --urlbar-box-background-color: var(--button-background-color-hover);
       --urlbar-box-background-color-focus: var(--button-background-color);
