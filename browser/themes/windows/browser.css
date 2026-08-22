@@ -152,8 +152,8 @@
   }
 
   @media (prefers-contrast) {
-    background-color: Field;
-    color: ButtonText; /* FIXME: shouldn't it be FieldText? */
+    background-color: -moz-field;
+    color: ButtonText;
 
     &:hover {
       background-color: SelectedItem;
