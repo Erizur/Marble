@@ -186,7 +186,6 @@ treechildren::-moz-tree-column(insertafter) {
   fill: currentColor;
   min-width: 0;
   padding: 1px 0;
-  border-block: 0;
   appearance: none;
 }
 
