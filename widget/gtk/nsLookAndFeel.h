@@ -10,8 +10,10 @@
 
 #include "X11UndefineNone.h"
 #include "nsXPLookAndFeel.h"
+#include "nsCOMPtr.h"
 #include "gfxFont.h"
 
+enum WidgetNodeType : int;
 struct _GtkStyle;
 typedef struct _GDBusProxy GDBusProxy;
 typedef struct _GtkCssProvider GtkCssProvider;
@@ -105,6 +107,7 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
   using ThemeFamily = mozilla::StyleGtkThemeFamily;
 
  protected:
+  static bool WidgetUsesImage(WidgetNodeType aNodeType);
   void RecordLookAndFeelSpecificTelemetry() override;
   static bool ShouldHonorThemeScrollbarColors();
   mozilla::Maybe<ColorScheme> ComputeColorSchemeSetting();

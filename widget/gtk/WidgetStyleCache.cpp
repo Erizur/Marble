@@ -6,68 +6,32 @@
 
 #include <dlfcn.h>
 #include <gtk/gtk.h>
-#include "GtkWidgets.h"
+#include "WidgetStyleCache.h"
+#include "gtkdrawing.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/PodOperations.h"
-#include "mozilla/EnumeratedArray.h"
-#include "mozilla/WidgetUtilsGtk.h"
+#include "mozilla/ScopeExit.h"
+#include "nsDebug.h"
 
-namespace mozilla::widget::GtkWidgets {
+static GtkWidget* sWidgetStorage[MOZ_GTK_WIDGET_NODE_COUNT];
+static GtkStyleContext* sStyleStorage[MOZ_GTK_WIDGET_NODE_COUNT];
 
-static EnumeratedArray<Type, GtkWidget*, kTypeCount> sWidgetStorage;
-static EnumeratedArray<Type, GtkStyleContext*, kTypeCount> sStyleStorage;
-
-static GtkStyleContext* CreateCSSNode(const char* aName,
-                                      GtkStyleContext* aParentStyle,
-                                      GType aType = G_TYPE_NONE) {
-  static auto sGtkWidgetPathIterSetObjectName =
-      reinterpret_cast<void (*)(GtkWidgetPath*, gint, const char*)>(
-          dlsym(RTLD_DEFAULT, "gtk_widget_path_iter_set_object_name"));
-
-  GtkWidgetPath* path;
-  if (aParentStyle) {
-    path = gtk_widget_path_copy(gtk_style_context_get_path(aParentStyle));
-    // Copy classes from the parent style context to its corresponding node in
-    // the path, because GTK will only match against ancestor classes if they
-    // are on the path.
-    GList* classes = gtk_style_context_list_classes(aParentStyle);
-    for (GList* link = classes; link; link = link->next) {
-      gtk_widget_path_iter_add_class(path, -1, static_cast<gchar*>(link->data));
-    }
-    g_list_free(classes);
-  } else {
-    path = gtk_widget_path_new();
-  }
-
-  gtk_widget_path_append_type(path, aType);
-
-  if (sGtkWidgetPathIterSetObjectName) {
-    sGtkWidgetPathIterSetObjectName(path, -1, aName);
-  }
-
-  GtkStyleContext* context = gtk_style_context_new();
-  gtk_style_context_set_path(context, path);
-  gtk_style_context_set_parent(context, aParentStyle);
-  gtk_widget_path_unref(path);
-
-  return context;
-}
-
-static GtkStyleContext* GetWidgetRootStyle(Type aType);
-static GtkStyleContext* GetCssNodeStyleInternal(Type aType);
+static GtkStyleContext* GetWidgetRootStyle(WidgetNodeType aNodeType);
+static GtkStyleContext* GetCssNodeStyleInternal(WidgetNodeType aNodeType);
 
 static GtkWidget* CreateWindowContainerWidget() {
   GtkWidget* widget = gtk_fixed_new();
-  gtk_container_add(GTK_CONTAINER(Get(Type::Window)), widget);
+  gtk_container_add(GTK_CONTAINER(GetWidget(MOZ_GTK_WINDOW)), widget);
   return widget;
 }
 
 static void AddToWindowContainer(GtkWidget* widget) {
-  gtk_container_add(GTK_CONTAINER(Get(Type::WindowContainer)), widget);
+  gtk_container_add(GTK_CONTAINER(GetWidget(MOZ_GTK_WINDOW_CONTAINER)), widget);
 }
 
-static GtkWidget* CreateScrollbarWidget() {
-  GtkWidget* widget = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, nullptr);
+static GtkWidget* CreateScrollbarWidget(WidgetNodeType aAppearance,
+                                        GtkOrientation aOrientation) {
+  GtkWidget* widget = gtk_scrollbar_new(aOrientation, nullptr);
   AddToWindowContainer(widget);
   return widget;
 }
@@ -76,7 +40,8 @@ static GtkWidget* CreateMenuPopupWidget() {
   GtkWidget* widget = gtk_menu_new();
   GtkStyleContext* style = gtk_widget_get_style_context(widget);
   gtk_style_context_add_class(style, GTK_STYLE_CLASS_POPUP);
-  gtk_menu_attach_to_widget(GTK_MENU(widget), Get(Type::Window), nullptr);
+  gtk_menu_attach_to_widget(GTK_MENU(widget), GetWidget(MOZ_GTK_WINDOW),
+                            nullptr);
   return widget;
 }
 
@@ -127,7 +92,7 @@ static GtkWidget* CreateTreeHeaderCellWidget() {
   GtkTreeViewColumn* middleTreeViewColumn;
   GtkTreeViewColumn* lastTreeViewColumn;
 
-  GtkWidget* treeView = Get(Type::TreeView);
+  GtkWidget* treeView = GetWidget(MOZ_GTK_TREEVIEW);
 
   /* Create and append our three columns */
   firstTreeViewColumn = gtk_tree_view_column_new();
@@ -176,16 +141,16 @@ static void CreateWindowAndHeaderBar() {
   // sizes. (Bug 1419442)
   gtk_style_context_add_class(headerBarStyle, "default-decoration");
 
-  MOZ_ASSERT(!sWidgetStorage[Type::HeaderBar],
+  MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADER_BAR],
              "Headerbar widget is already created!");
-  MOZ_ASSERT(!sWidgetStorage[Type::Window],
+  MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_WINDOW],
              "Window widget is already created!");
-  MOZ_ASSERT(!sWidgetStorage[Type::HeaderBarFixed],
+  MOZ_ASSERT(!sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED],
              "Fixed widget is already created!");
 
-  sWidgetStorage[Type::HeaderBar] = headerBar;
-  sWidgetStorage[Type::Window] = window;
-  sWidgetStorage[Type::HeaderBarFixed] = fixed;
+  sWidgetStorage[MOZ_GTK_HEADER_BAR] = headerBar;
+  sWidgetStorage[MOZ_GTK_WINDOW] = window;
+  sWidgetStorage[MOZ_GTK_HEADERBAR_FIXED] = fixed;
 
   gtk_container_add(GTK_CONTAINER(fixed), headerBar);
   gtk_window_set_titlebar(GTK_WINDOW(window), fixed);
@@ -193,57 +158,48 @@ static void CreateWindowAndHeaderBar() {
   gtk_widget_show_all(headerBar);
 }
 
-static GtkWidget* CreateWidget(Type aType) {
-  switch (aType) {
-    case Type::Window:
-    case Type::HeaderBarFixed:
-    case Type::HeaderBar:
-      // Create header bar widgets once and fill with child elements as we need
-      // the header bar fully configured to get a correct style.
+static GtkWidget* CreateWidget(WidgetNodeType aAppearance) {
+  switch (aAppearance) {
+    case MOZ_GTK_WINDOW:
+    case MOZ_GTK_HEADERBAR_FIXED:
+    case MOZ_GTK_HEADER_BAR:
+      /* Create header bar widgets once and fill with child elements as we need
+         the header bar fully configured to get a correct style */
       CreateWindowAndHeaderBar();
-      return sWidgetStorage[aType];
-    case Type::WindowContainer:
+      return sWidgetStorage[aAppearance];
+    case MOZ_GTK_WINDOW_CONTAINER:
       return CreateWindowContainerWidget();
-    case Type::Scrollbar:
-      return CreateScrollbarWidget();
-    case Type::Menupopup:
+    case MOZ_GTK_SCROLLBAR_VERTICAL:
+      return CreateScrollbarWidget(aAppearance, GTK_ORIENTATION_VERTICAL);
+    case MOZ_GTK_MENUPOPUP:
       return CreateMenuPopupWidget();
-    case Type::Menubar:
+    case MOZ_GTK_MENUBAR:
       return CreateMenuBarWidget();
-    case Type::Frame:
+    case MOZ_GTK_FRAME:
       return CreateFrameWidget();
-    case Type::Button:
+    case MOZ_GTK_BUTTON:
       return CreateButtonWidget();
-    case Type::ScrolledWindow:
+    case MOZ_GTK_SCROLLED_WINDOW:
       return CreateScrolledWindowWidget();
-    case Type::TreeView:
+    case MOZ_GTK_TREEVIEW:
       return CreateTreeViewWidget();
-    case Type::TreeHeaderCell:
+    case MOZ_GTK_TREE_HEADER_CELL:
       return CreateTreeHeaderCellWidget();
-    case Type::ScrollbarContents:
-    case Type::ScrollbarTrough:
-    case Type::ScrollbarThumb:
-    case Type::TextView:
-    case Type::TextViewText:
-    case Type::TextViewTextSelection:
-    case Type::Tooltip:
-    case Type::TooltipBox:
-    case Type::TooltipBoxLabel:
-    case Type::FrameBorder:
-    case Type::Menuitem:
-    case Type::MenubarItem:
-    case Type::WindowDecoration:
-      break;
+    default:
+      /* Not implemented */
+      return nullptr;
   }
-  // Not implemented
-  return nullptr;
 }
 
-GtkWidget* Get(Type aType) {
-  GtkWidget* widget = sWidgetStorage[aType];
+GtkWidget* GetWidget(WidgetNodeType aAppearance) {
+  GtkWidget* widget = sWidgetStorage[aAppearance];
   if (!widget) {
-    widget = CreateWidget(aType);
-    sWidgetStorage[aType] = widget;
+    widget = CreateWidget(aAppearance);
+    // Some widgets may not be available or implemented.
+    if (!widget) {
+      return nullptr;
+    }
+    sWidgetStorage[aAppearance] = widget;
   }
   return widget;
 }
@@ -298,29 +254,63 @@ GtkStyleContext* CreateStyleForWidget(GtkWidget* aWidget,
 }
 
 static GtkStyleContext* CreateStyleForWidget(GtkWidget* aWidget,
-                                             Type aParentType) {
+                                             WidgetNodeType aParentType) {
   return CreateStyleForWidget(aWidget, GetWidgetRootStyle(aParentType));
+}
+
+GtkStyleContext* CreateCSSNode(const char* aName, GtkStyleContext* aParentStyle,
+                               GType aType) {
+  static auto sGtkWidgetPathIterSetObjectName =
+      reinterpret_cast<void (*)(GtkWidgetPath*, gint, const char*)>(
+          dlsym(RTLD_DEFAULT, "gtk_widget_path_iter_set_object_name"));
+
+  GtkWidgetPath* path;
+  if (aParentStyle) {
+    path = gtk_widget_path_copy(gtk_style_context_get_path(aParentStyle));
+    // Copy classes from the parent style context to its corresponding node in
+    // the path, because GTK will only match against ancestor classes if they
+    // are on the path.
+    GList* classes = gtk_style_context_list_classes(aParentStyle);
+    for (GList* link = classes; link; link = link->next) {
+      gtk_widget_path_iter_add_class(path, -1, static_cast<gchar*>(link->data));
+    }
+    g_list_free(classes);
+  } else {
+    path = gtk_widget_path_new();
+  }
+
+  gtk_widget_path_append_type(path, aType);
+
+  if (sGtkWidgetPathIterSetObjectName) {
+    (*sGtkWidgetPathIterSetObjectName)(path, -1, aName);
+  }
+
+  GtkStyleContext* context = gtk_style_context_new();
+  gtk_style_context_set_path(context, path);
+  gtk_style_context_set_parent(context, aParentStyle);
+  gtk_widget_path_unref(path);
+
+  return context;
 }
 
 // Return a style context matching that of the root CSS node of a widget.
 // This is used by all GTK versions.
-static GtkStyleContext* GetWidgetRootStyle(Type aType) {
-  GtkStyleContext* style = sStyleStorage[aType];
-  if (style) {
-    return style;
-  }
+static GtkStyleContext* GetWidgetRootStyle(WidgetNodeType aNodeType) {
+  GtkStyleContext* style = sStyleStorage[aNodeType];
+  if (style) return style;
 
-  switch (aType) {
-    case Type::Menuitem:
-      style = CreateStyleForWidget(gtk_menu_item_new(), Type::Menupopup);
+  switch (aNodeType) {
+    case MOZ_GTK_MENUITEM:
+      style = CreateStyleForWidget(gtk_menu_item_new(), MOZ_GTK_MENUPOPUP);
       break;
-    case Type::MenubarItem:
-      style = CreateStyleForWidget(gtk_menu_item_new(), Type::Menubar);
+    case MOZ_GTK_MENUBARITEM:
+      style = CreateStyleForWidget(gtk_menu_item_new(), MOZ_GTK_MENUBAR);
       break;
-    case Type::TextView:
-      style = CreateStyleForWidget(gtk_text_view_new(), Type::ScrolledWindow);
+    case MOZ_GTK_TEXT_VIEW:
+      style =
+          CreateStyleForWidget(gtk_text_view_new(), MOZ_GTK_SCROLLED_WINDOW);
       break;
-    case Type::Tooltip:
+    case MOZ_GTK_TOOLTIP:
       if (gtk_check_version(3, 20, 0) != nullptr) {
         GtkWidget* tooltipWindow = gtk_window_new(GTK_WINDOW_POPUP);
         GtkStyleContext* style = gtk_widget_get_style_context(tooltipWindow);
@@ -333,40 +323,40 @@ static GtkStyleContext* GetWidgetRootStyle(Type aType) {
         gtk_style_context_add_class(style, GTK_STYLE_CLASS_BACKGROUND);
       }
       break;
-    case Type::TooltipBox:
+    case MOZ_GTK_TOOLTIP_BOX:
       style = CreateStyleForWidget(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0),
-                                   Type::Tooltip);
+                                   MOZ_GTK_TOOLTIP);
       break;
-    case Type::TooltipBoxLabel:
-      style = CreateStyleForWidget(gtk_label_new(nullptr), Type::TooltipBox);
+    case MOZ_GTK_TOOLTIP_BOX_LABEL:
+      style = CreateStyleForWidget(gtk_label_new(nullptr), MOZ_GTK_TOOLTIP_BOX);
       break;
     default:
-      GtkWidget* widget = Get(aType);
+      GtkWidget* widget = GetWidget(aNodeType);
       MOZ_ASSERT(widget);
       return gtk_widget_get_style_context(widget);
   }
 
   MOZ_ASSERT(style);
-  sStyleStorage[aType] = style;
+  sStyleStorage[aNodeType] = style;
   return style;
 }
 
 static GtkStyleContext* CreateChildCSSNode(const char* aName,
-                                           Type aParentType) {
-  return CreateCSSNode(aName, GetCssNodeStyleInternal(aParentType));
+                                           WidgetNodeType aParentNodeType) {
+  return CreateCSSNode(aName, GetCssNodeStyleInternal(aParentNodeType));
 }
 
 // Create a style context equivalent to a saved root style context of
-// |aType| with |aStyleClass| as an additional class.  This is used to
+// |aAppearance| with |aStyleClass| as an additional class.  This is used to
 // produce a context equivalent to what GTK versions < 3.20 use for many
 // internal parts of widgets.
-static GtkStyleContext* CreateSubStyleWithClass(Type aType,
+static GtkStyleContext* CreateSubStyleWithClass(WidgetNodeType aAppearance,
                                                 const gchar* aStyleClass) {
   static auto sGtkWidgetPathIterGetObjectName =
       reinterpret_cast<const char* (*)(const GtkWidgetPath*, gint)>(
           dlsym(RTLD_DEFAULT, "gtk_widget_path_iter_get_object_name"));
 
-  GtkStyleContext* parentStyle = GetWidgetRootStyle(aType);
+  GtkStyleContext* parentStyle = GetWidgetRootStyle(aAppearance);
 
   // Create a new context that behaves like |parentStyle| would after
   // gtk_style_context_save(parentStyle).
@@ -412,103 +402,102 @@ static GtkStyleContext* CreateSubStyleWithClass(Type aType,
   return style;
 }
 
-// GetCssNodeStyleInternal is used by Gtk >= 3.20
-static GtkStyleContext* GetCssNodeStyleInternal(Type aType) {
-  GtkStyleContext* style = sStyleStorage[aType];
-  if (style) {
-    return style;
-  }
+/* GetCssNodeStyleInternal is used by Gtk >= 3.20 */
+static GtkStyleContext* GetCssNodeStyleInternal(WidgetNodeType aNodeType) {
+  GtkStyleContext* style = sStyleStorage[aNodeType];
+  if (style) return style;
 
-  switch (aType) {
-    case Type::ScrollbarContents:
-      style = CreateChildCSSNode("contents", Type::Scrollbar);
+  switch (aNodeType) {
+    case MOZ_GTK_SCROLLBAR_CONTENTS_VERTICAL:
+      style = CreateChildCSSNode("contents", MOZ_GTK_SCROLLBAR_VERTICAL);
       break;
-    case Type::ScrollbarTrough:
-      style =
-          CreateChildCSSNode(GTK_STYLE_CLASS_TROUGH, Type::ScrollbarContents);
+    case MOZ_GTK_SCROLLBAR_TROUGH_VERTICAL:
+      style = CreateChildCSSNode(GTK_STYLE_CLASS_TROUGH,
+                                 MOZ_GTK_SCROLLBAR_CONTENTS_VERTICAL);
       break;
-    case Type::ScrollbarThumb:
-      style = CreateChildCSSNode(GTK_STYLE_CLASS_SLIDER, Type::ScrollbarTrough);
+    case MOZ_GTK_SCROLLBAR_THUMB_VERTICAL:
+      style = CreateChildCSSNode(GTK_STYLE_CLASS_SLIDER,
+                                 MOZ_GTK_SCROLLBAR_TROUGH_VERTICAL);
       break;
-    case Type::ScrolledWindow:
+    case MOZ_GTK_SCROLLED_WINDOW:
       // TODO - create from CSS node
-      style =
-          CreateSubStyleWithClass(Type::ScrolledWindow, GTK_STYLE_CLASS_FRAME);
+      style = CreateSubStyleWithClass(MOZ_GTK_SCROLLED_WINDOW,
+                                      GTK_STYLE_CLASS_FRAME);
       break;
-    case Type::TextViewTextSelection:
-      style = CreateChildCSSNode("selection", Type::TextViewText);
+    case MOZ_GTK_TEXT_VIEW_TEXT_SELECTION:
+      style = CreateChildCSSNode("selection", MOZ_GTK_TEXT_VIEW_TEXT);
       break;
-    case Type::TextViewText:
-      style = CreateChildCSSNode("text", Type::TextView);
+    case MOZ_GTK_TEXT_VIEW_TEXT:
+      style = CreateChildCSSNode("text", MOZ_GTK_TEXT_VIEW);
       break;
-    case Type::FrameBorder:
-      style = CreateChildCSSNode("border", Type::Frame);
+    case MOZ_GTK_FRAME_BORDER:
+      style = CreateChildCSSNode("border", MOZ_GTK_FRAME);
       break;
-    case Type::WindowDecoration: {
+    case MOZ_GTK_WINDOW_DECORATION: {
       GtkStyleContext* parentStyle =
-          CreateSubStyleWithClass(Type::Window, "csd");
+          CreateSubStyleWithClass(MOZ_GTK_WINDOW, "csd");
       style = CreateCSSNode("decoration", parentStyle);
       g_object_unref(parentStyle);
       break;
     }
     default:
-      return GetWidgetRootStyle(aType);
+      return GetWidgetRootStyle(aNodeType);
   }
 
   MOZ_ASSERT(style, "missing style context for node type");
-  sStyleStorage[aType] = style;
+  sStyleStorage[aNodeType] = style;
   return style;
 }
 
-// GetWidgetStyleInternal is used by Gtk < 3.20
-static GtkStyleContext* GetWidgetStyleInternal(Type aType) {
-  GtkStyleContext* style = sStyleStorage[aType];
-  if (style) {
-    return style;
-  }
+/* GetWidgetStyleInternal is used by Gtk < 3.20 */
+static GtkStyleContext* GetWidgetStyleInternal(WidgetNodeType aNodeType) {
+  GtkStyleContext* style = sStyleStorage[aNodeType];
+  if (style) return style;
 
-  switch (aType) {
-    case Type::ScrollbarTrough:
-      style = CreateSubStyleWithClass(Type::Scrollbar, GTK_STYLE_CLASS_TROUGH);
+  switch (aNodeType) {
+    case MOZ_GTK_SCROLLBAR_TROUGH_VERTICAL:
+      style = CreateSubStyleWithClass(MOZ_GTK_SCROLLBAR_VERTICAL,
+                                      GTK_STYLE_CLASS_TROUGH);
       break;
-    case Type::ScrollbarThumb:
-      style = CreateSubStyleWithClass(Type::Scrollbar, GTK_STYLE_CLASS_SLIDER);
+    case MOZ_GTK_SCROLLBAR_THUMB_VERTICAL:
+      style = CreateSubStyleWithClass(MOZ_GTK_SCROLLBAR_VERTICAL,
+                                      GTK_STYLE_CLASS_SLIDER);
       break;
-    case Type::ScrolledWindow:
-      style =
-          CreateSubStyleWithClass(Type::ScrolledWindow, GTK_STYLE_CLASS_FRAME);
+    case MOZ_GTK_SCROLLED_WINDOW:
+      style = CreateSubStyleWithClass(MOZ_GTK_SCROLLED_WINDOW,
+                                      GTK_STYLE_CLASS_FRAME);
       break;
-    case Type::TextViewText:
+    case MOZ_GTK_TEXT_VIEW_TEXT:
       // GTK versions prior to 3.20 do not have the view class on the root
       // node, but add this to determine the background for the text window.
-      style = CreateSubStyleWithClass(Type::TextView, GTK_STYLE_CLASS_VIEW);
+      style = CreateSubStyleWithClass(MOZ_GTK_TEXT_VIEW, GTK_STYLE_CLASS_VIEW);
       break;
-    case Type::FrameBorder:
-      return GetWidgetRootStyle(Type::Frame);
+    case MOZ_GTK_FRAME_BORDER:
+      return GetWidgetRootStyle(MOZ_GTK_FRAME);
     default:
-      return GetWidgetRootStyle(aType);
+      return GetWidgetRootStyle(aNodeType);
   }
 
   MOZ_ASSERT(style);
-  sStyleStorage[aType] = style;
+  sStyleStorage[aNodeType] = style;
   return style;
 }
 
-static void ResetWidgetCache() {
-  for (auto& style : sStyleStorage) {
+void ResetWidgetCache() {
+  for (auto* style : sStyleStorage) {
     if (style) {
       g_object_unref(style);
     }
   }
-  mozilla::PodZero(sStyleStorage.begin(), sStyleStorage.size());
+  mozilla::PodArrayZero(sStyleStorage);
 
-  // This will destroy all of our widgets
-  if (sWidgetStorage[Type::Window]) {
-    gtk_widget_destroy(sWidgetStorage[Type::Window]);
+  /* This will destroy all of our widgets */
+  if (sWidgetStorage[MOZ_GTK_WINDOW]) {
+    gtk_widget_destroy(sWidgetStorage[MOZ_GTK_WINDOW]);
   }
 
-  // Clear already freed arrays
-  mozilla::PodZero(sWidgetStorage.begin(), sWidgetStorage.size());
+  /* Clear already freed arrays */
+  mozilla::PodArrayZero(sWidgetStorage);
 }
 
 static void StyleContextSetScale(GtkStyleContext* style, gint aScaleFactor) {
@@ -521,12 +510,13 @@ static void StyleContextSetScale(GtkStyleContext* style, gint aScaleFactor) {
   }
 }
 
-GtkStyleContext* GetStyle(Type aType, int aScale, GtkStateFlags aState) {
+GtkStyleContext* GetStyleContext(WidgetNodeType aNodeType, int aScale,
+                                 GtkStateFlags aState) {
   GtkStyleContext* style;
   if (gtk_check_version(3, 20, 0) != nullptr) {
-    style = GetWidgetStyleInternal(aType);
+    style = GetWidgetStyleInternal(aNodeType);
   } else {
-    style = GetCssNodeStyleInternal(aType);
+    style = GetCssNodeStyleInternal(aNodeType);
     StyleContextSetScale(style, aScale);
   }
   if (gtk_style_context_get_state(style) != aState) {
@@ -534,56 +524,3 @@ GtkStyleContext* GetStyle(Type aType, int aScale, GtkStateFlags aState) {
   }
   return style;
 }
-
-#if 0
-// It's used for debugging only to compare Gecko widget style with
-// the ones used by Gtk+ applications.
-static void
-style_path_print(GtkStyleContext *context)
-{
-    const GtkWidgetPath* path = gtk_style_context_get_path(context);
-
-    static auto sGtkWidgetPathToStringPtr =
-        (char * (*)(const GtkWidgetPath *))
-        dlsym(RTLD_DEFAULT, "gtk_widget_path_to_string");
-
-    fprintf(stderr, "Style path:\n%s\n\n", sGtkWidgetPathToStringPtr(path));
-}
-#endif
-
-void Refresh() { ResetWidgetCache(); }
-
-static void DrawWindowDecoration(cairo_t* cr, const DrawingParams& aParams) {
-  if (GdkIsWaylandDisplay()) {
-    // Doesn't seem to be needed.
-    return;
-  }
-  GtkStyleContext* decorationStyle =
-      GetStyle(Type::WindowDecoration, aParams.image_scale, aParams.state);
-
-  const auto& rect = aParams.rect;
-  gtk_render_background(decorationStyle, cr, rect.x, rect.y, rect.width,
-                        rect.height);
-  gtk_render_frame(decorationStyle, cr, rect.x, rect.y, rect.width,
-                   rect.height);
-}
-
-/* cairo_t *cr argument has to be a system-cairo. */
-void Draw(cairo_t* cr, const DrawingParams* aParams) {
-  /* A workaround for https://bugzilla.gnome.org/show_bug.cgi?id=694086 */
-  cairo_new_path(cr);
-  switch (aParams->widget) {
-    case Type::WindowDecoration:
-      return DrawWindowDecoration(cr, *aParams);
-    default:
-      g_warning("Unknown widget type: %u", uint32_t(aParams->widget));
-      return;
-  }
-}
-
-void Shutdown() {
-  /* This will destroy all of our widgets */
-  ResetWidgetCache();
-}
-
-}  // namespace mozilla::widget::GtkWidgets
