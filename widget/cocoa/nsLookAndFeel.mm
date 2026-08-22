@@ -355,9 +355,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::TargetTextBackground:
     case ColorID::TargetTextForeground:
     case ColorID::Buttonborder:
-    case ColorID::MozButtonhoverborder:
-    case ColorID::MozButtonactiveborder:
-    case ColorID::MozButtondisabledborder:
       aColor = GetStandinForNativeColor(aID, aScheme);
       return NS_OK;
     default:

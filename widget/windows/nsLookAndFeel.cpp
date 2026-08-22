@@ -266,7 +266,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
 
   if (mHighContrastOn) {
     switch (aID) {
-      case ColorID::MozButtonhoverborder:
       case ColorID::MozButtonhoverface:
       case ColorID::MozColheaderhover:
       case ColorID::MozButtonactivetext:
@@ -281,9 +280,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
       case ColorID::TargetTextForeground:
         aColor = GetColorForSysColorIndex(COLOR_HIGHLIGHTTEXT);
         return NS_OK;
-      case ColorID::MozButtondisabledborder:
-        aColor = GetColorForSysColorIndex(COLOR_GRAYTEXT);
-        return NS_OK;
       case ColorID::Buttonface:
       case ColorID::MozColheader:
       case ColorID::MozButtondisabledface:
@@ -295,7 +291,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
       case ColorID::MozColheadertext:
       case ColorID::Buttonborder:
       case ColorID::Fieldtext:
-      case ColorID::MozButtonactiveborder:
         aColor = GetColorForSysColorIndex(COLOR_BTNTEXT);
         return NS_OK;
       case ColorID::Visitedtext: {
@@ -489,9 +484,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::TargetTextBackground:
     case ColorID::TargetTextForeground:
     case ColorID::Buttonborder:
-    case ColorID::MozButtonhoverborder:
-    case ColorID::MozButtonactiveborder:
-    case ColorID::MozButtondisabledborder:
       aColor = GetStandinForNativeColor(aID, aScheme);
       return NS_OK;
     default:

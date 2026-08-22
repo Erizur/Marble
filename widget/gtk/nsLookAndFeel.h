@@ -92,18 +92,6 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
     }
   };
 
-  struct ButtonColors : ColorPair {
-    nscolor mBorder = kBlack;
-
-    bool operator==(const ButtonColors& aOther) const {
-      return mBg == aOther.mBg && mFg == aOther.mFg &&
-             mBorder == aOther.mBorder;
-    }
-    bool operator!=(const ButtonColors& aOther) const {
-      return !(*this == aOther);
-    }
-  };
-
   using ThemeFamily = mozilla::StyleGtkThemeFamily;
 
  protected:
@@ -145,10 +133,10 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
     ColorPair mMenuHover;
     ColorPair mHeaderBar;
     ColorPair mHeaderBarInactive;
-    ButtonColors mButton;
-    ButtonColors mButtonHover;
-    ButtonColors mButtonActive;
-    ButtonColors mButtonDisabled;
+    ColorPair mButton;
+    ColorPair mButtonHover;
+    ColorPair mButtonActive;
+    nscolor mButtonBorder = kBlack;
     nscolor mFrameBorder = kBlack;
     nscolor mNativeHyperLinkText = kBlack;
     nscolor mNativeVisitedHyperLinkText = kBlack;
