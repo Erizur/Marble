@@ -165,7 +165,12 @@ fn eval_gtk_csd_titlebar_radius(device: &Device, url_data: &UrlExtraData) -> Var
     VariableValue::pixels(int_pixels as f32 * unzoomed_scale, url_data)
 }
 
-static CHROME_ENVIRONMENT_VARIABLES: [EnvironmentVariable; 9] = [
+static CHROME_ENVIRONMENT_VARIABLES: [EnvironmentVariable; 10] = [
+    lnf_int_variable!(
+        atom!("-moz-gtk-csd-titlebar-button-spacing"),
+        TitlebarButtonSpacing,
+        int_pixels
+    ),
     make_variable!(
         atom!("-moz-gtk-csd-titlebar-radius"),
         eval_gtk_csd_titlebar_radius

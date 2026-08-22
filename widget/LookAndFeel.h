@@ -300,6 +300,9 @@ class LookAndFeel {
     /** GTK titlebar radius */
     TitlebarRadius,
 
+    /** GTK button-to-button spacing in the inline axis */
+    TitlebarButtonSpacing,
+
     /** GTK tooltip radius */
     TooltipRadius,
 

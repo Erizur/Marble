@@ -161,13 +161,8 @@
 .titlebar-buttonbox {
   z-index: 1;
   align-items: stretch;
-  /* In libadwaita buttons are 24px big and spacing is
-   * 3px of gap + 5px * 2 of padding = 13px / 2, see:
-   * https://gitlab.gnome.org/GNOME/libadwaita/-/blob/fe21c3c823443a8f2333cf3cc09ba3d0fa753228/src/stylesheet/widgets/_header-bar.scss#L164
-   * We want a contiguous hit region so we use 6.5px of padding instead. */
+  /* In libadwaita buttons are 24px big. */
   --titlebar-button-size: 24px;
-  --titlebar-button-spacing: 6.5px;
-  --titlebar-button-end-spacing: 10px;
   @media (-moz-gtk-theme-family: breeze) {
     /* On breeze, titlebar button size and spacing depends on the font, see:
      *  * https://invent.kde.org/plasma/kdecoration/-/blob/28898c2492708f6a1603458baa535a8504e8d638/src/decorationsettings.cpp#L18-33
@@ -177,11 +172,6 @@
      * ems snapped to device pixels for crisp rendering. */
     /* The button size is also the grid unit */
     --titlebar-button-size: round(1.3em, 2 * env(hairline));
-    /* The spacing is half the button size. Since we apply it to each side,
-     * it's that divided by 2 */
-    --titlebar-button-spacing: calc(var(--titlebar-button-size) / 4);
-    /* End spacing is 2 * smallSpacing, which is max(2px, clamp(grid-unit / 4)). */
-    --titlebar-button-end-spacing: calc(2 * max(2px, round(down, var(--titlebar-button-size) / 4, env(hairline))));
   }
   --max-titlebar-button-position: max(
     env(-moz-gtk-csd-maximize-button-position),
@@ -201,10 +191,11 @@
   color: inherit;
   align-items: center;
   padding: 0;
-  padding-inline: var(--titlebar-button-spacing);
+  padding-inline: calc(env(-moz-gtk-csd-titlebar-button-spacing) / 2);
+  /* We want double the end spacing for the last button */
   padding-inline-end: max(
-    var(--titlebar-button-spacing),
-    var(--titlebar-button-end-spacing) * (var(--titlebar-button-position) - var(--max-titlebar-button-position) + 1)
+    env(-moz-gtk-csd-titlebar-button-spacing) / 2,
+    env(-moz-gtk-csd-titlebar-button-spacing) * (var(--titlebar-button-position) - var(--max-titlebar-button-position) + 1)
   );
   order: var(--titlebar-button-position);
   /* In GTK applications, you can drag the window by titlebar buttons */
