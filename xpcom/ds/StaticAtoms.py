@@ -752,7 +752,6 @@ STATIC_ATOMS = [
     Atom("nav", "nav"),
     Atom("ne", "ne"),
     Atom("never", "never"),
-    Atom("neverhidden", "neverhidden"),
     Atom("_new", "new"),
     Atom("newline", "newline"),
     Atom("nextRemoteTabId", "nextRemoteTabId"),
