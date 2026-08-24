@@ -120,6 +120,7 @@ static HTMLInputElement* GetContainingNumberInput(nsIContent* aContent) {
     case StyleAppearance::NumberInput:
     case StyleAppearance::Textfield:
     case StyleAppearance::PasswordInput:
+    case StyleAppearance::Searchfield:
     case StyleAppearance::Textarea: {
       if (CheckBooleanAttr(aFrame, nsGkAtoms::focused)) {
         flags |= ElementState::FOCUS | ElementState::FOCUSRING;

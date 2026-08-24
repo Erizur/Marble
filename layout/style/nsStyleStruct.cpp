@@ -2477,9 +2477,10 @@ static bool AppearanceValueAffectsFrames(StyleAppearance aAppearance,
       // This is for <input type=number/search> where we allow authors to
       // specify a |-moz-appearance:textfield| to get a control without buttons.
       // We need to reframe since this affects the spinbox creation in
-      // nsNumberControlFrame::CreateAnonymousContent.
+      // nsNumber/SearchControlFrame::CreateAnonymousContent.
       return aDefaultAppearance == StyleAppearance::NumberInput ||
-             aDefaultAppearance == StyleAppearance::PasswordInput;
+             aDefaultAppearance == StyleAppearance::PasswordInput ||
+             aDefaultAppearance == StyleAppearance::Searchfield;
     case StyleAppearance::Menulist:
       // This affects the menulist button creation.
       return aDefaultAppearance == StyleAppearance::Menulist;
