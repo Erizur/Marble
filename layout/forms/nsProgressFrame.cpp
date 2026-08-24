@@ -87,11 +87,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsContainerFrame)
 
 void nsProgressFrame::BuildDisplayList(nsDisplayListBuilder* aBuilder,
                                        const nsDisplayListSet& aLists) {
-  if (IsThemed()) {
-    DisplayBorderBackgroundOutline(aBuilder, aLists);
-  } else {
-    BuildDisplayListForInline(aBuilder, aLists);
-  }
+  BuildDisplayListForInline(aBuilder, aLists);
 }
 
 void nsProgressFrame::Reflow(nsPresContext* aPresContext,
@@ -237,6 +233,18 @@ nscoord nsProgressFrame::IntrinsicISize(const IntrinsicSizeInput& aInput,
 }
 
 bool nsProgressFrame::ShouldUseNativeStyle() const {
-  return StyleDisplay()->HasNativeAppearance() &&
-         !Style()->HasAuthorSpecifiedBorderOrBackground();
+  nsIFrame* barFrame = PrincipalChildList().FirstChild();
+
+  // Use the native style if these conditions are satisfied:
+  // - both frames use the native appearance;
+  // - neither frame has author specified rules setting the border or the
+  //   background.
+  if (!StyleDisplay()->HasNativeAppearance() ||
+      Style()->HasAuthorSpecifiedBorderOrBackground() || !barFrame ||
+      barFrame->Style()->HasAuthorSpecifiedBorderOrBackground()) {
+    return false;
+  }
+  auto barAppearance = barFrame->StyleDisplay()->EffectiveAppearance();
+  return barAppearance == StyleAppearance::Progresschunk ||
+         barAppearance == StyleAppearance::Meterchunk;
 }
