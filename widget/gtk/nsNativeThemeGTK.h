@@ -54,6 +54,7 @@ class nsNativeThemeGTK final : public mozilla::widget::Theme {
 
   bool WidgetAttributeChangeRequiresRepaint(StyleAppearance,
                                             nsAtom* aAttribute) override;
+  void ThemeChanged() override;
 
   bool ThemeSupportsWidget(nsPresContext*, nsIFrame*, StyleAppearance) override;
   bool WidgetIsContainer(StyleAppearance) override;
