@@ -440,6 +440,7 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
       idx = COLOR_WINDOWTEXT;
       break;
     case ColorID::Field:
+    case ColorID::MozEventreerow:
     case ColorID::MozOddtreerow:
     case ColorID::MozSidebar:
     case ColorID::MozCombobox:
