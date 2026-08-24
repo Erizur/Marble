@@ -11,19 +11,14 @@
     "resource://gre/modules/AppConstants.sys.mjs"
   );
 
-  // For the non-native context menu styling, we need to know if we need a
-  // gutter for checkboxes or icons. On linux any checkbox / radio / icon
-  // requires a gutter. On Windows, only checked items do. On macOS, we also
-  // need selected to deal with the menulists (like `<select>`).
-  const ITEM_NEEDS_GUTTER_SELECTOR = (() => {
-    if (AppConstants.platform == "macosx") {
-      return "[checked=true], [selected=true]";
-    }
-    if (AppConstants.platform == "win") {
-      return "[checked=true]";
-    }
-    return "[type=checkbox], [type=radio]";
-  })();
+  // For the non-native context menu styling, we need to know if we need
+  // a gutter for checkboxes. To do this, check whether there are any
+  // radio/checkbox type menuitems in a menupopup when showing it.
+  const ITEM_NEEDS_GUTTER_SELECTOR =
+    // On macOS, selected menuitems are checked regardless of type
+    AppConstants.platform == "macosx"
+      ? "[checked=true], [selected=true]"
+      : "[type=checkbox], [type=radio]";
 
   const GUTTER_SELECTOR = `:scope > menuitem:not([hidden]):is(${ITEM_NEEDS_GUTTER_SELECTOR})`;
 
