@@ -35,6 +35,11 @@ using namespace mozilla::ipc;
 static NS_DEFINE_CID(kThisIconURIImplementationCID,
                      NS_THIS_ICONURI_IMPLEMENTATION_CID);
 
+static const char* const kSizeStrings[] = {"button", "toolbar", "toolbarsmall",
+                                           "menu",   "dnd",     "dialog"};
+
+static const char* const kStateStrings[] = {"normal", "disabled"};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 NS_IMPL_CLASSINFO(nsMozIconURI, nullptr, nsIClassInfo::THREADSAFE,
@@ -87,12 +92,18 @@ nsMozIconURI::GetSpec(nsACString& aSpec) {
   }
 
   aSpec += "?size=";
-  {
+  if (mIconSize >= 0) {
+    aSpec += kSizeStrings[mIconSize];
+  } else {
     char buf[20];
     SprintfLiteral(buf, "%d", mSize);
     aSpec.Append(buf);
   }
 
+  if (mIconState >= 0) {
+    aSpec += "&state=";
+    aSpec += kStateStrings[mIconState];
+  }
   if (!mContentType.IsEmpty()) {
     aSpec += "&contentType=";
     aSpec += mContentType.get();
@@ -204,6 +215,8 @@ nsresult nsMozIconURI::SetSpecInternal(const nsACString& aSpec) {
   mContentType.Truncate();
   mFileName.Truncate();
   mStockIcon.Truncate();
+  mIconSize = -1;
+  mIconState = -1;
   mScale = 1;
   mDark.reset();
 
@@ -225,9 +238,29 @@ nsresult nsMozIconURI::SetSpecInternal(const nsACString& aSpec) {
     nsAutoCString sizeString;
     extractAttributeValue(iconSpec.get(), "size=", sizeString);
     if (!sizeString.IsEmpty()) {
+      const char* sizeStr = sizeString.get();
+      for (uint32_t i = 0; i < std::size(kSizeStrings); i++) {
+        if (nsCRT::strcasecmp(sizeStr, kSizeStrings[i]) == 0) {
+          mIconSize = i;
+          break;
+        }
+      }
+
       int32_t sizeValue = atoi(sizeString.get());
       if (sizeValue > 0) {
         mSize = sizeValue;
+      }
+    }
+
+    nsAutoCString stateString;
+    extractAttributeValue(iconSpec.get(), "state=", stateString);
+    if (!stateString.IsEmpty()) {
+      const char* stateStr = stateString.get();
+      for (uint32_t i = 0; i < std::size(kStateStrings); i++) {
+        if (nsCRT::strcasecmp(stateStr, kStateStrings[i]) == 0) {
+          mIconState = i;
+          break;
+        }
       }
     }
 
@@ -456,6 +489,8 @@ nsresult nsMozIconURI::Clone(nsIURI** result) {
   uri->mContentType = mContentType;
   uri->mFileName = mFileName;
   uri->mStockIcon = mStockIcon;
+  uri->mIconSize = mIconSize;
+  uri->mIconState = mIconState;
   uri.forget(result);
 
   return NS_OK;
@@ -549,6 +584,26 @@ nsMozIconURI::GetStockIcon(nsACString& aStockIcon) {
   return NS_OK;
 }
 
+NS_IMETHODIMP
+nsMozIconURI::GetIconSize(nsACString& aSize) {
+  if (mIconSize >= 0) {
+    aSize = kSizeStrings[mIconSize];
+  } else {
+    aSize.Truncate();
+  }
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsMozIconURI::GetIconState(nsACString& aState) {
+  if (mIconState >= 0) {
+    aState = kStateStrings[mIconState];
+  } else {
+    aState.Truncate();
+  }
+  return NS_OK;
+}
+
 void nsMozIconURI::Serialize(URIParams& aParams) {
   IconURIParams params;
 
@@ -568,6 +623,8 @@ void nsMozIconURI::Serialize(URIParams& aParams) {
   params.size() = mSize;
   params.contentType() = mContentType;
   params.fileName() = mFileName;
+  params.iconSize() = mIconSize;
+  params.iconState() = mIconState;
   params.stockIcon() = mStockIcon;
 
   params.iconScale() = mScale;
@@ -596,6 +653,18 @@ bool nsMozIconURI::Deserialize(const URIParams& aParams) {
   mContentType = params.contentType();
   mFileName = params.fileName();
   mStockIcon = params.stockIcon();
+
+  if (params.iconSize() < -1 ||
+      params.iconSize() >= (int32_t)std::size(kSizeStrings)) {
+    return false;
+  }
+  mIconSize = params.iconSize();
+
+  if (params.iconState() < -1 ||
+      params.iconState() >= (int32_t)std::size(kStateStrings)) {
+    return false;
+  }
+  mIconState = params.iconState();
 
   mScale = params.iconScale();
   mDark = params.iconDark();

@@ -23,7 +23,7 @@ function run_test() {
 
   // Make sure a valid file name icon URI can be created and that we can obtain
   // all arguments, the spec, and the file extension.
-  currentSpec = "moz-icon://foo.html?contentType=bar&size=16";
+  currentSpec = "moz-icon://foo.html?contentType=bar&size=button&state=normal";
   try {
     uri = ioService.newURI(currentSpec);
   } catch (e) {
@@ -33,7 +33,8 @@ function run_test() {
   exception = false; // reset exception value
 
   iconURI = uri.QueryInterface(Ci.nsIMozIconURI);
-  Assert.equal(iconURI.imageSize, 16);
+  Assert.equal(iconURI.iconSize, "button");
+  Assert.equal(iconURI.iconState, "normal");
   Assert.equal(iconURI.contentType, "bar");
   Assert.equal(iconURI.fileExtension, ".html");
 
