@@ -45,7 +45,7 @@
     list-style-image: url("chrome://global/skin/icons/warning-large.png");
   }
   @media (-moz-platform: linux) {
-    list-style-image: image-set("moz-icon://stock/dialog-warning?size=48" 1x, "moz-icon://stock/dialog-warning?size=48&scale=2" 2x);
+    list-style-image: url("moz-icon://stock/gtk-dialog-warning?size=dialog");
   }
 }
 
