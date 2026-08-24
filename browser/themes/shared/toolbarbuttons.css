@@ -280,8 +280,7 @@ toolbar .toolbaritem-combined-buttons {
     opacity: .2;
   }
 
-  > separator:has(+ toolbarbutton:not([disabled]):hover),
-  > toolbarbutton:not([disabled]):hover + separator {
+  &:hover > separator {
     display: none;
   }
 }
