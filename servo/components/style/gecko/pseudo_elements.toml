@@ -90,6 +90,10 @@ is_element_backed = true
 pref = "dom.select.customizable_select.enabled"
 is_tree_abiding = true
 
+# XXXbz should we really allow random content to style these?  Maybe
+# use our flags to prevent that?
+[-moz-focus-inner]
+
 # HTML5 Forms pseudo elements
 [-moz-number-spin-box]
 supports_user_action_state = true
