@@ -420,6 +420,7 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozSidebarborder:
       idx = COLOR_3DLIGHT;
       break;
+    case ColorID::Buttonborder:
     case ColorID::Threedshadow:
       idx = COLOR_3DSHADOW;
       break;
@@ -478,7 +479,6 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozAutofillBackground:
     case ColorID::TargetTextBackground:
     case ColorID::TargetTextForeground:
-    case ColorID::Buttonborder:
       aColor = GetStandinForNativeColor(aID, aScheme);
       return NS_OK;
     default:
