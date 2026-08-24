@@ -888,7 +888,7 @@ var PlacesSearchBox = {
   /**
    * The Search text field
    *
-   * @see {@link https://searchfox.org/firefox-main/source/toolkit/content/widgets/moz-input-search}
+   * @see {@link https://searchfox.org/firefox-main/source/toolkit/content/widgets/search-textbox.js}
    * @returns {HTMLInputElement}
    */
   get searchFilter() {

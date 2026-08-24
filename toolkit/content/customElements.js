@@ -794,6 +794,7 @@
       ["named-deck", "chrome://global/content/elements/named-deck.js"],
       ["named-deck-button", "chrome://global/content/elements/named-deck.js"],
       ["stringbundle", "chrome://global/content/elements/stringbundle.js"],
+      ["search-textbox", "chrome://global/content/elements/search-textbox.js"],
       [
         "printpreview-pagination",
         "chrome://global/content/printPreviewPagination.js",
