@@ -137,9 +137,10 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
   NS_DECL_ISUPPORTS_INHERITED
 
   // The nsITheme interface.
-  void DrawWidgetBackground(gfxContext* aContext, nsIFrame*, StyleAppearance,
-                            const nsRect& aRect, const nsRect& aDirtyRect,
-                            DrawOverflow) override;
+  NS_IMETHOD DrawWidgetBackground(gfxContext* aContext, nsIFrame*,
+                                  StyleAppearance, const nsRect& aRect,
+                                  const nsRect& aDirtyRect,
+                                  DrawOverflow) override;
   bool CreateWebRenderCommandsForWidget(
       mozilla::wr::DisplayListBuilder& aBuilder,
       mozilla::wr::IpcResourceUpdateQueue& aResources,
@@ -160,6 +161,7 @@ class nsNativeThemeCocoa : public mozilla::widget::ThemeCocoa {
                                            StyleAppearance) override;
   bool WidgetAttributeChangeRequiresRepaint(StyleAppearance,
                                             nsAtom* aAttribute) override;
+  NS_IMETHOD ThemeChanged() override;
   bool ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame*,
                            StyleAppearance) override;
   bool WidgetIsContainer(StyleAppearance) override;

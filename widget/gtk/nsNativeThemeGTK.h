@@ -13,9 +13,9 @@ class nsNativeThemeGTK final : public mozilla::widget::Theme {
 
  public:
   // The nsITheme interface.
-  void DrawWidgetBackground(gfxContext*, nsIFrame*, StyleAppearance,
-                            const nsRect& aRect, const nsRect& aDirtyRect,
-                            DrawOverflow) override;
+  NS_IMETHOD DrawWidgetBackground(gfxContext*, nsIFrame*, StyleAppearance,
+                                  const nsRect& aRect, const nsRect& aDirtyRect,
+                                  DrawOverflow) override;
 
   bool CreateWebRenderCommandsForWidget(
       mozilla::wr::DisplayListBuilder&, mozilla::wr::IpcResourceUpdateQueue&,
@@ -54,7 +54,7 @@ class nsNativeThemeGTK final : public mozilla::widget::Theme {
 
   bool WidgetAttributeChangeRequiresRepaint(StyleAppearance,
                                             nsAtom* aAttribute) override;
-  void ThemeChanged() override;
+  NS_IMETHOD ThemeChanged() override;
 
   bool ThemeSupportsWidget(nsPresContext*, nsIFrame*, StyleAppearance) override;
   bool WidgetIsContainer(StyleAppearance) override;
