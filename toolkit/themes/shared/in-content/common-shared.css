@@ -78,20 +78,31 @@ html|hr {
 /* tabpanels and tabs */
 
 xul|tabpanels {
+  appearance: none;
   border: none;
   padding: 0;
+  background-color: transparent;
+  color: inherit;
+  color-scheme: unset;
 }
 
 xul|tabs {
   margin-block-end: var(--space-small);
   border-bottom: var(--button-border);
+  background-color: transparent;
+  color: inherit;
 }
 
 xul|tab {
+  appearance: none;
+  margin: 0;
   padding: var(--space-xxsmall) var(--space-xlarge) 0;
   min-height: var(--size-item-xlarge);
+  color: inherit;
+  background-color: transparent;
   border-bottom: 2px solid transparent;
   transition: background-color 50ms ease 0s;
+  color-scheme: unset;
 
   &:where(:hover) {
     background-color: var(--button-background-color-hover);
