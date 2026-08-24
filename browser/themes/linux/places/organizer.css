@@ -14,7 +14,7 @@
   min-height: var(--button-min-height);
 
   &:hover {
-    color: -moz-buttonhovertext;
+    color: ButtonText;
   }
 
   &:hover:active,

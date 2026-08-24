@@ -5,21 +5,25 @@
 toolbarbutton {
   appearance: auto;
   -moz-default-appearance: toolbarbutton;
+  background-color: transparent;
   margin: 0;
   /* Prefer pixels over rem spacing in chrome */
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 3px;
 
-  &:where(:focus-visible) {
-    outline: auto;
+  @media (-moz-platform: windows) {
+    &:focus-visible {
+      outline: var(--default-focusring);
+      outline-offset: calc(-1 * var(--default-focusring-width) - 1px);
+    }
   }
 
-  @media not (-moz-platform: macos) {
+  @media (-moz-platform: linux) {
     &:where(:hover) {
       color: -moz-buttonhovertext;
     }
-    &:where(:hover:active, [checked="true"], [open="true"]) {
-      color: -moz-buttonactivetext;
+    &:where([checked="true"], :hover:active, [open="true"]) {
+      color: ButtonText;
     }
   }
 

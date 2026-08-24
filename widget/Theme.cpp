@@ -1037,7 +1037,7 @@ void Theme::PaintButton(PaintBackendData& aPaintData,
   if (aAppearance == StyleAppearance::Toolbarbutton &&
       (!aState.HasState(ElementState::HOVER) ||
        aState.HasState(ElementState::DISABLED))) {
-    backgroundColor = borderColor = sTransparent;
+    borderColor = sTransparent;
   }
 
   ThemeDrawing::PaintRoundedRectWithRadius(aPaintData, aRect, backgroundColor,
