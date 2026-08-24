@@ -12,33 +12,40 @@
 /* ::::: tabs ::::: */
 
 tabs {
-  border-bottom: 1px solid ThreeDShadow;
+  position: relative;
+  z-index: 0;
 }
 
 /* ::::: tabpanels ::::: */
 
 tabpanels {
+  appearance: auto;
+  -moz-default-appearance: tabpanels;
   padding: 8px;
+  color: -moz-DialogText;
 }
 
 /* ::::: tab ::::: */
 
 tab {
   position: relative;
-  border-bottom: 3px solid transparent;
-  padding: 6px 1em;
+  appearance: auto;
+  -moz-default-appearance: tab;
+  margin-top: 2px;
+  padding: 3px 4px;
+  color: -moz-DialogText;
+}
 
-  &:where(:hover) {
-    background-color: color-mix(in srgb, currentColor 15%, transparent);
-  }
+tab:where([visuallyselected]) {
+  z-index: 1;
+  margin-top: 0;
+  margin-bottom: -2px;
+  padding-top: 4px;
+  padding-bottom: 6px;
+}
 
-  &:where(:hover:active) {
-    background-color: color-mix(in srgb, currentColor 30%, transparent);
-  }
-
-  &:where([visuallyselected]) {
-    border-bottom-color: AccentColor;
-  }
+tab:where(:not(:first-of-type)) {
+  margin-inline-start: -2px;
 }
 
 .tab-text {
