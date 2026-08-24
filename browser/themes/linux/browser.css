@@ -200,6 +200,7 @@
   -moz-window-dragging: drag;
 
   > .toolbarbutton-icon {
+    appearance: auto;
     border-radius: var(--border-radius-circle);
     background-position: center center;
     background-size: min(16px, var(--titlebar-button-size) - 2 * env(hairline));
@@ -215,12 +216,21 @@
     }
   }
 
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("widget.gtk.non-native-titlebar-buttons.enabled") {
+    /* When using lightweight themes, use our own buttons since native ones might
+     * assume a native background in order to be visible. */
+    :root[lwtheme] & > .toolbarbutton-icon {
+      appearance: none;
+    }
+  }
+
   &:hover > .toolbarbutton-icon {
-    background-color: color-mix(in srgb, currentColor 15%, transparent);
+    background-color: color-mix(in srgb, currentColor 12%, transparent);
   }
 
   &:hover:active > .toolbarbutton-icon {
-    background-color: color-mix(in srgb, currentColor 30%, transparent);
+    background-color: color-mix(in srgb, currentColor 20%, transparent);
   }
 
   &:focus-visible > .toolbarbutton-icon {
@@ -254,7 +264,8 @@
   --titlebar-button-position: env(-moz-gtk-csd-maximize-button-position);
 
   > .toolbarbutton-icon {
-    background-image: -moz-symbolic-icon(window-maximize-symbolic);
+    -moz-default-appearance: -moz-window-button-maximize;
+    background-image: url(chrome://browser/skin/window-controls/maximize.svg);
   }
 
   @media not (-moz-gtk-csd-maximize-button) {
@@ -263,14 +274,25 @@
 }
 
 .titlebar-restore > .toolbarbutton-icon {
-  background-image: -moz-symbolic-icon(window-restore-symbolic);
+  -moz-default-appearance: -moz-window-button-restore;
+  background-image: url(chrome://browser/skin/window-controls/restore.svg);
 }
 
 .titlebar-close {
   --titlebar-button-position: env(-moz-gtk-csd-close-button-position);
 
   > .toolbarbutton-icon {
-    background-image: -moz-symbolic-icon(window-close-symbolic);
+    -moz-default-appearance: -moz-window-button-close;
+    background-image: url(chrome://browser/skin/window-controls/close.svg);
+  }
+
+  &:hover > .toolbarbutton-icon {
+    background-color: #d70022;
+    color: white;
+  }
+
+  &:hover:active > .toolbarbutton-icon {
+    background-color: #ff0039;
   }
 
   @media not (-moz-gtk-csd-close-button) {
@@ -282,7 +304,8 @@
   --titlebar-button-position: env(-moz-gtk-csd-minimize-button-position);
 
   > .toolbarbutton-icon {
-    background-image: -moz-symbolic-icon(window-minimize-symbolic);
+    -moz-default-appearance: -moz-window-button-minimize;
+    background-image: url(chrome://browser/skin/window-controls/minimize.svg);
   }
 
   @media not (-moz-gtk-csd-minimize-button) {
