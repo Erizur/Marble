@@ -46,10 +46,6 @@ tab:where(:first-of-type[visuallyselected]) {
   margin: 0 !important;
 }
 
-tab:focus-visible > .tab-middle {
+tab:-moz-focusring > .tab-middle {
   outline: var(--default-focusring);
-}
-
-.tabs-right {
-  flex: 1;
 }

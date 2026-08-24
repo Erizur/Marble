@@ -103,34 +103,28 @@ xul|tab {
   border-bottom: 2px solid transparent;
   transition: background-color 50ms ease 0s;
   color-scheme: unset;
+}
 
-  &:where(:hover) {
-    background-color: var(--button-background-color-hover);
-    color: var(--button-text-color-hover);
-    border-bottom-color: var(--border-color);
+xul|tab:where(:hover) {
+  border-bottom-color: var(--border-color);
+  background-color: var(--button-background-color-hover);
+  color: var(--button-text-color-hover);
+}
 
-    @media (forced-colors) {
-      border-bottom-color: currentColor;
-    }
-  }
+xul|tab:where(:hover:active) {
+  background-color: var(--button-background-color-active);
+  color: var(--button-text-color-active);
+}
 
-  &:where(:hover:active) {
-    background-color: var(--button-background-color-active);
-    color: var(--button-text-color-active);
-  }
+xul|tab[selected] {
+  color: var(--button-background-color-primary);
+  border-bottom-color: currentColor;
+}
 
-  &[selected] {
-    color: var(--button-background-color-primary);
+@media (forced-colors) {
+  xul|tab:hover {
     border-bottom-color: currentColor;
   }
-}
-
-.tabs-left {
-  flex: 0;
-}
-
-.tabs-right {
-  flex: 1;
 }
 
 /* html buttons */
