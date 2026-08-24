@@ -735,6 +735,7 @@ class nsWindow : public nsIWidget {
   // Draw titlebar with :backdrop css state (inactive/unfocused).
   bool mTitlebarBackdropState : 1;
   bool mAlwaysOnTop : 1;
+  bool mNoAutoHide : 1;
   bool mIsTransparent : 1;
   // We can expect at least one size-allocate event after early resizes.
   bool mHasReceivedSizeAllocate : 1;
