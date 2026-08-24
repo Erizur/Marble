@@ -30,7 +30,6 @@ headers = [
     "mozilla/ServoStyleSet.h",
     "mozilla/ServoTraversalStatistics.h",
     "mozilla/SizeOfState.h",
-    "nsDeviceContext.h",
     "nsCSSProps.h",
     "nsNameSpaceManager.h",
 ]
@@ -320,7 +319,6 @@ opaque-types = [
     "mozilla::external::AtomicRefCounted",
     "RefPtr_Proxy",
     "RefPtr_Proxy_member_function",
-    "nsRegion_.*",
     "mozilla::detail::HashTable", # <- We should be able to remove this and
                                   # HashSet below once
                                   # https://github.com/rust-lang/rust-bindgen/pull/1515
