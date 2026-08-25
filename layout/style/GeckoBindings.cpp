@@ -289,6 +289,7 @@ void Gecko_NoteHighlightPseudoStyleInvalidated(const Document* aDoc) {
 
 float Gecko_GetScrollbarInlineSize(const nsPresContext* aPc) {
   MOZ_ASSERT(aPc);
+  MutexAutoLock guard(*sServoFFILock);  // We read some look&feel values.
   auto overlay = aPc->UseOverlayScrollbars() ? nsITheme::Overlay::Yes
                                              : nsITheme::Overlay::No;
   LayoutDeviceIntCoord size =
@@ -728,16 +729,20 @@ nscolor Gecko_ComputeSystemColor(StyleSystemColor aColor, const Document* aDoc,
   }
 
   auto useStandins = LookAndFeel::ShouldUseStandins(*aDoc, aColor);
+
+  MutexAutoLock guard(*sServoFFILock);
   return LookAndFeel::Color(aColor, colorScheme, useStandins);
 }
 
 int32_t Gecko_GetLookAndFeelInt(int32_t aId) {
   auto intId = static_cast<LookAndFeel::IntID>(aId);
+  MutexAutoLock guard(*sServoFFILock);
   return LookAndFeel::GetInt(intId);
 }
 
 float Gecko_GetLookAndFeelFloat(int32_t aId) {
   auto id = static_cast<LookAndFeel::FloatID>(aId);
+  MutexAutoLock guard(*sServoFFILock);
   return LookAndFeel::GetFloat(id);
 }
 
@@ -983,6 +988,7 @@ void Gecko_nsFont_InitSystem(nsFont* aDest, StyleSystemFont aFontId,
   // itself, so this will do.
   new (aDest) nsFont(defaultVariableFont);
 
+  MutexAutoLock guard(*sServoFFILock);
   nsLayoutUtils::ComputeSystemFont(aDest, aFontId, defaultVariableFont,
                                    aDocument);
 }
