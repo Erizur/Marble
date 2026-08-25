@@ -6845,6 +6845,7 @@ static bool AnonymousBoxIsBFC(const ComputedStyle* aStyle) {
   switch (aStyle->GetPseudoType()) {
     case PseudoStyleType::MozFieldsetContent:
     case PseudoStyleType::MozColumnContent:
+    case PseudoStyleType::MozButtonContent:
     case PseudoStyleType::MozCellContent:
     case PseudoStyleType::MozScrolledContent:
     case PseudoStyleType::MozAnonymousItem:
@@ -8394,6 +8395,8 @@ void nsBlockFrame::SetInitialChildList(ChildListID aListID,
          (pseudo == PseudoStyleType::MozCellContent &&
           !GetParent()->Style()->IsPseudoOrAnonBox()) ||
          pseudo == PseudoStyleType::MozFieldsetContent ||
+         (pseudo == PseudoStyleType::MozButtonContent &&
+          !GetParent()->IsComboboxControlFrame()) ||
          pseudo == PseudoStyleType::MozColumnContent ||
          pseudo == PseudoStyleType::MozScrolledContent ||
          pseudo == PseudoStyleType::MozSvgText) &&

@@ -208,7 +208,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             return pseudo.skip_item_display_fixup();
         }
 
-        element.is_some_and(|e| e.skip_item_display_fixup())
+        element.map_or(false, |e| e.skip_item_display_fixup())
     }
 
     /// Apply the blockification rules based on the table in CSS 2.2 section 9.7.
@@ -971,6 +971,9 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             self.swap_insets(PhysicalSide::Left, PhysicalSide::Right);
             self.swap_margins(PhysicalSide::Left, PhysicalSide::Right);
         } else {
+        }
+        #[cfg(feature = "gecko")]
+        {
             self.swap_insets(PhysicalSide::Top, PhysicalSide::Bottom);
             self.swap_margins(PhysicalSide::Top, PhysicalSide::Bottom);
         }

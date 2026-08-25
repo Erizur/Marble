@@ -34,6 +34,7 @@
 #include "nsCSSFrameConstructor.h"
 #include "nsDisplayList.h"
 #include "nsFieldSetFrame.h"
+#include "nsHTMLButtonControlFrame.h"
 #include "nsHashKeys.h"
 #include "nsIFrameInlines.h"  // for nsIFrame::GetLogicalNormalPosition (don't remove)
 #include "nsLayoutUtils.h"
@@ -4047,6 +4048,15 @@ static Subgrid* SubgridComputeMarginBorderPadding(
         szOuterFrame.ComputedLogicalBorderPadding(cbWM) +
         LogicalMargin(cbWM,
                       scrollContainerFrame->IntrinsicScrollbarGutterSize());
+  }
+
+  if (nsHTMLButtonControlFrame* f = do_QueryFrame(aGridItem.mFrame)) {
+    // Add the margin and border / padding from the button frame; the subgrid
+    // is its -moz-button-content anonymous box.
+    SizeComputationInput szOuterFrame(f, nullptr, cbWM, pmPercentageBasis);
+    subgrid->mMarginBorderPadding +=
+        szOuterFrame.ComputedLogicalMargin(cbWM) +
+        szOuterFrame.ComputedLogicalBorderPadding(cbWM);
   }
 
   if (nsFieldSetFrame* f = do_QueryFrame(aGridItem.mFrame)) {

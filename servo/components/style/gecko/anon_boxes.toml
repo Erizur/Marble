@@ -57,6 +57,7 @@ inherits = false
 wrapper = true
 [-moz-line-frame]
 
+[-moz-button-content]
 [-moz-cell-content]
 [-moz-fieldset-content]
 [-moz-html-canvas-content]
