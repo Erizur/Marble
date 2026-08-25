@@ -120,7 +120,7 @@ void nsWindow::ForcePresent() {
   }
 }
 
-bool nsWindow::OnPaint() {
+bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   struct FallbackPaintContext {
     RefPtr<gfxASurface> mTargetSurface;
     RefPtr<DrawTarget> mDt;
@@ -190,6 +190,9 @@ bool nsWindow::OnPaint() {
   auto endPaint = MakeScopeExit([&] {
     ::EndPaint(mWnd, &ps);
     mLastPaintEndTime = TimeStamp::Now();
+    if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
+      OnPaint(1);
+    }
   });
 
   Maybe<FallbackPaintContext> fallback;
