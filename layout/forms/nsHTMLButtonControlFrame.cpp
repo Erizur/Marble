@@ -37,6 +37,21 @@ nsHTMLButtonControlFrame::nsHTMLButtonControlFrame(ComputedStyle* aStyle,
 
 nsHTMLButtonControlFrame::~nsHTMLButtonControlFrame() = default;
 
+void nsHTMLButtonControlFrame::Init(nsIContent* aContent,
+                                    nsContainerFrame* aParent,
+                                    nsIFrame* aPrevInFlow) {
+  nsContainerFrame::Init(aContent, aParent, aPrevInFlow);
+  mRenderer.SetFrame(this, PresContext());
+}
+
+void nsHTMLButtonControlFrame::DidSetComputedStyle(
+    ComputedStyle* aOldComputedStyle) {
+  nsContainerFrame::DidSetComputedStyle(aOldComputedStyle);
+  if (aOldComputedStyle) {
+    mRenderer.ReResolveStyles(PresContext());
+  }
+}
+
 NS_QUERYFRAME_HEAD(nsHTMLButtonControlFrame)
   NS_QUERYFRAME_ENTRY(nsHTMLButtonControlFrame)
 NS_QUERYFRAME_TAIL_INHERITING(nsContainerFrame)
@@ -67,6 +82,7 @@ bool nsHTMLButtonControlFrame::ShouldClipPaintingToBorderBox() const {
 
 void nsHTMLButtonControlFrame::BuildDisplayList(
     nsDisplayListBuilder* aBuilder, const nsDisplayListSet& aLists) {
+  nsDisplayList onTop(aBuilder);
   if (IsVisibleForPainting()) {
     // Clip the button itself to its border area for event hit testing.
     Maybe<DisplayListClipState::AutoSaveRestore> eventClipState;
@@ -79,8 +95,10 @@ void nsHTMLButtonControlFrame::BuildDisplayList(
           rect, hasRadii ? &radii : nullptr);
     }
 
-    DisplayBorderBackgroundOutline(aBuilder, aLists);
+    mRenderer.DisplayButton(aBuilder, aLists.BorderBackground(), &onTop);
   }
+
+  nsDisplayListCollection set(aBuilder);
 
   {
     DisplayListClipState::AutoSaveRestore clipState(aBuilder);
@@ -95,9 +113,15 @@ void nsHTMLButtonControlFrame::BuildDisplayList(
                                                hasRadii ? &radii : nullptr);
     }
 
-    BuildDisplayListForChild(aBuilder, mFrames.FirstChild(), aLists,
+    BuildDisplayListForChild(aBuilder, mFrames.FirstChild(), set,
                              DisplayChildFlag::ForcePseudoStackingContext);
   }
+
+  // Put the foreground outline and focus rects on top of the children
+  set.Content()->AppendToTop(&onTop);
+  set.MoveTo(aLists);
+
+  DisplayOutline(aBuilder, aLists);
 
   // To draw border when selected in editor
   DisplaySelectionOverlay(aBuilder, aLists.Content());
