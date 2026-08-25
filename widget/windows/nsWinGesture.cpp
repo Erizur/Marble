@@ -9,6 +9,7 @@
 
 #include "nscore.h"
 #include "nsWinGesture.h"
+#include "nsUXThemeData.h"
 #include "mozilla/Logging.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/Preferences.h"
@@ -16,7 +17,6 @@
 #include "mozilla/dom/SimpleGestureEventBinding.h"
 #include "mozilla/dom/WheelEventBinding.h"
 
-#include <uxtheme.h>
 
 using namespace mozilla;
 using namespace mozilla::widget;
