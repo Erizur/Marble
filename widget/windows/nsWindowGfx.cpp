@@ -179,6 +179,7 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   // https://learn.microsoft.com/en-us/windows/win32/gdi/the-wm-paint-message
   HDC hDC = ::BeginPaint(mWnd, &ps);
   LayoutDeviceIntRegion region = GetRegionToPaint(ps, hDC);
+  LayoutDeviceIntRegion regionToClear;
   // Clear the translucent region if needed.
   if (mTransparencyMode == TransparencyMode::Transparent) {
     auto translucentRegion = GetTranslucentRegion();
@@ -189,10 +190,10 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     //   regionToClear = translucentRegion - (mClearedRegion - region)
     //   mClearedRegion = translucentRegion;
     //   And add translucentRegion to region afterwards.
-    LayoutDeviceIntRegion regionToClear = translucentRegion;
+    LayoutDeviceIntRegion translucentToClear = translucentRegion;
     if (!mClearedRegion.IsEmpty()) {
       mClearedRegion.SubOut(region);
-      regionToClear.SubOut(mClearedRegion);
+      translucentToClear.SubOut(mClearedRegion);
     }
     region.OrWith(translucentRegion);
     mClearedRegion = std::move(translucentRegion);
@@ -201,11 +202,18 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     // We clear the whole window below anyways, and doing so could cause
     // flicker, as Windows doesn't guarantee atomicity even between
     // ::BeginPaint and ::EndPaint, see bug 1958631.
-    if (!regionToClear.IsEmpty() && !isFallback) {
-      auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
-      nsAutoRegion hRgnToClear(WinUtils::RegionToHRGN(regionToClear));
-      ::FillRgn(hDC, hRgnToClear, black);
+    if (!isFallback) {
+      regionToClear.OrWith(translucentToClear);
     }
+  }
+  if (mNeedsNCAreaClear) {
+    regionToClear.OrWith(ComputeNonClientRegion());
+    mNeedsNCAreaClear = false;
+  }
+  if (!regionToClear.IsEmpty()) {
+    auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
+    nsAutoRegion hRgnToClear(WinUtils::RegionToHRGN(regionToClear));
+    ::FillRgn(hDC, hRgnToClear, black);
   }
 
   bool didPaint = false;

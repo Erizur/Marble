@@ -20804,6 +20804,20 @@
   value: 0
   mirror: always
 
+
+# Whether we expand the client area into the taskbar hidden edge on maximized
+# windows.
+- name: widget.windows.hidden-taskbar-hack.size
+  type: bool
+  value: false
+  mirror: always
+
+# Whether we paint the bottom taskbar edge on maximized windows.
+- name: widget.windows.hidden-taskbar-hack.paint
+  type: bool
+  value: false
+  mirror: always
+
 # Whether to use the Windows App SDK to disable the minimize/maximize/close buttons.
 # This should only be disabled if crashes are happening, because it will make
 # double minimize/maximize/close buttons draw. Note that this preference is disregarded
