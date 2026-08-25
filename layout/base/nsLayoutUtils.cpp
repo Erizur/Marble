@@ -2489,13 +2489,36 @@ Maybe<nsPoint> nsLayoutUtils::FrameToWidgetOffset(const nsIFrame* aFrame,
                   aFrame->PresContext()->AppUnitsPerDevPixel()));
 }
 
+static LayoutDeviceIntPoint GetWidgetOffset(nsIWidget* aWidget,
+                                            nsIWidget*& aRootWidget) {
+  LayoutDeviceIntPoint offset(0, 0);
+  while (aWidget->GetWindowType() == widget::WindowType::Child) {
+    nsIWidget* parent = aWidget->GetParent();
+    if (!parent) {
+      break;
+    }
+    LayoutDeviceIntRect bounds = aWidget->GetBounds();
+    offset += bounds.TopLeft();
+    aWidget = parent;
+  }
+  aRootWidget = aWidget;
+  return offset;
+}
+
 LayoutDeviceIntPoint nsLayoutUtils::WidgetToWidgetOffset(nsIWidget* aFrom,
                                                          nsIWidget* aTo) {
   if (aFrom == aTo) {
     return {};
   }
-  auto fromOffset = aFrom->WidgetToScreenOffset();
-  auto toOffset = aTo->WidgetToScreenOffset();
+  nsIWidget* fromRoot;
+  LayoutDeviceIntPoint fromOffset = GetWidgetOffset(aFrom, fromRoot);
+  nsIWidget* toRoot;
+  LayoutDeviceIntPoint toOffset = GetWidgetOffset(aTo, toRoot);
+
+  if (fromRoot != toRoot) {
+    fromOffset = aFrom->WidgetToScreenOffset();
+    toOffset = aTo->WidgetToScreenOffset();
+  }
   return fromOffset - toOffset;
 }
 

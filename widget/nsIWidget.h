@@ -2394,7 +2394,7 @@ class nsIWidget : public nsSupportsWeakReference {
   nsIWidget* MOZ_NON_OWNING_REF mParent = nullptr;
   // When Destroy() is called, the sub class should set this true.
   bool mOnDestroyCalled = false;
-  WindowType mWindowType = WindowType::TopLevel;
+  WindowType mWindowType = WindowType::Child;
   WidgetType mWidgetType = WidgetType::Native;
 
   nsIWidgetListener* mWidgetListener = nullptr;

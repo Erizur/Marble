@@ -981,8 +981,8 @@ bool nsIWidget::UseAPZ() const {
     return false;
   }
 
-  // Always use APZ for top-level windows. XXX what about Dialog?
-  if (mWindowType == WindowType::TopLevel) {
+  // Always use APZ for top-level windows
+  if (mWindowType == WindowType::TopLevel || mWindowType == WindowType::Child) {
     return true;
   }
 

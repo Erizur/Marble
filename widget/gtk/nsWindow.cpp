@@ -442,6 +442,7 @@ nsWindow::nsWindow()
       mX11HiddenPopupPositioned(false),
       mPopupTemporaryHidden(false),
       mWaitingToSessionRestore(false) {
+  mWindowType = WindowType::Child;
   SetSafeWindowSize(mSizeConstraints.mMaxSize);
 
   if (!gGlobalsInitialized) {
@@ -4273,6 +4274,8 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   // Figure out our parent window.
   auto* parentnsWindow = static_cast<nsWindow*>(aParent);
   LOG("  parent window [%p]", parentnsWindow);
+
+  MOZ_DIAGNOSTIC_ASSERT(mWindowType != WindowType::Child);
 
   MOZ_ASSERT_IF(mWindowType == WindowType::Popup, parentnsWindow);
   if (mWindowType != WindowType::Dialog && mWindowType != WindowType::Popup &&
