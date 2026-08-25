@@ -371,6 +371,7 @@ class nsWindow : public nsIWidget {
   RefPtr<mozilla::widget::WaylandSurface> GetWaylandSurface() {
     return mSurface;
   }
+  bool GetCSDDecorationOffset(int* aDx, int* aDy);
 #endif
   bool IsDestroyed() const { return mIsDestroyed; }
   bool IsPopup() const;

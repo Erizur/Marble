@@ -223,8 +223,17 @@ static bool moz_container_wayland_ensure_surface(MozContainer* container,
                              MOZ_WL_SURFACE(parentWindow->GetMozContainer()));
   }
 
-  if (!surface->MapLocked(lock, parentSurface,
-                          aPosition ? *aPosition : DesktopIntPoint())) {
+  // Try to guess subsurface offset to avoid potential flickering.
+  DesktopIntPoint subsurfacePosition;
+  if (aPosition) {
+    subsurfacePosition = *aPosition;
+  } else {
+    int x = 0, y = 0;
+    window->GetCSDDecorationOffset(&x, &y);
+    subsurfacePosition = DesktopIntPoint(x, y);
+  }
+
+  if (!surface->MapLocked(lock, parentSurface, subsurfacePosition)) {
     return false;
   }
 

@@ -907,6 +907,18 @@ bool nsWindow::DrawsToCSDTitlebar() const {
   return mGtkWindowDecoration == GTK_DECORATION_CLIENT && mDrawInTitlebar;
 }
 
+#ifdef MOZ_WAYLAND
+bool nsWindow::GetCSDDecorationOffset(int* aDx, int* aDy) {
+  if (!DrawsToCSDTitlebar()) {
+    return false;
+  }
+  GtkBorder decorationSize = GetTopLevelCSDDecorationSize();
+  *aDx = decorationSize.left;
+  *aDy = decorationSize.top;
+  return true;
+}
+#endif
+
 void nsWindow::ApplySizeConstraints() {
   if (!mShell) {
     return;
