@@ -16,7 +16,7 @@ panel {
   --menuitem-max-width: 42em;
 
   @media (-moz-platform: linux) {
-    --menuitem-padding: 0.25em 0.5em;
+    --menuitem-padding: 4px 6px;
   }
   @media (-moz-platform: macos) {
     /* Space tokens don't match native macOS dimensions. */
@@ -182,7 +182,7 @@ menubar > menu {
     color: inherit;
     background-color: transparent;
     border-radius: 0;
-    padding: 0.25em 0.5em;
+    padding: 4px 6px;
     padding-bottom: 1px;
     border-bottom: 3px solid transparent;
 
@@ -287,7 +287,7 @@ menupopup > menu::after {
 
   margin-inline: 1em 0;
   @media (-moz-platform: linux) {
-    margin-inline: 0.5em 0;
+    margin-inline: 6px 0;
   }
   @media (-moz-platform: macos) {
     margin-inline: var(--space-xlarge) calc(-1 * var(--space-xxsmall));
@@ -323,8 +323,7 @@ menupopup > menu:-moz-locale-dir(rtl)::after {
     margin-inline: 25px 0;
   }
   @media (-moz-platform: linux) {
-    /* Matches the margin-inline-end on iconic-left */
-    margin-inline: var(--space-small) 0;
+    margin-inline: 0 7px;
   }
 
   @media not (prefers-contrast) {
@@ -353,8 +352,8 @@ menuitem[highlightable] > .menu-text {
   height: var(--icon-size);
 
   @media (-moz-platform: linux) {
-    /* Matches inline menuitem padding */
-    margin-inline-end: 0.5em;
+    /* We can only hardcode this, to make the default GTK icon<->label spacing */
+    margin-inline-end: 3px;
   }
   @media (-moz-platform: windows) {
     margin-top: var(--space-xxsmall);
