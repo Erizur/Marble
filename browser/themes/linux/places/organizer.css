@@ -30,16 +30,14 @@
 
 /* Expanders */
 
-.expander-up,
-.expander-down {
-  > .button-box {
-    appearance: auto;
-    -moz-default-appearance: -moz-menulist-arrow-button;
-  }
+.expander-up > .button-box {
+  appearance: auto;
+  -moz-default-appearance: button-arrow-up;
 }
 
-.expander-up > .button-box {
-  transform: scaleY(-1);
+.expander-down > .button-box {
+  appearance: auto;
+  -moz-default-appearance: button-arrow-down;
 }
 
 /* Downloads pane */
