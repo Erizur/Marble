@@ -295,6 +295,28 @@ static nsresult GetIconWithGIO(nsIMozIconURI* aIconURI, ByteBuf* aDataOut) {
   return MozGdkPixbufToByteBuf(pixbuf, aDataOut);
 }
 
+// The legacy GTK stock ids are not icon theme names, so a plain icon theme
+// lookup finds nothing for them. Map the ones we still ask for onto their
+// freedesktop equivalents.
+static const char* MapLegacyStockIcon(const nsACString& aName) {
+  static constexpr struct {
+    const char* mStockId;
+    const char* mIconName;
+  } kLegacyStockIcons[] = {
+      {"gtk-dialog-error", "dialog-error"},
+      {"gtk-dialog-info", "dialog-information"},
+      {"gtk-dialog-question", "dialog-question"},
+      {"gtk-dialog-warning", "dialog-warning"},
+      {"gtk-save", "document-save"},
+  };
+  for (const auto& entry : kLegacyStockIcons) {
+    if (aName.EqualsASCII(entry.mStockId)) {
+      return entry.mIconName;
+    }
+  }
+  return nullptr;
+}
+
 static already_AddRefed<GdkPixbuf> GetSymbolicIconPixbuf(const nsCString& aName,
                                                          int aIconSize,
                                                          int aScale,
@@ -330,8 +352,11 @@ nsresult nsIconChannel::GetIcon(nsIURI* aURI, ByteBuf* aDataOut) {
   if (stockIcon.IsEmpty()) {
     return GetIconWithGIO(iconURI, aDataOut);
   }
+  if (const char* mapped = MapLegacyStockIcon(stockIcon)) {
+    stockIcon.AssignASCII(mapped);
+  }
 
-  const gint iconSize = iconURI->GetImageSize();
+  const gint iconSize = GetIconSize(iconURI);
   const gint scale = iconURI->GetImageScale();
   const nscolor fg = GetForegroundColor(iconURI);
   RefPtr pixbuf = GetSymbolicIconPixbuf(stockIcon, iconSize, scale, fg);
