@@ -29,11 +29,6 @@
 :root[customtitlebar]:not([lwtheme]) {
   @media (-moz-windows-mica) {
     background-color: transparent;
-    @media -moz-pref("widget.windows.mica.toplevel-backdrop", 2) {
-      /* For acrylic, do the same we do for popups to guarantee some contrast */
-      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, stylelint-plugin-mozilla/no-base-design-tokens */
-      background-color: light-dark(var(--color-white-alpha-60), var(--color-black-alpha-60));
-    }
   }
 
   @media (-moz-windows-accent-color-in-titlebar) and ((-moz-windows-mica) or -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled")) {
