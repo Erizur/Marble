@@ -1726,6 +1726,10 @@ pub enum Appearance {
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     ButtonArrowDown,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    ButtonArrowNext,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    ButtonArrowPrevious,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
     ButtonArrowUp,
     /// https://drafts.csswg.org/css-forms/#appearance
     #[parse(condition = "appearance_base_enabled")]

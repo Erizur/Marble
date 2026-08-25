@@ -261,12 +261,18 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowDown:
     case StyleAppearance::ButtonArrowUp:
+    case StyleAppearance::ButtonArrowNext:
+    case StyleAppearance::ButtonArrowPrevious:
       aGtkWidgetType = MOZ_GTK_TOOLBARBUTTON_ARROW;
       if (aWidgetFlags) {
         *aWidgetFlags = GTK_ARROW_DOWN;
 
         if (aAppearance == StyleAppearance::ButtonArrowUp)
           *aWidgetFlags = GTK_ARROW_UP;
+        else if (aAppearance == StyleAppearance::ButtonArrowNext)
+          *aWidgetFlags = GTK_ARROW_RIGHT;
+        else if (aAppearance == StyleAppearance::ButtonArrowPrevious)
+          *aWidgetFlags = GTK_ARROW_LEFT;
       }
       break;
     case StyleAppearance::ProgressBar:
@@ -847,6 +853,8 @@ bool nsNativeThemeGTK::GetWidgetPadding(nsDeviceContext* aContext,
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
+    case StyleAppearance::ButtonArrowNext:
+    case StyleAppearance::ButtonArrowPrevious:
     case StyleAppearance::RangeThumb:
       aResult->SizeTo(0, 0, 0, 0);
       return true;
@@ -934,7 +942,9 @@ LayoutDeviceIntSize nsNativeThemeGTK::GetMinimumWidgetSize(
     } break;
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
-    case StyleAppearance::ButtonArrowDown: {
+    case StyleAppearance::ButtonArrowDown:
+    case StyleAppearance::ButtonArrowNext:
+    case StyleAppearance::ButtonArrowPrevious: {
       moz_gtk_get_arrow_size(MOZ_GTK_TOOLBARBUTTON_ARROW, &result.width,
                              &result.height);
     } break;
@@ -1027,6 +1037,8 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowUp:
     case StyleAppearance::ButtonArrowDown:
+    case StyleAppearance::ButtonArrowNext:
+    case StyleAppearance::ButtonArrowPrevious:
     case StyleAppearance::Listbox:
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Progresschunk:
@@ -1056,9 +1068,10 @@ nsNativeThemeGTK::WidgetIsContainer(StyleAppearance aAppearance) {
   // XXXdwh At some point flesh all of this out.
   if (aAppearance == StyleAppearance::RangeThumb ||
       aAppearance == StyleAppearance::ButtonArrowUp ||
-      aAppearance == StyleAppearance::ButtonArrowDown) {
+      aAppearance == StyleAppearance::ButtonArrowDown ||
+      aAppearance == StyleAppearance::ButtonArrowNext ||
+      aAppearance == StyleAppearance::ButtonArrowPrevious)
     return false;
-  }
   return true;
 }
 
