@@ -297,41 +297,10 @@ menucaption {
   }
 }
 
-.menu-text,
-.menu-iconic-text,
-.menu-accel,
-.menu-iconic-accel {
-  margin: 0;
-  @media (-moz-platform: windows) {
-    padding: 1px 0;
+@media (-moz-platform: macos) {
+  :is(.menu-accel, .menu-iconic-accel)[value] {
+    margin-inline-start: 25px;
   }
-  @media (-moz-platform: linux) {
-    /* --space-xxsmall (0.125rem) only equals 2px at a 16px root font, causing
-     * rounding differences in layout at other font sizes.
-     */
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-    margin-inline: 0 2px;
-  }
-}
-
-.menu-accel,
-.menu-iconic-accel {
-  margin-inline: 0.74em 1.35em;
-  @media (-moz-platform: macos) {
-    /* margin-inline mimics natively-rendered menus */
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-    margin-inline: 25px 0;
-  }
-  @media (-moz-platform: linux) {
-    margin-inline: 0 7px;
-  }
-
-  @media not (prefers-contrast) {
-    menuitem:not([disabled]) > & {
-      color: var(--text-color-disabled);
-    }
-  }
-
 }
 
 @media (-moz-platform: macos) {
@@ -339,9 +308,4 @@ menucaption {
   :is(menu, menuitem):not([acceltext]) > .menu-accel-container {
     display: none;
   }
-}
-
-.menu-iconic-icon {
-  width: var(--icon-size);
-  height: var(--icon-size);
 }
