@@ -540,7 +540,7 @@ sidebar-main,
   &::before {
     content: unset;
   }
-  > .menu-icon {
+  > .menu-iconic-icon {
     display: none;
   }
 }

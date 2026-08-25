@@ -284,7 +284,7 @@
   @media -moz-pref("browser.nova.enabled") {
     --menuitem-icon-fill: var(--identity-pill-color);
 
-    > .menu-icon {
+    > .menu-iconic-icon {
       width: var(--icon-size-large);
       height: var(--icon-size-large);
       padding: var(--space-xsmall);
