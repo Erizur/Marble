@@ -121,29 +121,15 @@ void nsWindow::ForcePresent() {
 }
 
 bool nsWindow::OnPaint(uint32_t aNestingLevel) {
-  struct FallbackPaintContext {
-    RefPtr<gfxASurface> mTargetSurface;
-    RefPtr<DrawTarget> mDt;
-    gfxContext mGfxContext;
-    AutoLayerManagerSetup mSetup;
-
-    explicit FallbackPaintContext(nsWindow* aWindow,
-                                  RefPtr<gfxASurface> aTargetSurface,
-                                  RefPtr<DrawTarget> aDt)
-        : mTargetSurface(std::move(aTargetSurface)),
-          mDt(std::move(aDt)),
-          mGfxContext(mDt),
-          mSetup(aWindow, &mGfxContext) {}
-  };
-
   gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
   if (gfxWindowsPlatform::GetPlatform()->DidRenderingDeviceReset(
           &resetReason)) {
     gfxCriticalNote << "(nsWindow) Detected device reset: " << (int)resetReason;
 
     gfxWindowsPlatform::GetPlatform()->UpdateRenderMode();
-    wr::RenderThread::PostHandleDeviceReset(gfx::DeviceResetDetectPlace::WIDGET,
-                                            resetReason);
+
+    GPUProcessManager::GPUProcessManager::NotifyDeviceReset(
+        resetReason, gfx::DeviceResetDetectPlace::WIDGET);
 
     gfxCriticalNote << "(nsWindow) Finished device reset.";
     return false;
@@ -159,12 +145,11 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     return true;
   }
 
-  RefPtr renderer = GetWindowRenderer();
+  WindowRenderer* renderer = GetWindowRenderer();
   KnowsCompositor* knowsCompositor = renderer->AsKnowsCompositor();
   WebRenderLayerManager* layerManager = renderer->AsWebRender();
   const bool isFallback =
       renderer->GetBackendType() == LayersBackend::LAYERS_NONE;
-  const bool isTransparent = mTransparencyMode == TransparencyMode::Transparent;
   MOZ_ASSERT(
       isFallback || renderer->GetBackendType() == LayersBackend::LAYERS_WR,
       "Unknown layers backend");
@@ -179,6 +164,12 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   mLastPaintBounds = mBounds;
 
   RefPtr<nsWindow> strongThis(this);
+  if (nsIWidgetListener* listener = GetPaintListener()) {
+    // WillPaintWindow will update our transparent area if needed, which we use
+    // below. Note that this might kill the listener.
+    listener->WillPaintWindow(this);
+  }
+
   // BeginPaint/EndPaint must be called to make Windows think that invalid
   // area is painted. Otherwise it will continue sending the same message
   // endlessly. Note that we need to call it after WillPaintWindow, which
@@ -187,18 +178,77 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   // [1]:
   // https://learn.microsoft.com/en-us/windows/win32/gdi/the-wm-paint-message
   HDC hDC = ::BeginPaint(mWnd, &ps);
+  LayoutDeviceIntRegion region = GetRegionToPaint(ps, hDC);
+  // Clear the translucent region if needed.
+  if (mTransparencyMode == TransparencyMode::Transparent) {
+    auto translucentRegion = GetTranslucentRegion();
+    // Clear the parts of the translucent region that aren't clear already or
+    // that Windows has told us to repaint.
+    // NOTE(emilio): Ordering of region ops is a bit subtle to avoid
+    // unnecessary copies, but we want to end up with:
+    //   regionToClear = translucentRegion - (mClearedRegion - region)
+    //   mClearedRegion = translucentRegion;
+    //   And add translucentRegion to region afterwards.
+    LayoutDeviceIntRegion regionToClear = translucentRegion;
+    if (!mClearedRegion.IsEmpty()) {
+      mClearedRegion.SubOut(region);
+      regionToClear.SubOut(mClearedRegion);
+    }
+    region.OrWith(translucentRegion);
+    mClearedRegion = std::move(translucentRegion);
+
+    // Don't clear the region for unaccelerated transparent windows;
+    // We clear the whole window below anyways, and doing so could cause
+    // flicker, as Windows doesn't guarantee atomicity even between
+    // ::BeginPaint and ::EndPaint, see bug 1958631.
+    if (!regionToClear.IsEmpty() && !isFallback) {
+      auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
+      // We could use RegionToHRGN, but at least for simple regions (and
+      // possibly for complex ones too?) FillRect is faster; see bug 1946365
+      // comment 12.
+      for (auto it = regionToClear.RectIter(); !it.Done(); it.Next()) {
+        auto rect = WinUtils::ToWinRect(it.Get());
+        ::FillRect(hDC, &rect, black);
+      }
+    }
+  }
+
+  bool didPaint = false;
   auto endPaint = MakeScopeExit([&] {
     ::EndPaint(mWnd, &ps);
-    mLastPaintEndTime = TimeStamp::Now();
-    if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
-      OnPaint(1);
+    if (didPaint) {
+      mLastPaintEndTime = TimeStamp::Now();
+      if (nsIWidgetListener* listener = GetPaintListener()) {
+        listener->DidPaintWindow();
+      }
+      if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
+        OnPaint(1);
+      }
     }
   });
 
-  Maybe<FallbackPaintContext> fallback;
+  if (region.IsEmpty() || !GetPaintListener()) {
+    return false;
+  }
+
+  if (knowsCompositor && layerManager) {
+    layerManager->SendInvalidRegion(region.ToUnknownRegion());
+    layerManager->ScheduleComposite(wr::RenderReasons::WIDGET);
+  }
+
+  // Should probably pass in a real region here, using GetRandomRgn
+  // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/gdi/clipping_4q0e.asp
+#ifdef WIDGET_DEBUG_OUTPUT
+  debug_DumpPaintEvent(stdout, this, region.ToUnknownRegion(), "noname",
+                       (int32_t)mWnd);
+#endif  // WIDGET_DEBUG_OUTPUT
+
+  bool result = true;
   if (isFallback) {
-    uint32_t flags = isTransparent ? gfxWindowsSurface::FLAG_IS_TRANSPARENT : 0;
-    auto targetSurface = MakeRefPtr<gfxWindowsSurface>(hDC, flags);
+    uint32_t flags = mTransparencyMode == TransparencyMode::Opaque
+                         ? 0
+                         : gfxWindowsSurface::FLAG_IS_TRANSPARENT;
+    RefPtr<gfxASurface> targetSurface = new gfxWindowsSurface(hDC, flags);
     RECT paintRect;
     ::GetClientRect(mWnd, &paintRect);
     RefPtr<DrawTarget> dt = gfxPlatform::CreateDrawTargetForSurface(
@@ -209,82 +259,33 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
       return false;
     }
 
-    fallback.emplace(this, std::move(targetSurface), std::move(dt));
-  }
-
-  LayoutDeviceIntRegion region = GetRegionToPaint(ps, hDC);
-  if (!mClearedRegion.IsEmpty()) {
-    // Don't consider regions that Windows has told us to repaint as clear, even
-    // if we've cleared them before.
-    mClearedRegion.SubOut(region);
-  }
-
-  auto ComputeAndClearTranslucentRegion = [&]() {
-    if (!isTransparent) {
-      return;
+    if (mTransparencyMode == TransparencyMode::Transparent) {
+      // If we're rendering with translucency, we're going to be
+      // rendering the whole window; make sure we clear it first
+      dt->ClearRect(Rect(dt->GetRect()));
     }
-    const LayoutDeviceIntRegion translucentRegion = GetTranslucentRegion();
-    auto regionToClear = translucentRegion;
-    if (!mClearedRegion.IsEmpty()) {
-      regionToClear.SubOut(mClearedRegion);
-    }
-    mClearedRegion = std::move(translucentRegion);
-    auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
-    // We could use RegionToHRGN, but at least for simple regions (and
-    // possibly for complex ones too?) FillRect is faster; see bug 1946365
-    // comment 12.
-    for (auto it = regionToClear.RectIter(); !it.Done(); it.Next()) {
-      if (fallback) {
-        // Make sure to use the fallback DT if needed, rather than calling
-        // ::FillRect directly. Not doing so could cause flicker, as Windows
-        // doesn't guarantee atomicity even between ::BeginPaint and
-        // ::EndPaint, see bug 1958631.
-        fallback->mDt->ClearRect(Rect(it.Get().ToUnknownRect()));
-      } else {
-        auto rect = WinUtils::ToWinRect(it.Get());
-        ::FillRect(hDC, &rect, black);
+
+    gfxContext thebesContext(dt);
+
+    {
+      AutoLayerManagerSetup setupLayerManager(this, &thebesContext);
+      if (nsIWidgetListener* listener = GetPaintListener()) {
+        listener->PaintWindow(this);
       }
     }
-    region.OrWith(regionToClear);
-  };
-
-  // This is a bit subtle: For fallback windows, we paint directly into the DC,
-  // so we need to clear it before PaintWindow().
-  //
-  // For composited windows, we first need to paint (so that we know the
-  // translucent area, which is computed from the display list), then we clear
-  // it.
-  //
-  // We don't track the transparent region for popups (meaning we always rely on
-  // the whole client area being cleared) so this works out.
-  if (fallback) {
-    ComputeAndClearTranslucentRegion();
+  } else {
+    if (nsIWidgetListener* listener = GetPaintListener()) {
+      listener->PaintWindow(this);
+    }
+    if (!gfxEnv::MOZ_DISABLE_FORCE_PRESENT()) {
+      nsCOMPtr<nsIRunnable> event = NewRunnableMethod(
+          "nsWindow::ForcePresent", this, &nsWindow::ForcePresent);
+      NS_DispatchToMainThread(event);
+    }
   }
 
-  if (auto* listener = GetPaintListener()) {
-    listener->PaintWindow(this);
-  }
-
-  if (!fallback) {
-    ComputeAndClearTranslucentRegion();
-  }
-
-  if (knowsCompositor && layerManager && !region.IsEmpty()) {
-    layerManager->SendInvalidRegion(region.ToUnknownRegion());
-    layerManager->ScheduleComposite(wr::RenderReasons::WIDGET);
-  }
-
-#ifdef WIDGET_DEBUG_OUTPUT
-  debug_DumpPaintEvent(stdout, this, region.ToUnknownRegion(), "noname",
-                       (int32_t)mWnd);
-#endif  // WIDGET_DEBUG_OUTPUT
-
-  if (!isFallback && !gfxEnv::MOZ_DISABLE_FORCE_PRESENT()) {
-    NS_DispatchToMainThread(NewRunnableMethod("nsWindow::ForcePresent", this,
-                                              &nsWindow::ForcePresent));
-  }
-
-  return true;
+  didPaint = true;
+  return result;
 }
 
 bool nsWindow::NeedsToTrackWindowOcclusionState() {
