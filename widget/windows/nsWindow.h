@@ -233,7 +233,6 @@ class nsWindow final : public nsIWidget {
   [[nodiscard]] nsresult GetRestoredBounds(LayoutDeviceIntRect& aRect) override;
   LayoutDeviceIntRect GetClientBounds() override;
   LayoutDeviceIntPoint GetClientOffset() override;
-  LayoutDeviceIntSize GetSize() const;
   void SetCursor(const Cursor&) override;
   bool PrepareForFullscreenTransition(nsISupports** aData) override;
   void PerformFullscreenTransition(FullscreenTransitionStage aStage,
@@ -559,7 +558,7 @@ class nsWindow final : public nsIWidget {
   bool UpdateNonClientMargins(bool aReflowWindow = true);
   void UpdateDarkModeToolbar();
   void ResetLayout();
-  LayoutDeviceIntRegion ComputeNonClientRegion();
+  nsAutoRegion ComputeNonClientHRGN();
   HWND GetOwnerWnd() const { return ::GetWindow(mWnd, GW_OWNER); }
   bool IsOwnerForegroundWindow() const {
     HWND owner = GetOwnerWnd();
@@ -650,10 +649,6 @@ class nsWindow final : public nsIWidget {
   LayoutDeviceIntRegion GetOpaqueRegionForTesting() const override {
     return mOpaqueRegion;
   }
-  // Gets the translucent region, relative to the whole window, including the
-  // NC area.
-  LayoutDeviceIntRegion GetTranslucentRegion();
-  void MaybeInvalidateTranslucentRegion();
 
   void SetColorScheme(const mozilla::Maybe<mozilla::ColorScheme>&) override;
   void SetMicaBackdrop(bool) override;
@@ -848,17 +843,13 @@ class nsWindow final : public nsIWidget {
 
   // Draggable titlebar region maintained by UpdateWindowDraggingRegion
   LayoutDeviceIntRegion mDraggableRegion;
-  // Opaque region maintained by UpdateOpaqueRegion (relative to the client
-  // area).
+  // Opaque region maintained by UpdateOpaqueRegion
   LayoutDeviceIntRegion mOpaqueRegion;
 
   LayoutDeviceIntRect mBounds;
 
   // Graphics
   LayoutDeviceIntRect mLastPaintBounds;
-  // The region of the window we know is cleared to transparent already
-  // (relative to the whole window).
-  LayoutDeviceIntRegion mClearedRegion;
 
   ResizeState mResizeState = NOT_RESIZING;
 

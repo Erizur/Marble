@@ -170,6 +170,12 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     listener->WillPaintWindow(this);
   }
 
+  const LayoutDeviceIntRect winRect = [&] {
+    RECT r;
+    ::GetWindowRect(mWnd, &r);
+    ::MapWindowPoints(nullptr, mWnd, (LPPOINT)&r, 2);
+    return WinUtils::ToIntRect(r);
+  }();
   // BeginPaint/EndPaint must be called to make Windows think that invalid
   // area is painted. Otherwise it will continue sending the same message
   // endlessly. Note that we need to call it after WillPaintWindow, which
@@ -179,42 +185,30 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   // https://learn.microsoft.com/en-us/windows/win32/gdi/the-wm-paint-message
   HDC hDC = ::BeginPaint(mWnd, &ps);
   LayoutDeviceIntRegion region = GetRegionToPaint(ps, hDC);
-  LayoutDeviceIntRegion regionToClear;
-  // Clear the translucent region if needed.
+  LayoutDeviceIntRegion translucentRegion;
   if (mTransparencyMode == TransparencyMode::Transparent) {
-    auto translucentRegion = GetTranslucentRegion();
-    // Clear the parts of the translucent region that aren't clear already or
-    // that Windows has told us to repaint.
-    // NOTE(emilio): Ordering of region ops is a bit subtle to avoid
-    // unnecessary copies, but we want to end up with:
-    //   regionToClear = translucentRegion - (mClearedRegion - region)
-    //   mClearedRegion = translucentRegion;
-    //   And add translucentRegion to region afterwards.
-    LayoutDeviceIntRegion translucentToClear = translucentRegion;
-    if (!mClearedRegion.IsEmpty()) {
-      mClearedRegion.SubOut(region);
-      translucentToClear.SubOut(mClearedRegion);
-    }
+    translucentRegion = LayoutDeviceIntRegion{winRect};
+    translucentRegion.SubOut(mOpaqueRegion);
     region.OrWith(translucentRegion);
-    mClearedRegion = std::move(translucentRegion);
+  }
 
-    // Don't clear the region for unaccelerated transparent windows;
-    // We clear the whole window below anyways, and doing so could cause
-    // flicker, as Windows doesn't guarantee atomicity even between
-    // ::BeginPaint and ::EndPaint, see bug 1958631.
-    if (!isFallback) {
-      regionToClear.OrWith(translucentToClear);
-    }
-  }
-  if (mNeedsNCAreaClear) {
-    regionToClear.OrWith(ComputeNonClientRegion());
-    mNeedsNCAreaClear = false;
-  }
-  if (!regionToClear.IsEmpty()) {
+  if (mNeedsNCAreaClear ||
+      (didResize && mTransparencyMode == TransparencyMode::Transparent)) {
+    // We need to clear the non-client-area region, and the transparent parts
+    // of the window to black (once).
     auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
-    nsAutoRegion hRgnToClear(WinUtils::RegionToHRGN(regionToClear));
-    ::FillRgn(hDC, hRgnToClear, black);
+    nsAutoRegion regionToClear(ComputeNonClientHRGN());
+    // Don't clear the translucent region for unaccelerated transparent
+    // windows; We clear the whole window below anyways, and doing so could
+    // cause flicker, as Windows doesn't guarantee atomicity even between
+    // ::BeginPaint and ::EndPaint, see bug 1958631.
+    if (!translucentRegion.IsEmpty() && !isFallback) {
+      nsAutoRegion translucent(WinUtils::RegionToHRGN(translucentRegion));
+      ::CombineRgn(regionToClear, regionToClear, translucent, RGN_OR);
+    }
+    ::FillRgn(hDC, regionToClear, black);
   }
+  mNeedsNCAreaClear = false;
 
   bool didPaint = false;
   auto endPaint = MakeScopeExit([&] {
