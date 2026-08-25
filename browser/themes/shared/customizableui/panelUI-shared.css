@@ -17,6 +17,14 @@
   --menu-panel-width: 22.35em;
   --menu-panel-width-wide: 29em;
 
+  --arrowpanel-menuitem-margin-block: 0;
+  --arrowpanel-menuitem-margin-inline: 8px;
+  --arrowpanel-menuitem-margin: var(--arrowpanel-menuitem-margin-block) var(--arrowpanel-menuitem-margin-inline);
+  --arrowpanel-menuitem-padding-block: 8px;
+  --arrowpanel-menuitem-padding-inline: 8px;
+  --arrowpanel-menuitem-padding: var(--arrowpanel-menuitem-padding-block) var(--arrowpanel-menuitem-padding-inline);
+  --arrowpanel-menuitem-border-radius: 4px;
+
   --panel-header-info-icon-padding: 4px;
   --panel-header-info-icon-full-width: calc(var(--icon-size-small) + (2 * var(--panel-header-info-icon-padding)));
 
@@ -303,9 +311,6 @@ panelview {
     --panel-text-color: inherit;
     --panel-padding: var(--panel-subview-body-padding);
     --panel-box-shadow-margin: inherit;
-    --menuitem-border-radius: var(--panel-menuitem-border-radius);
-    --menuitem-padding: var(--panel-menuitem-padding);
-    --menuitem-margin: var(--panel-menuitem-margin);
   }
 
   menupopup {
@@ -1160,6 +1165,7 @@ panelmultiview[mainViewId="PanelUI-fxa"] #PanelUI-remotetabs-syncnow {
   display: none;
 }
 
+.toolbar-menupopup :is(menu, menuitem),
 .subview-subheader,
 panelview .toolbarbutton-1,
 .subviewbutton,
