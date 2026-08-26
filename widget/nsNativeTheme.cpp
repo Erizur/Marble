@@ -127,6 +127,7 @@ static HTMLInputElement* GetContainingNumberInput(nsIContent* aContent) {
         flags |= ElementState::HOVER | ElementState::ACTIVE;
       }
       break;
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Menulist:
     case StyleAppearance::NumberInput:
     case StyleAppearance::Textfield:

@@ -187,7 +187,8 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
         aAppearance == StyleAppearance::MozWindowButtonRestore ||
         aAppearance == StyleAppearance::MozWindowButtonMaximize ||
         aAppearance == StyleAppearance::MozWindowButtonClose ||
-        aAppearance == StyleAppearance::Menulist) {
+        aAppearance == StyleAppearance::Menulist ||
+        aAppearance == StyleAppearance::MenulistButton) {
       aState->active &= aState->inHover;
     }
 
@@ -203,7 +204,8 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
           aAppearance == StyleAppearance::Toolbarbutton ||
           aAppearance == StyleAppearance::Dualbutton ||
           aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
-          aAppearance == StyleAppearance::Menulist) {
+          aAppearance == StyleAppearance::Menulist ||
+          aAppearance == StyleAppearance::MenulistButton) {
         bool menuOpen = IsOpenButton(aFrame);
         aState->depressed = IsCheckedButton(aFrame) || menuOpen;
         // we must not highlight buttons with open drop down menus on hover.
@@ -263,6 +265,7 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
     case StyleAppearance::Listbox:
       aGtkWidgetType = MOZ_GTK_TREEVIEW;
       break;
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Menulist:
       aGtkWidgetType = MOZ_GTK_DROPDOWN;
       if (aWidgetFlags)
@@ -1006,8 +1009,10 @@ LayoutDeviceIntSize nsNativeThemeGTK::GetMinimumWidgetSize(
       break;
     }
     case StyleAppearance::Button:
-    case StyleAppearance::Menulist: {
-      if (aAppearance == StyleAppearance::Menulist) {
+    case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton: {
+      if (aAppearance == StyleAppearance::Menulist ||
+          aAppearance == StyleAppearance::MenulistButton) {
         // Include the arrow size.
         moz_gtk_get_arrow_size(MOZ_GTK_DROPDOWN, &result.width, &result.height);
       }
@@ -1098,6 +1103,7 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
   switch (aAppearance) {
     // Combobox dropdowns don't support native theming in vertical mode.
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
       if (aFrame && aFrame->GetWritingMode().IsVertical()) {
         return false;
       }
@@ -1160,6 +1166,7 @@ bool nsNativeThemeGTK::ThemeDrawsFocusForWidget(nsIFrame* aFrame,
   switch (aAppearance) {
     case StyleAppearance::Button:
     case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
     case StyleAppearance::Textarea:
     case StyleAppearance::Textfield:
     case StyleAppearance::NumberInput:
