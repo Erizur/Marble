@@ -62,8 +62,6 @@ checkbox {
   }
 
   @media (-moz-platform: linux) {
-    width: 1.3em;
-    height: 1.3em;
     margin: 2px;
     margin-inline-end: 4px;
   }
@@ -103,9 +101,6 @@ checkbox {
 
     &:focus-visible > .checkbox-label-box {
       outline: var(--focus-outline);
-    }
-    &:focus-visible > .checkbox-check {
-      outline: none;
     }
   }
 }
