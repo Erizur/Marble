@@ -1533,6 +1533,24 @@ LayoutDeviceIntCoord GetXWindowBorder(GdkWindow* aWin) {
     mGdkWindow position:  Relative position to toplevel decoration left
                           top corner, so matches CSD size - (40,40).
 */
+DesktopIntMargin nsWindow::EstimateCsdMargin() const {
+  if (!ToplevelUsesCSD()) {
+    return {};
+  }
+  // FIXME: This needs to account for the gtk-inserted headerbar.
+  GtkBorder decorationRect{0};
+  if (mSizeMode == nsSizeMode_Normal) {
+    decorationRect = GetCSDDecorationSize(IsPopup());
+  }
+  if (!mDrawInTitlebar) {
+    decorationRect.top += moz_gtk_get_titlebar_preferred_height();
+  }
+  // GtkBorder is already in Gdk (logical) units, which is what mClientMargin
+  // uses, so no scaling is needed here.
+  return DesktopIntMargin(decorationRect.top, decorationRect.right,
+                          decorationRect.bottom, decorationRect.left);
+}
+
 #ifdef MOZ_X11
 void nsWindow::RecomputeBoundsX11(bool aMayChangeCsdMargin) {
   LOG("RecomputeBoundsX11(%d)", aMayChangeCsdMargin);
@@ -1617,17 +1635,24 @@ void nsWindow::RecomputeBoundsX11(bool aMayChangeCsdMargin) {
   mClientArea.MoveBy(systemDecorationOffset);
   LOGVERBOSE("  mClientArea %s", ToString(mClientArea).c_str());
 
+  bool measuredClientArea = true;
   if (mClientArea.X() < 0 || mClientArea.Y() < 0 || mClientArea.Width() <= 1 ||
       mClientArea.Height() <= 1) {
     // If we don't have gdkwindow bounds, assume we take the whole toplevel
     // except system decorations.
     mClientArea = DesktopIntRect(systemDecorationOffset, toplevelBounds.Size());
+    measuredClientArea = false;
   }
 
   const bool decorated =
       IsTopLevelWidget() && mSizeMode != nsSizeMode_Fullscreen && !mUndecorated;
   if (!decorated) {
     mClientMargin = {};
+  } else if (!measuredClientArea) {
+    // We have no real client bounds to measure against yet, so measuring would
+    // just yield a zero margin and briefly report the window as undecorated.
+    // Estimate the decoration from the theme instead.
+    mClientMargin = EstimateCsdMargin();
   } else if (aMayChangeCsdMargin) {
     mClientMargin =
         DesktopIntRect(DesktopIntPoint(), toplevelBoundsWithTitlebar.Size()) -
@@ -1661,16 +1686,21 @@ void nsWindow::RecomputeBoundsWayland(bool aMayChangeCsdMargin) {
       mClientArea.height, toplevelBounds.x, toplevelBounds.y,
       toplevelBounds.width, toplevelBounds.height);
 
+  bool measuredClientArea = true;
   if (mClientArea.X() < 0 || mClientArea.Y() < 0 || mClientArea.Width() <= 1 ||
       mClientArea.Height() <= 1) {
     // If we don't have gdkwindow bounds, assume we take the whole toplevel.
     mClientArea = toplevelBounds;
+    measuredClientArea = false;
   }
 
   const bool decorated =
       IsTopLevelWidget() && mSizeMode != nsSizeMode_Fullscreen && !mUndecorated;
   if (!decorated) {
     mClientMargin = {};
+  } else if (!measuredClientArea) {
+    // See the equivalent comment in RecomputeBoundsX11().
+    mClientMargin = EstimateCsdMargin();
   } else if (aMayChangeCsdMargin) {
     mClientMargin =
         DesktopIntRect(DesktopIntPoint(), toplevelBounds.Size()) - mClientArea;
@@ -3779,8 +3809,10 @@ void nsWindow::OnWindowStateEvent(GtkWidget* aWidget,
   if (mSizeMode != oldSizeMode || mIsTiled != oldIsTiled) {
     // When going to fullscreen to non-fullscreen our client margin may change
     // without other notifications (because we assume fullscreen windows are not
-    // decorated).
-    RecomputeBounds(/* MayChangeCSDMargin */ fullscreenChanging);
+    // decorated). The same goes for any other sizemode change, since maximized
+    // and tiled windows are not decorated like normal ones either (bug
+    // 1958004).
+    RecomputeBounds(/* MayChangeCSDMargin */ mSizeMode != oldSizeMode);
   }
   if (mSizeMode != oldSizeMode) {
     if (mWidgetListener) {

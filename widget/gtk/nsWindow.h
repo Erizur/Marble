@@ -228,6 +228,9 @@ class nsWindow : public nsIWidget {
 #ifdef MOZ_WAYLAND
   void RecomputeBoundsWayland(bool aMayChangeCsdMargin);
 #endif
+  // Theme-derived estimate of the CSD decoration margin, used before GTK has
+  // allocated the container and there is nothing real to measure against.
+  DesktopIntMargin EstimateCsdMargin() const;
   enum class MayChangeCsdMargin : bool { No = false, Yes };
   void SchedulePendingBounds(MayChangeCsdMargin);
   void MaybeRecomputeBounds();
