@@ -423,11 +423,9 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
     case ColorID::MozColheaderactivetext:
       idx = COLOR_WINDOWTEXT;
       break;
-    case ColorID::Linktext:
+    case ColorID::MozNativehyperlinktext:
       idx = COLOR_HOTLIGHT;
       break;
-    case ColorID::Activetext:
-    case ColorID::Visitedtext:
     case ColorID::Marktext:
     case ColorID::Mark:
     case ColorID::SpellCheckerUnderline:
