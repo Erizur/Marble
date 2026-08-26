@@ -1,0 +1,22 @@
+[core]
+    untrackedCache = true        # caches untracked files (needs fsmonitor or mtime)
+    checkStat = minimal          # only checks mtime+ctime, skips size/inode
+    preloadIndex = true          # parallel index preloading
+    commitGraph = true           # faster graph walks
+    compression = 1
+
+[protocol]
+    version = 2
+
+[fetch]
+    writeCommitGraph = true      # auto-updates commit graph on fetch
+    parallel = 8                 # parallel fetches (adjust to your CPU count)
+
+[index]
+    version = 4                  # compressed index, faster for large trees
+
+[pack]
+    useBitmaps = true
+
+[feature]
+    manyFiles = true             # enables several large-repo optimizations at once
