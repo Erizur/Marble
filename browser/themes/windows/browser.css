@@ -27,11 +27,7 @@
 }
 
 :root[customtitlebar]:not([lwtheme]) {
-  @media (-moz-windows-mica) {
-    background-color: transparent;
-  }
-
-  @media (-moz-windows-accent-color-in-titlebar) and ((-moz-windows-mica) or -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled")) {
+  @media (-moz-windows-accent-color-in-titlebar) and -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled") {
     body {
       /* These colors match the Linux/HCM default button colors. We need to
        * override these on the toolbox-like elements because the accent color

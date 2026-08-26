@@ -104,9 +104,6 @@ class LookAndFeel {
      */
     WindowsAccentColorInTitlebar,
 
-    /* Whether Windows mica effect is enabled and available */
-    WindowsMica,
-
     /*
      * A Boolean value to determine whether the macOS Big Sur-specific
      * theming should be used.

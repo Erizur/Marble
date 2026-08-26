@@ -2656,17 +2656,6 @@ void nsWindow::SetColorScheme(const Maybe<ColorScheme>& aScheme) {
                         sizeof dark);
 }
 
-void nsWindow::SetMicaBackdrop(bool aEnabled) {
-  if (!WinUtils::MicaEnabled()) {
-    return;
-  }
-
-  // Enable Mica Alt Material if available.
-  const DWM_SYSTEMBACKDROP_TYPE type =
-      aEnabled ? DWMSBT_TABBEDWINDOW : DWMSBT_AUTO;
-  DwmSetWindowAttribute(mWnd, DWMWA_SYSTEMBACKDROP_TYPE, &type, sizeof type);
-}
-
 LayoutDeviceIntMargin nsWindow::NormalWindowNonClientOffset() const {
   MOZ_ASSERT(mCustomNonClient);
   // We're dealing with a "normal" window (not maximized, minimized, or

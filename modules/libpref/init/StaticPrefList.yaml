@@ -20775,13 +20775,6 @@
   value: 2
   mirror: always
 
-# Whether we use the mica backdrop for top level windows. Off by default for
-# now.
-- name: widget.windows.mica
-  type: bool
-  value: false
-  mirror: once
-
 # Whether we expand the client area into the taskbar hidden edge on maximized
 # windows.
 - name: widget.windows.hidden-taskbar-hack.size

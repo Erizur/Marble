@@ -2020,12 +2020,6 @@ bool WinUtils::GetTimezoneName(wchar_t* aBuffer) {
   return true;
 }
 
-bool WinUtils::MicaEnabled() {
-  static bool sEnabled =
-      IsWin1122H2OrLater() && StaticPrefs::widget_windows_mica_AtStartup();
-  return sEnabled;
-}
-
 static BOOL CALLBACK InvalidateWindowPreviewsProc(HWND aHwnd, LPARAM aLParam) {
   if (RefPtr<nsWindow> window = WinUtils::GetNSWindowPtr(aHwnd)) {
     RefPtr<nsITaskbarWindowPreview> taskbarPreview =

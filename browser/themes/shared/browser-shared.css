@@ -183,10 +183,6 @@ body {
       --chrome-block-radius: 4px;
     }
 
-    @media (-moz-windows-mica) {
-      --chrome-block-radius: 8px;
-    }
-
     @media (-moz-mac-tahoe-theme) {
       --chrome-block-radius: 16px;
     }
