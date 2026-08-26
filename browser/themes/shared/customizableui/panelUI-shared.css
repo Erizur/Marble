@@ -161,6 +161,8 @@ panel toolbarseparator {
   }
 }
 
+
+
 #PanelUI-menu-button[badge-status="addon-alert"],
 #PanelUI-menu-button[badge-status="fxa-needs-authentication"],
 #fxa-toolbar-menu-button[badge-status="login_failed"] {
@@ -310,7 +312,6 @@ panelview {
     --panel-border-radius: inherit;
     --panel-text-color: inherit;
     --panel-padding: var(--panel-subview-body-padding);
-    --panel-box-shadow-margin: inherit;
   }
 
   menupopup {
@@ -319,8 +320,7 @@ panelview {
     margin-top: calc(-1 * (var(--panel-subview-body-padding-block) + var(--panel-box-shadow-margin) + 1px));
   }
 
-  menu,
-  menuitem {
+  :is(menu, menuitem) {
     &[disabled] {
       color: var(--button-text-color-ghost-disabled);
       background-color: var(--button-background-color-ghost-disabled);
