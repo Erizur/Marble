@@ -52,11 +52,10 @@ extern mozilla::LazyLogModule gWidgetPopupLog;
 extern mozilla::LazyLogModule gWidgetVsync;
 extern mozilla::LazyLogModule gWidgetWaylandLog;
 
-#  define LOG_WIN(win, str, ...)                           \
-    MOZ_LOG(win->IsPopup() ? gWidgetPopupLog : gWidgetLog, \
-            mozilla::LogLevel::Debug,                      \
-            ("%s: " str, win->GetDebugTag().get(), ##__VA_ARGS__))
-#  define LOG(...) LOG_WIN(this, __VA_ARGS__)
+#  define LOG(str, ...)                               \
+    MOZ_LOG(IsPopup() ? gWidgetPopupLog : gWidgetLog, \
+            mozilla::LogLevel::Debug,                 \
+            ("%s: " str, GetDebugTag().get(), ##__VA_ARGS__))
 #  define LOGVERBOSE(str, ...)                        \
     MOZ_LOG(IsPopup() ? gWidgetPopupLog : gWidgetLog, \
             mozilla::LogLevel::Verbose,               \
@@ -81,7 +80,6 @@ extern mozilla::LazyLogModule gWidgetWaylandLog;
 #else
 
 #  define LOG(...)
-#  define LOG_WIN(...)
 #  define LOGVERBOSE(...)
 #  define LOGW(...)
 #  define LOGDRAG(...)
@@ -201,7 +199,6 @@ class nsWindow : public nsIWidget {
   void Resize(const DesktopRect&, bool aRepaint) override;
   bool IsEnabled() const override;
 
-  nsSizeMode GetSizeMode() const { return mSizeMode; }
   nsSizeMode SizeMode() override { return mSizeMode; }
   void SetSizeMode(nsSizeMode aMode) override;
   void GetWorkspaceID(nsAString& workspaceID) override;
@@ -224,35 +221,15 @@ class nsWindow : public nsIWidget {
 
   // Recomputes the bounds according to our current window position. Dispatches
   // move / resizes as needed.
-  void RecomputeBounds(bool aScaleChange = false);
-  // Window bounds (as in GetBounds()) are composed as
-  // mClientArea.Inflate(mClientMargin)*scale, i.e.:
-  //
-  // mBounds.x = (mClientArea.x - mClientMargin.left) * scale;
-  // mBounds.y = (mClientArea.y - mClientMargin.top) * scale;
-  // mBounds.width = (mClientArea.width +
-  //                 (mClientMargin.right + mClientMargin.left)) * scale;
-  // mBounds.height = (mClientArea.height +
-  //                  (mClientMargin.top + mClientMargin.bottom)) * scale;
-  //
-  // We use mClientMargin and mClientArea in Gdk (logical, widget) coordinates
-  // instead of device pixel coordinates to avoid rounding errors.
-  struct Bounds {
-    // mClientArea is window rendering area in global coordinates.
-    DesktopIntRect mClientArea;
-    // mClientMargin contains CSD decorations size on Wayland and
-    // CSD decorations and system titlebar size on X11.
-    DesktopIntMargin mClientMargin;
-
-    static Bounds Compute(const nsWindow*);
+  void RecomputeBounds(bool aMayChangeCsdMargin, bool aScaleChange = false);
 #ifdef MOZ_X11
-    static Bounds ComputeX11(const nsWindow*);
+  void RecomputeBoundsX11(bool aMayChangeCsdMargin);
 #endif
 #ifdef MOZ_WAYLAND
-    static Bounds ComputeWayland(const nsWindow*);
+  void RecomputeBoundsWayland(bool aMayChangeCsdMargin);
 #endif
-  };
-  void SchedulePendingBounds();
+  enum class MayChangeCsdMargin : bool { No = false, Yes };
+  void SchedulePendingBounds(MayChangeCsdMargin);
   void MaybeRecomputeBounds();
 
   void SetCursor(const Cursor&) override;
@@ -642,6 +619,10 @@ class nsWindow : public nsIWidget {
   constexpr static const int sNoScale = -1;
   int mCeiledScaleFactor = sNoScale;
 
+  // Client area received by OnContainerSizeAllocate().
+  // We don't use it directly but as a reference.
+  DesktopIntRect mReceivedClientArea{};
+
   // The size requested, which might not be reflected in mClientArea.  Used in
   // WaylandPopupSetDirectPosition() to remember intended size for popup
   // positioning, in LockAspect() to remember the intended aspect ratio, and
@@ -652,9 +633,27 @@ class nsWindow : public nsIWidget {
   // Same but for positioning. Used to track move requests.
   DesktopIntPoint mLastMoveRequest;
 
-  // See Bounds for these members.
-  DesktopIntRect mClientArea;
-  DesktopIntMargin mClientMargin;
+  // Window bounds (mBounds) are composed as
+  // mClientArea.Inflate(mClientMargin)*scale, i.e.:
+  //
+  // mBounds.x = (mClientArea.x - mClientMargin.left) * scale;
+  // mBounds.y = (mClientArea.y - mClientMargin.top) * scale;
+  // mBounds.width = (mClientArea.width +
+  //                 (mClientMargin.right + mClientMargin.left)) * scale;
+  // mBounds.height = (mClientArea.height +
+  //                  (mClientMargin.top + mClientMargin.bottom)) * scale;
+  //
+  // We use mClientMargin and mClientArea in Gdk (logical, widget) coordinates
+  // instead of mBounds i device pixel coordinates to avoid
+  // rounding errors.
+
+  // mClientMargin contains CSD decorations size on Wayland and
+  // CSD decorations and system titlebar size on X11.
+  DesktopIntMargin mClientMargin{};
+
+  // mClientArea is window rendering area. mClientArea.x, mClientArea.y are
+  // equal to mClientMargin.left, mClientMargin.top.
+  DesktopIntRect mClientArea{};
 
   // This field omits duplicate scroll events caused by GNOME bug 726878.
   guint32 mLastScrollEventTime = GDK_CURRENT_TIME;
@@ -733,6 +732,12 @@ class nsWindow : public nsIWidget {
   bool mHasMappedToplevel : 1;
   bool mPanInProgress : 1;
   bool mPendingBoundsChange : 1;
+  // Whether our pending bounds change event might change the window CSD margin.
+  // This is needed because we might get two configures (one for mShell, one
+  // for mContainer's window) in quick succession, which might cause us to send
+  // spurious sequences of resizes if we don't do this on some compositors
+  // (older mutter at least).
+  bool mPendingBoundsChangeMayChangeCsdMargin : 1;
   // Draw titlebar with :backdrop css state (inactive/unfocused).
   bool mTitlebarBackdropState : 1;
   // It's child window, i.e. window which is nested in parent window.
