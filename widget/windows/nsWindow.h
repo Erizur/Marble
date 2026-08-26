@@ -341,8 +341,6 @@ class nsWindow final : public nsIWidget {
   void SetSmallIconNoData();
   void SetBigIconNoData();
 
-  void UpdateMicaBackdrop(bool aForce = false);
-
   static void SetIsRestoringSession(const bool aIsRestoringSession) {
     sIsRestoringSession = aIsRestoringSession;
   }
@@ -877,9 +875,6 @@ class nsWindow final : public nsIWidget {
 
   // Whether we were created as a child window (aka ChildWindow) or not.
   bool mIsChildWindow : 1;
-
-  // Whether we are asked to render a mica backdrop.
-  bool mMicaBackdrop : 1;
 
   int32_t mCachedHitTestResult = 0;
 
