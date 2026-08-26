@@ -47,6 +47,16 @@
   /* Panel design token theming */
   --background-color-canvas: var(--panel-background-color);
 
+  @media (-moz-windows-mica-popups) {
+    appearance: auto;
+    -moz-default-appearance: menupopup;
+    /* The blur behind doesn't blur all that much, add a semi-transparent
+     * background to improve contrast */
+    --panel-background: light-dark(rgba(255, 255, 255, .5), rgba(0, 0, 0, .5));
+    --panel-border-color: transparent;
+    --panel-box-shadow-margin: 0px;
+  }
+
   @media (-moz-platform: linux) and (not (-moz-gtk-csd-transparency-available)) {
     /* On some linux WMs we need to draw square menus because alpha is not
      * available */
@@ -104,18 +114,6 @@
 menupopup {
   /* Also apply the padding in the inline axis for menus */
   --panel-padding: var(--panel-padding-block);
-
-  @media (-moz-windows-mica-popups) {
-    appearance: auto;
-    -moz-default-appearance: menupopup;
-    /* The blur behind doesn't blur all that much, add a semi-transparent
-     * background to improve contrast */
-    --panel-background: light-dark(rgba(255, 255, 255, .5), rgba(0, 0, 0, .5));
-    /* The mica backdrop takes care of our shadow, border, and border-radius */
-    --panel-border-color: transparent;
-    --panel-box-shadow-margin: 0px;
-    --panel-border-radius: 0px;
-  }
 
   @media (-moz-platform: windows) {
     > menu,
