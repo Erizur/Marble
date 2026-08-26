@@ -2026,12 +2026,6 @@ bool WinUtils::MicaEnabled() {
   return sEnabled;
 }
 
-bool WinUtils::MicaPopupsEnabled() {
-  static bool sEnabled = IsWin1122H2OrLater() &&
-                         StaticPrefs::widget_windows_mica_popups_AtStartup();
-  return sEnabled;
-}
-
 static BOOL CALLBACK InvalidateWindowPreviewsProc(HWND aHwnd, LPARAM aLParam) {
   if (RefPtr<nsWindow> window = WinUtils::GetNSWindowPtr(aHwnd)) {
     RefPtr<nsITaskbarWindowPreview> taskbarPreview =

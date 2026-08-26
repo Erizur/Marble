@@ -2323,7 +2323,6 @@ STATIC_ATOMS = [
     Atom("_moz_windows_accent_color_in_titlebar", "-moz-windows-accent-color-in-titlebar"),
     Atom("_moz_windows_accent_color_in_tabs", "-moz-windows-accent-color-in-tabs"),
     Atom("_moz_windows_mica", "-moz-windows-mica"),
-    Atom("_moz_windows_mica_popups", "-moz-windows-mica-popups"),
     Atom("_moz_mac_big_sur_theme", "-moz-mac-big-sur-theme"),
     Atom("_moz_mac_tahoe_theme", "-moz-mac-tahoe-theme"),
     Atom("_moz_mac_rtl", "-moz-mac-rtl"),
