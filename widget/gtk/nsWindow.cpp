@@ -912,7 +912,7 @@ bool nsWindow::GetCSDDecorationOffset(int* aDx, int* aDy) {
   if (!DrawsToCSDTitlebar()) {
     return false;
   }
-  GtkBorder decorationSize = GetTopLevelCSDDecorationSize();
+  GtkBorder decorationSize = GetCSDDecorationSize(IsPopup());
   *aDx = decorationSize.left;
   *aDy = decorationSize.top;
   return true;
