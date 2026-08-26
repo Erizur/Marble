@@ -151,7 +151,7 @@ mozilla::ipc::IPCResult CompositorWidgetParent::RecvClearTransparentWindow() {
 
   drawTarget->ClearRect(Rect(0, 0, size.width, size.height));
 
-  Unused << mRemoteBackbufferClient->PresentDrawTarget(
+  (void)mRemoteBackbufferClient->PresentDrawTarget(
       IntRect(0, 0, size.width, size.height));
 
   return IPC_OK();

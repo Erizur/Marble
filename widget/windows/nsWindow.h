@@ -197,11 +197,12 @@ class nsWindow final : public nsIWidget {
   double GetDefaultScaleInternal() override;
   void DidClearParent(nsIWidget* aOldParent) override;
   int32_t LogToPhys(double aValue);
-  mozilla::DesktopToLayoutDeviceScale GetDesktopToDeviceScale() override {
+  mozilla::DesktopToLayoutDeviceScale GetDesktopToDeviceScale() const override {
     if (mozilla::widget::WinUtils::IsPerMonitorDPIAware()) {
       return mozilla::DesktopToLayoutDeviceScale(1.0);
     } else {
-      return mozilla::DesktopToLayoutDeviceScale(GetDefaultScaleInternal());
+      return mozilla::DesktopToLayoutDeviceScale(
+          const_cast<nsWindow*>(this)->GetDefaultScaleInternal());
     }
   }
 
