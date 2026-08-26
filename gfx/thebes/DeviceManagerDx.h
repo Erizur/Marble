@@ -124,6 +124,7 @@ class DeviceManagerDx final {
   bool ExportDeviceInfo(D3D11DeviceStatus* aOut);
 
   void ResetDevices();
+  void InitializeDirectDraw();
 
   // Reset and reacquire the devices if a reset has happened.
   // Returns whether a reset occurred not whether reacquiring
@@ -217,6 +218,9 @@ class DeviceManagerDx final {
       MOZ_GUARDED_BY(mDeviceLock);
   RefPtr<layers::DeviceAttachmentsD3D11> mCompositorAttachments
       MOZ_GUARDED_BY(mDeviceLock);
+
+  nsModuleHandle mDirectDrawDLL;
+  RefPtr<IDirectDraw7> mDirectDraw;
   bool mCompositorDeviceSupportsVideo MOZ_GUARDED_BY(mDeviceLock);
   bool mSupportsDCompositionTexture MOZ_GUARDED_BY(mDeviceLock);
   Maybe<D3D11DeviceStatus> mDeviceStatus MOZ_GUARDED_BY(mDeviceLock);
