@@ -34,6 +34,7 @@
 #include "mozilla/gfx/DataSurfaceHelpers.h"
 #include "mozilla/gfx/Tools.h"
 #include "mozilla/RefPtr.h"
+#include "mozilla/PresShell.h"
 #include "mozilla/SVGImageContext.h"
 #include "nsGfxCIID.h"
 #include "gfxContext.h"
@@ -123,6 +124,21 @@ void nsWindow::ForcePresent() {
   }
 }
 
+// Bug 2002232 removed nsIWidgetListener::WillPaintWindow, which used to resolve
+// to PresShell::WillPaint(). We still need that flush before ::BeginPaint,
+// because it is what brings mOpaqueRegion up to date, and the translucent
+// region we clear below is derived from it. Painting without it leaves a stale
+// glass region for a frame. The listener may be destroyed by the flush.
+MOZ_CAN_RUN_SCRIPT_BOUNDARY static void WillPaintWindow(
+    nsIWidgetListener* aListener) {
+  if (!aListener) {
+    return;
+  }
+  if (RefPtr<PresShell> presShell = aListener->GetPresShell()) {
+    presShell->WillPaint();
+  }
+}
+
 bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
   if (gfxWindowsPlatform::GetPlatform()->DidRenderingDeviceReset(
@@ -167,11 +183,7 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   mLastPaintBounds = mBounds;
 
   RefPtr<nsWindow> strongThis(this);
-  if (nsIWidgetListener* listener = GetPaintListener()) {
-    // WillPaintWindow will update our transparent area if needed, which we use
-    // below. Note that this might kill the listener.
-    listener->WillPaintWindow(this);
-  }
+  WillPaintWindow(GetPaintListener());
 
   // For layered translucent popups all drawing should go to memory DC and no
   // WM_PAINT messages are normally generated. To support asynchronous painting
@@ -190,8 +202,8 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   LayoutDeviceIntRegion translucentRegion;
   // BeginPaint/EndPaint must be called to make Windows think that invalid
   // area is painted. Otherwise it will continue sending the same message
-  // endlessly. Note that we need to call it after WillPaintWindow, which
-  // informs us of our transparent region, but also before clearing the
+  // endlessly. Note that we need to call it after the WillPaintWindow flush,
+  // which informs us of our transparent region, but also before clearing the
   // nc-area, since ::BeginPaint might send WM_NCPAINT messages[1].
   // [1]:
   // https://learn.microsoft.com/en-us/windows/win32/gdi/the-wm-paint-message
@@ -236,9 +248,6 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     }
     if (didPaint) {
       mLastPaintEndTime = TimeStamp::Now();
-      if (nsIWidgetListener* listener = GetPaintListener()) {
-        listener->DidPaintWindow();
-      }
       if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
         OnPaint(1);
       }
