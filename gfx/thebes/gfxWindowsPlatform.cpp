@@ -557,7 +557,9 @@ bool gfxWindowsPlatform::CreatePlatformFontList() {
 // DrawTargetD2D/1 instances.
 void gfxWindowsPlatform::DisableD2D(FeatureStatus aStatus, const char* aMessage,
                                     const nsACString& aFailureId) {
-  gfxConfig::SetFailed(Feature::DIRECT2D, aStatus, aMessage, aFailureId);
+  // Feature::DIRECT2D no longer exists, so there is no config entry left to
+  // mark as failed; dropping the device and re-picking backends is all that
+  // still applies here.
   Factory::SetDirect3D11Device(nullptr);
   UpdateBackendPrefs();
 }

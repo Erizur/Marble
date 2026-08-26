@@ -142,10 +142,10 @@ nsresult GDIFontEntry::ReadCMAP(FontInfoData* aFontInfoData) {
   if (mFontType != GFX_FONT_TYPE_PS_OPENTYPE &&
       mFontType != GFX_FONT_TYPE_TT_OPENTYPE &&
       mFontType != GFX_FONT_TYPE_TRUETYPE) {
-    RefPtr<gfxCharacterMap> cmap = new gfxCharacterMap();
+    RefPtr<gfxCharacterMap> cmap = new gfxCharacterMap(0);
     cmap->mBuildOnTheFly = true;
     if (mCharacterMap.compareExchange(nullptr, cmap.get())) {
-      Unused << cmap.forget();
+      cmap.forget().leak();  // mCharacterMap now owns the reference
     }
     return NS_ERROR_FAILURE;
   }
@@ -159,7 +159,7 @@ nsresult GDIFontEntry::ReadCMAP(FontInfoData* aFontInfoData) {
     rv = NS_OK;
   } else {
     uint32_t kCMAP = TRUETYPE_TAG('c', 'm', 'a', 'p');
-    charmap = new gfxCharacterMap();
+    charmap = new gfxCharacterMap(256);
     AutoTArray<uint8_t, 16384> cmap;
     rv = CopyFontTable(kCMAP, cmap);
 
@@ -175,7 +175,7 @@ nsresult GDIFontEntry::ReadCMAP(FontInfoData* aFontInfoData) {
     mHasCmapTable = true;
   } else {
     // if error occurred, initialize to null cmap
-    charmap = new gfxCharacterMap();
+    charmap = new gfxCharacterMap(0);
     // For fonts where we failed to read the character map,
     // we can take a slow path to look up glyphs character by character
     charmap->mBuildOnTheFly = true;
@@ -198,6 +198,21 @@ nsresult GDIFontEntry::ReadCMAP(FontInfoData* aFontInfoData) {
 
 gfxFont* GDIFontEntry::CreateFontInstance(const gfxFontStyle* aFontStyle) {
   return new gfxGDIFont(this, aFontStyle);
+}
+
+GDIFontEntry::~GDIFontEntry() {
+  auto* cache = mFontTableCache.exchange(nullptr);
+  delete cache;
+}
+
+gfxFontEntry::FontTableCache* GDIFontEntry::GetFontTableCache(bool aCreate) {
+  if (!mFontTableCache && aCreate) {
+    auto* cache = new FontTableCache();
+    if (!mFontTableCache.compareExchange(nullptr, cache)) {
+      delete cache;
+    }
+  }
+  return mFontTableCache;
 }
 
 nsresult GDIFontEntry::CopyFontTable(uint32_t aTableTag,
@@ -659,11 +674,10 @@ int CALLBACK gfxGDIFontList::EnumFontFamExProc(ENUMLOGFONTEXW* lpelfe,
   return 1;
 }
 
-gfxFontEntry* gfxGDIFontList::LookupLocalFont(nsPresContext* aPresContext,
-                                              const nsACString& aFontName,
-                                              WeightRange aWeightForEntry,
-                                              StretchRange aStretchForEntry,
-                                              SlantStyleRange aStyleForEntry) {
+already_AddRefed<gfxFontEntry> gfxGDIFontList::LookupLocalFont(
+    FontVisibilityProvider* aFontVisibilityProvider,
+    const nsACString& aFontName, WeightRange aWeightForEntry,
+    StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry) {
   AutoLock lock(mLock);
 
   gfxFontEntry* lookup = LookupInFaceNameLists(aFontName);
@@ -692,7 +706,7 @@ gfxFontEntry* gfxGDIFontList::LookupLocalFont(nsPresContext* aPresContext,
   fe->mStyleRange = aStyleForEntry;
   fe->mStretchRange = aStretchForEntry;
 
-  return fe;
+  return do_AddRef(fe);
 }
 
 // If aFontData contains only a MS/Symbol cmap subtable, not MS/Unicode,
@@ -749,12 +763,10 @@ static bool FixupSymbolEncodedFont(uint8_t* aFontData, uint32_t aLength) {
   return false;
 }
 
-gfxFontEntry* gfxGDIFontList::MakePlatformFont(const nsACString& aFontName,
-                                               WeightRange aWeightForEntry,
-                                               StretchRange aStretchForEntry,
-                                               SlantStyleRange aStyleForEntry,
-                                               const uint8_t* aFontData,
-                                               uint32_t aLength) {
+already_AddRefed<gfxFontEntry> gfxGDIFontList::MakePlatformFont(
+    const nsACString& aFontName, WeightRange aWeightForEntry,
+    StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
+    const uint8_t* aFontData, uint32_t aLength) {
   // MakePlatformFont is responsible for deleting the font data with free
   // so we set up a stack object to ensure it is freed even if we take an
   // early exit
@@ -821,11 +833,12 @@ gfxFontEntry* gfxGDIFontList::MakePlatformFont(const nsACString& aFontName,
     fe->mIsDataUserFont = true;
   }
 
-  return fe;
+  return do_AddRef(fe);
 }
 
 bool gfxGDIFontList::FindAndAddFamiliesLocked(
-    nsPresContext* aPresContext, StyleGenericFontFamily aGeneric,
+    FontVisibilityProvider* aFontVisibilityProvider,
+    StyleGenericFontFamily aGeneric,
     const nsACString& aFamily, nsTArray<FamilyAndGeneric>* aOutput,
     FindFamiliesFlags aFlags, gfxFontStyle* aStyle, nsAtom* aLanguage,
     gfxFloat aDevToCssSize) {
@@ -834,8 +847,9 @@ bool gfxGDIFontList::FindAndAddFamiliesLocked(
   NS_ConvertUTF16toUTF8 keyName(key16);
 
   gfxFontFamily* ff = mFontSubstitutes.GetWeak(keyName);
-  FontVisibility level =
-      aPresContext ? aPresContext->GetFontVisibility() : FontVisibility::User;
+  FontVisibility level = aFontVisibilityProvider
+                             ? aFontVisibilityProvider->GetFontVisibility()
+                             : FontVisibility::User;
   if (ff && IsVisibleToCSS(*ff, level)) {
     aOutput->AppendElement(FamilyAndGeneric(ff, aGeneric));
     return true;
@@ -846,8 +860,8 @@ bool gfxGDIFontList::FindAndAddFamiliesLocked(
   }
 
   return gfxPlatformFontList::FindAndAddFamiliesLocked(
-      aPresContext, aGeneric, aFamily, aOutput, aFlags, aStyle, aLanguage,
-      aDevToCssSize);
+      aFontVisibilityProvider, aGeneric, aFamily, aOutput, aFlags, aStyle,
+      aLanguage, aDevToCssSize);
 }
 
 nsTArray<std::pair<const char**, uint32_t>>
@@ -858,7 +872,7 @@ gfxGDIFontList::GetFilteredPlatformFontLists() {
 }
 
 FontFamily gfxGDIFontList::GetDefaultFontForPlatform(
-    nsPresContext* aPresContext, const gfxFontStyle* aStyle,
+    FontVisibilityProvider* aFontVisibilityProvider, const gfxFontStyle* aStyle,
     nsAtom* aLanguage) {
   FontFamily ff;
 
@@ -868,7 +882,7 @@ FontFamily gfxGDIFontList::GetDefaultFontForPlatform(
   BOOL status =
       ::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0);
   if (status) {
-    ff = FindFamily(aPresContext,
+    ff = FindFamily(aFontVisibilityProvider,
                     NS_ConvertUTF16toUTF8(ncm.lfMessageFont.lfFaceName));
     if (!ff.IsNull()) {
       return ff;
@@ -879,7 +893,8 @@ FontFamily gfxGDIFontList::GetDefaultFontForPlatform(
   HGDIOBJ hGDI = ::GetStockObject(DEFAULT_GUI_FONT);
   LOGFONTW logFont;
   if (hGDI && ::GetObjectW(hGDI, sizeof(logFont), &logFont)) {
-    ff = FindFamily(aPresContext, NS_ConvertUTF16toUTF8(logFont.lfFaceName));
+    ff = FindFamily(aFontVisibilityProvider,
+                    NS_ConvertUTF16toUTF8(logFont.lfFaceName));
   }
 
   return ff;
@@ -1018,7 +1033,7 @@ int CALLBACK GDIFontInfo::EnumerateFontsForFamily(
     if (cmapSize != GDI_ERROR && cmapSize > 0 &&
         cmapData.SetLength(cmapSize, fallible)) {
       ::GetFontData(hdc, kCMAP, 0, cmapData.Elements(), cmapSize);
-      RefPtr<gfxCharacterMap> charmap = new gfxCharacterMap();
+      RefPtr<gfxCharacterMap> charmap = new gfxCharacterMap(256);
       uint32_t offset;
 
       if (NS_SUCCEEDED(gfxFontUtils::ReadCMAP(cmapData.Elements(), cmapSize,
@@ -1071,9 +1086,9 @@ already_AddRefed<FontInfoData> gfxGDIFontList::CreateFontInfoData() {
   return fi.forget();
 }
 
-gfxFontFamily* gfxGDIFontList::CreateFontFamily(
+already_AddRefed<gfxFontFamily> gfxGDIFontList::CreateFontFamily(
     const nsACString& aName, FontVisibility aVisibility) const {
-  return new GDIFontFamily(aName, aVisibility);
+  return MakeAndAddRef<GDIFontFamily>(aName, aVisibility);
 }
 
 #ifdef MOZ_BUNDLED_FONTS

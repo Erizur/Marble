@@ -57,8 +57,8 @@ gfxFont* gfxGDIFont::CopyWithAntialiasOption(AntialiasOption anAAOption) const {
   return new gfxGDIFont(entry, &mStyle, anAAOption);
 }
 
-bool gfxGDIFont::ShapeText(DrawTarget* aDrawTarget, const char16_t* aText,
-                           uint32_t aOffset, uint32_t aLength, Script aScript,
+bool gfxGDIFont::ShapeText(const char16_t* aText, uint32_t aOffset,
+                           uint32_t aLength, Script aScript,
                            nsAtom* aLanguage, bool aVertical,
                            RoundingFlags aRounding,
                            gfxShapedText* aShapedText) {
@@ -67,8 +67,8 @@ bool gfxGDIFont::ShapeText(DrawTarget* aDrawTarget, const char16_t* aText,
     return false;
   }
 
-  return gfxFont::ShapeText(aDrawTarget, aText, aOffset, aLength, aScript,
-                            aLanguage, aVertical, aRounding, aShapedText);
+  return gfxFont::ShapeText(aText, aOffset, aLength, aScript, aLanguage,
+                            aVertical, aRounding, aShapedText);
 }
 
 already_AddRefed<ScaledFont> gfxGDIFont::GetScaledFont(
@@ -89,7 +89,7 @@ already_AddRefed<ScaledFont> gfxGDIFont::GetScaledFont(
   InitializeScaledFont(newScaledFont);
 
   if (mAzureScaledFont.compareExchange(nullptr, newScaledFont.get())) {
-    Unused << newScaledFont.forget();
+    newScaledFont.forget().leak();  // mAzureScaledFont now owns the reference
   }
   ScaledFont* scaledFont = mAzureScaledFont;
   return do_AddRef(scaledFont);

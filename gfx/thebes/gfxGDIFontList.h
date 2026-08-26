@@ -163,6 +163,8 @@ class GDIFontEntry final : public gfxFontEntry {
                SlantStyleRange aStyle, WeightRange aWeight,
                StretchRange aStretch, gfxUserFontData* aUserFontData);
 
+  ~GDIFontEntry() override;
+
   void InitLogFont(const nsACString& aName, gfxWindowsFontType aFontType);
 
   gfxFont* CreateFontInstance(const gfxFontStyle* aFontStyle) override;
@@ -173,7 +175,11 @@ class GDIFontEntry final : public gfxFontEntry {
   already_AddRefed<mozilla::gfx::UnscaledFontGDI> LookupUnscaledFont(
       HFONT aFont);
 
+  FontTableCache* GetFontTableCache(bool aCreate) override;
+
   LOGFONTW mLogFont;
+
+  mozilla::Atomic<FontTableCache*> mFontTableCache;
 
   mozilla::ThreadSafeWeakPtr<mozilla::gfx::UnscaledFontGDI> mUnscaledFont;
 };
@@ -298,28 +304,27 @@ class gfxGDIFontList final : public gfxPlatformFontList {
   // initialize font lists
   nsresult InitFontListForPlatform() MOZ_REQUIRES(mLock) override;
 
-  gfxFontFamily* CreateFontFamily(const nsACString& aName,
-                                  FontVisibility aVisibility) const override;
+  already_AddRefed<gfxFontFamily> CreateFontFamily(
+      const nsACString& aName, FontVisibility aVisibility) const override;
 
   bool FindAndAddFamiliesLocked(
-      nsPresContext* aPresContext, mozilla::StyleGenericFontFamily aGeneric,
+      FontVisibilityProvider* aFontVisibilityProvider,
+      mozilla::StyleGenericFontFamily aGeneric,
       const nsACString& aFamily, nsTArray<FamilyAndGeneric>* aOutput,
       FindFamiliesFlags aFlags, gfxFontStyle* aStyle = nullptr,
       nsAtom* aLanguage = nullptr, gfxFloat aDevToCssSize = 1.0)
       MOZ_REQUIRES(mLock) override;
 
-  gfxFontEntry* LookupLocalFont(nsPresContext* aPresContext,
-                                const nsACString& aFontName,
-                                WeightRange aWeightForEntry,
-                                StretchRange aStretchForEntry,
-                                SlantStyleRange aStyleForEntry) override;
+  already_AddRefed<gfxFontEntry> LookupLocalFont(
+      FontVisibilityProvider* aFontVisibilityProvider,
+      const nsACString& aFontName, WeightRange aWeightForEntry,
+      StretchRange aStretchForEntry,
+      SlantStyleRange aStyleForEntry) override;
 
-  gfxFontEntry* MakePlatformFont(const nsACString& aFontName,
-                                 WeightRange aWeightForEntry,
-                                 StretchRange aStretchForEntry,
-                                 SlantStyleRange aStyleForEntry,
-                                 const uint8_t* aFontData,
-                                 uint32_t aLength) override;
+  already_AddRefed<gfxFontEntry> MakePlatformFont(
+      const nsACString& aFontName, WeightRange aWeightForEntry,
+      StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
+      const uint8_t* aFontData, uint32_t aLength) override;
 
   void AddSizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf,
                               FontListSizes* aSizes) const override;
@@ -327,10 +332,10 @@ class gfxGDIFontList final : public gfxPlatformFontList {
                               FontListSizes* aSizes) const override;
 
  protected:
-  FontFamily GetDefaultFontForPlatform(nsPresContext* aPresContext,
-                                       const gfxFontStyle* aStyle,
-                                       nsAtom* aLanguage = nullptr)
-      MOZ_REQUIRES(mLock) override;
+  FontFamily GetDefaultFontForPlatform(
+      FontVisibilityProvider* aFontVisibilityProvider,
+      const gfxFontStyle* aStyle,
+      nsAtom* aLanguage = nullptr) MOZ_REQUIRES(mLock) override;
 
   nsTArray<std::pair<const char**, uint32_t>> GetFilteredPlatformFontLists()
       override;

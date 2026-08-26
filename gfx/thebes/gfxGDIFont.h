@@ -60,9 +60,9 @@ class gfxGDIFont final : public gfxFont {
 
   const Metrics& GetHorizontalMetrics() const override { return *mMetrics; }
 
-  bool ShapeText(DrawTarget* aDrawTarget, const char16_t* aText,
-                 uint32_t aOffset, uint32_t aLength, Script aScript,
-                 nsAtom* aLanguage, bool aVertical, RoundingFlags aRounding,
+  bool ShapeText(const char16_t* aText, uint32_t aOffset, uint32_t aLength,
+                 Script aScript, nsAtom* aLanguage, bool aVertical,
+                 RoundingFlags aRounding,
                  gfxShapedText* aShapedText) override;
 
   void Initialize();  // creates metrics and Cairo fonts
