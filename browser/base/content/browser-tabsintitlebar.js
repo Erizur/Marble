@@ -69,8 +69,14 @@ var TabsInTitlebar = {
 
     if (allowed) {
       document.documentElement.setAttribute("tabsintitlebar", "true");
+      if (AppConstants.platform == "macosx") {
+        document.documentElement.setAttribute("chromemargin", "0,-1,-1,-1");
+      } else {
+        document.documentElement.setAttribute("chromemargin", "0,2,2,2");
+      }
     } else {
       document.documentElement.removeAttribute("tabsintitlebar");
+      document.documentElement.removeAttribute("chromemargin");
     }
 
     ToolbarIconColor.inferFromText("tabsintitlebar", allowed);
