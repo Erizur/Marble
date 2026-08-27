@@ -212,7 +212,7 @@ var gBrowserInit = {
       }
     }
 
-    // Run menubar initialization first, to avoid CustomTitlebar code picking
+    // Run menubar initialization first, to avoid TabsInTitlebar code picking
     // up mutations from it and causing a reflow.
     BrowserUtils.callModulesFromCategory(
       {
@@ -223,7 +223,7 @@ var gBrowserInit = {
       window
     );
 
-    // Update the customtitlebar attribute so the window can be sized
+    // Update the tabsintitlebar attribute so the window can be sized
     // correctly.
     window.TabBarVisibility.update();
 
@@ -237,7 +237,7 @@ var gBrowserInit = {
     }
 
     // The following modules would be initialized:
-    // CustomTitlebar, LightweightThemeConsumer, and ToolbarIconColor.
+    // TabsInTitlebar, LightweightThemeConsumer, and ToolbarIconColor.
     // ToolbarIconColor.init should be called after we set the attributes, since
     // it might change the toolbars' computed text color.
     BrowserUtils.callModulesFromCategory(

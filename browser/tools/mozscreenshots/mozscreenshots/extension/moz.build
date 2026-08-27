@@ -23,7 +23,7 @@ FINAL_TARGET_FILES.resources.configurations += [
     "configurations/Buttons.sys.mjs",
     "configurations/ControlCenter.sys.mjs",
     "configurations/CustomizeMode.sys.mjs",
-    "configurations/CustomTitlebar.sys.mjs",
+    "configurations/TabsInTitlebar.sys.mjs",
     "configurations/DevTools.sys.mjs",
     "configurations/LightweightThemes.sys.mjs",
     "configurations/PermissionPrompts.sys.mjs",

@@ -30,7 +30,7 @@
  * `-moz-gtk-csd-titlebar-radius`) environment variable, and a window shadow
  * (which we can't read back from GTK).
  */
-:root[customtitlebar] {
+:root[tabsintitlebar] {
   background-color: transparent;
 
   &[sizemode="normal"]:not([gtktiledwindow]) {
