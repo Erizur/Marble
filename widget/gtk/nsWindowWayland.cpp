@@ -2093,7 +2093,7 @@ void nsWindowWayland::CreateNative() {
   // Only use for toplevel windows for now, see bug 1619246.
 
   if (StaticPrefs::widget_wayland_vsync_enabled_AtStartup() &&
-      IsTopLevelWidget()) {
+      IsTopLevelWindowType()) {
     LOG_VSYNC("  create WaylandVsyncSource");
     mWaylandVsyncSource = new WaylandVsyncSource(this);
     mWaylandVsyncSource->Init();
@@ -2108,7 +2108,7 @@ void nsWindowWayland::CreateNative() {
   }
 
   mWaitingToSessionRestore =
-      IsTopLevelWidget() &&
+      IsTopLevelWindowType() &&
       nsAppShell::UpdateAndGetSessionState() == eSessionRestoring;
 }
 

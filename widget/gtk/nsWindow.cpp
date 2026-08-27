@@ -880,7 +880,7 @@ void nsWindow::SetSizeConstraints(const SizeConstraints& aConstraints) {
 
 // See gtk_window_should_use_csd.
 bool nsWindow::ToplevelUsesCSD() const {
-  if (!IsTopLevelWidget() || mUndecorated ||
+  if (!IsTopLevelWindowType() || mUndecorated ||
       mSizeMode == nsSizeMode_Fullscreen) {
     return false;
   }
@@ -1127,7 +1127,7 @@ void nsWindow::Move(const DesktopPoint& aTopLeft) {
       request.x.value, request.y.value, scale, request.x.value * scale,
       request.y.value * scale);
 
-  if (mSizeMode != nsSizeMode_Normal && IsTopLevelWidget()) {
+  if (mSizeMode != nsSizeMode_Normal && IsTopLevelWindowType()) {
     LOG("  size state is not normal, can't move, bailing");
     return;
   }
@@ -1591,7 +1591,7 @@ void nsWindow::RecomputeBoundsX11(bool aMayChangeCsdMargin) {
   // Window position and size with decoration but WITHOUT system titlebar.
   auto GetBounds = [&](GdkWindow* aWin) {
     GdkRectangle b{0};
-    if (IsTopLevelWidget() && aWin == toplevel) {
+    if (IsTopLevelWindowType() && aWin == toplevel) {
       // We want the up-to-date size from the X server, not the last configure
       // event size, to avoid spurious resizes on e.g. sizemode changes.
       gdk_window_get_geometry(aWin, nullptr, nullptr, &b.width, &b.height);
@@ -1645,7 +1645,7 @@ void nsWindow::RecomputeBoundsX11(bool aMayChangeCsdMargin) {
   }
 
   const bool decorated =
-      IsTopLevelWidget() && mSizeMode != nsSizeMode_Fullscreen && !mUndecorated;
+      IsTopLevelWindowType() && mSizeMode != nsSizeMode_Fullscreen && !mUndecorated;
   if (!decorated) {
     mClientMargin = {};
   } else if (!measuredClientArea) {
@@ -1695,7 +1695,7 @@ void nsWindow::RecomputeBoundsWayland(bool aMayChangeCsdMargin) {
   }
 
   const bool decorated =
-      IsTopLevelWidget() && mSizeMode != nsSizeMode_Fullscreen && !mUndecorated;
+      IsTopLevelWindowType() && mSizeMode != nsSizeMode_Fullscreen && !mUndecorated;
   if (!decorated) {
     mClientMargin = {};
   } else if (!measuredClientArea) {
@@ -2463,7 +2463,7 @@ gboolean nsWindow::OnShellConfigureEvent(GdkEventConfigure* aEvent) {
 
   // Don't fire configure event for scale changes, we handle that
   // OnScaleEvent event. Skip that for toplevel windows only.
-  if (IsTopLevelWidget() &&
+  if (IsTopLevelWindowType() &&
       mCeiledScaleFactor != gdk_window_get_scale_factor(mGdkWindow)) {
     LOG("  scale factor changed to %d, return early",
         gdk_window_get_scale_factor(mGdkWindow));
@@ -2646,7 +2646,7 @@ void nsWindow::OnLeaveNotifyEvent(GdkEventCrossing* aEvent) {
 
   // The filter out for subwindows should make sure that this is targeted to
   // this nsWindow.
-  const bool leavingTopLevel = IsTopLevelWidget();
+  const bool leavingTopLevel = IsTopLevelWindowType();
   if (leavingTopLevel && IsBogusLeaveNotifyEvent(mGdkWindow, aEvent)) {
     return;
   }
@@ -3303,7 +3303,7 @@ void nsWindow::OnContainerFocusInEvent(GdkEventFocus* aEvent) {
 void nsWindow::OnContainerFocusOutEvent(GdkEventFocus* aEvent) {
   LOG("OnContainerFocusOutEvent");
 
-  if (IsTopLevelWidget()) {
+  if (IsTopLevelWindowType()) {
     // Rollup menus when a window is focused out unless a drag is occurring.
     // This check is because drags grab the keyboard and cause a focus out on
     // versions of GTK before 2.18.
@@ -3863,7 +3863,7 @@ void nsWindow::OnCompositedChanged() {
 // Let's follow the working scenario for now to avoid complexity
 // and maybe fix that later.
 void nsWindow::OnScaleEvent() {
-  if (!IsTopLevelWidget()) {
+  if (!IsTopLevelWindowType()) {
     return;
   }
 
@@ -3874,7 +3874,7 @@ void nsWindow::OnScaleEvent() {
 }
 
 void nsWindow::RefreshScale(bool aRefreshScreen, bool aForceRefresh) {
-  if (!IsTopLevelWidget()) {
+  if (!IsTopLevelWindowType()) {
     return;
   }
 
@@ -4391,7 +4391,7 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
   // gfxVars, used below.
   (void)gfxPlatform::GetPlatform();
 
-  if (IsTopLevelWidget()) {
+  if (IsTopLevelWindowType()) {
     mGtkWindowDecoration = GetSystemGtkWindowDecoration();
   }
 
@@ -7732,7 +7732,7 @@ void nsWindow::OnUnmap() {
 }
 
 void nsWindow::NotifyOcclusionState(OcclusionState aState) {
-  if (!IsTopLevelWidget()) {
+  if (!IsTopLevelWindowType()) {
     return;
   }
 
@@ -7839,7 +7839,7 @@ void nsWindow::InsertEmoji(RefPtr<nsWindow> aToplevelWindow) {
     return;
   }
 
-  if (IsTopLevelWidget()) {
+  if (IsTopLevelWindowType()) {
     if (nsIWidget* popup =
             nsXULPopupManager::GetInstance()->GetRollupWidget()) {
       if (nsWindow* window = nsWindow::FromWidget(popup)) {
@@ -7884,7 +7884,7 @@ void nsWindow::InsertEmoji(RefPtr<nsWindow> aToplevelWindow) {
   }
 
   DesktopIntRect input = aToplevelWindow->GetTextInputArea();
-  auto offset = IsTopLevelWidget()
+  auto offset = IsTopLevelWindowType()
                     ? DesktopIntPoint()
                     : WidgetToScreenOffsetUnscaled() -
                           DesktopIntPoint(aToplevelWindow->mClientMargin.left,

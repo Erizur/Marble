@@ -879,6 +879,11 @@ class nsWindow : public nsIWidget {
    */
   void CreateRootAccessible();
 
+  bool IsTopLevelWindowType() const {
+    return mWindowType == WindowType::TopLevel ||
+           mWindowType == WindowType::Dialog;
+  }
+
   /**
    * Dispatch accessible event for the top level window accessible.
    *
