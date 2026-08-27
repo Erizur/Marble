@@ -1696,6 +1696,8 @@ void nsWindow::Show(bool aState) {
             break;
         }
 
+        mHasBeenShown = true;
+
       } else {
         DWORD flags = SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW;
         if (wasVisible) {

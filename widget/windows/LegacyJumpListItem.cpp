@@ -419,7 +419,7 @@ nsresult LegacyJumpListShortcut::GetJumpListShortcut(
 
   nsCOMPtr<nsIFile> file;
   nsDependentString filepath(buf);
-  rv = NS_NewLocalFile(filepath, false, getter_AddRefs(file));
+  rv = NS_NewLocalFile(filepath, getter_AddRefs(file));
   NS_ENSURE_SUCCESS(rv, rv);
 
   rv = handlerApp->SetExecutable(file);

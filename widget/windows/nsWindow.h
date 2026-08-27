@@ -751,6 +751,9 @@ class nsWindow final : public nsIWidget {
   // don't steal focus from other windows when opened. They're also expected to
   // be of type WindowType::Dialog.
   bool mIsAlert = false;
+  // Whether ::ShowWindow() has been called at least once. Bug 1968297 uses
+  // this to avoid marking a not-yet-shown window as occluded.
+  bool mHasBeenShown = false;
   bool mIsPerformingDwmFlushHack = false;
   bool mDraggingWindowWithMouse = false;
   // Partial cached window-styles, for when going fullscreen. (Only window-
