@@ -192,6 +192,7 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   const bool usingMemoryDC =
       IsPopup() && renderer->GetBackendType() == LayersBackend::LAYERS_NONE &&
       mTransparencyMode == TransparencyMode::Transparent;
+  HDC hDC = nullptr;
   const LayoutDeviceIntRect winRect = [&] {
     RECT r;
     ::GetWindowRect(mWnd, &r);
@@ -200,21 +201,19 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   }();
   LayoutDeviceIntRegion region;
   LayoutDeviceIntRegion translucentRegion;
-  // BeginPaint/EndPaint must be called to make Windows think that invalid
-  // area is painted. Otherwise it will continue sending the same message
-  // endlessly. Note that we need to call it after the WillPaintWindow flush,
-  // which informs us of our transparent region, but also before clearing the
-  // nc-area, since ::BeginPaint might send WM_NCPAINT messages[1].
-  // [1]:
-  // https://learn.microsoft.com/en-us/windows/win32/gdi/the-wm-paint-message
-  HDC hDC = ::BeginPaint(mWnd, &ps);
   if (usingMemoryDC) {
+    // BeginPaint/EndPaint must be called to make Windows think that invalid
+    // area is painted. Otherwise it will continue sending the same message
+    // endlessly.
+    ::BeginPaint(mWnd, &ps);
     ::EndPaint(mWnd, &ps);
+
     // We're guaranteed to have a widget proxy since we called
     // GetLayerManager().
     hDC = mBasicLayersSurface->GetTransparentDC();
     region = translucentRegion = LayoutDeviceIntRegion{winRect};
   } else {
+    hDC = ::BeginPaint(mWnd, &ps);
     region = GetRegionToPaint(ps, hDC);
     if (mTransparencyMode == TransparencyMode::Transparent) {
       translucentRegion = LayoutDeviceIntRegion{winRect};

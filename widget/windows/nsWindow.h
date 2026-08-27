@@ -564,6 +564,7 @@ class nsWindow final : public nsIWidget {
   void UpdateDarkModeToolbar();
   void ResetLayout();
   nsAutoRegion ComputeNonClientHRGN();
+  void InvalidateNonClientRegion();
   HWND GetOwnerWnd() const { return ::GetWindow(mWnd, GW_OWNER); }
   bool IsOwnerForegroundWindow() const {
     HWND owner = GetOwnerWnd();
