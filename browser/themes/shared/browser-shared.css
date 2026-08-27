@@ -324,7 +324,7 @@ body {
   color: inherit;
 
   @media not -moz-pref("sidebar.verticalTabs") {
-    &:not(.browser-titlebar) {
+    &:not(.titlebar-color) {
       background-color: var(--toolbar-background-color);
       color: var(--toolbar-text-color);
     }

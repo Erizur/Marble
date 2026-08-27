@@ -10146,6 +10146,7 @@ var TabBarVisibility = {
       "browser-titlebar",
       TabsInTitlebar.enabled && hideTabsToolbar
     );
+    navbar.classList.toggle("titlebar-color", hideTabsToolbar);
 
     if (
       hideTabsToolbar == tabsToolbar.collapsed &&
