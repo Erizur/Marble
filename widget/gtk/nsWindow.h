@@ -421,6 +421,7 @@ class nsWindow : public nsIWidget {
       mozilla::widget::CompositorWidgetInitData* aInitData) override;
 
   void SetCustomTitlebar(bool) override;
+  mozilla::LayoutDeviceIntCoord GetTitlebarRadius();
   void UpdateWindowDraggingRegion(
       const LayoutDeviceIntRegion& aRegion) override;
 
