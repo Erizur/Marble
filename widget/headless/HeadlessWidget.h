@@ -77,6 +77,10 @@ class HeadlessWidget final : public nsIWidget {
     // Headless widgets have no title, so just ignore it.
     return NS_OK;
   }
+  nsresult SetNonClientMargins(const LayoutDeviceIntMargin& margins) override {
+    // Headless widgets have no chrome margins, so just ignore the call.
+    return NS_OK;
+  }
   LayoutDeviceIntPoint WidgetToScreenOffset() override;
   void SetInputContext(const InputContext& aContext,
                        const InputContextAction& aAction) override {

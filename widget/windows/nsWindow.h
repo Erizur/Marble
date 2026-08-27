@@ -295,7 +295,7 @@ class nsWindow final : public nsIWidget {
   TextEventDispatcherListener* GetNativeTextEventDispatcherListener() override;
   void SetTransparencyMode(TransparencyMode aMode) override;
   TransparencyMode GetTransparencyMode() override;
-  void SetCustomTitlebar(bool) override;
+  nsresult SetNonClientMargins(const LayoutDeviceIntMargin&) override;
   void SetResizeMargin(mozilla::LayoutDeviceIntCoord aResizeMargin) override;
   void UpdateWindowDraggingRegion(
       const LayoutDeviceIntRegion& aRegion) override;

@@ -7371,14 +7371,17 @@ bool nsCocoaWindow::IsMacTitlebarDirectionRTL() {
                         NSUserInterfaceLayoutDirectionRightToLeft;
 }
 
-void nsCocoaWindow::SetCustomTitlebar(bool aState) {
-  NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
+nsresult nsCocoaWindow::SetNonClientMargins(
+    const LayoutDeviceIntMargin& margins) {
+  NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
   if (mWindow) {
-    mWindow.drawsContentsIntoWindowFrame = aState;
+    mWindow.drawsContentsIntoWindowFrame = margins.top == 0;
   }
 
-  NS_OBJC_END_TRY_IGNORE_BLOCK;
+  return NS_OK;
+
+  NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
 }
 
 void nsCocoaWindow::LockAspectRatio(bool aShouldLock) {

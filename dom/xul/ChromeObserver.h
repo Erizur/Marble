@@ -26,7 +26,10 @@ class ChromeObserver final : public nsStubMutationObserver {
   nsIWidget* GetWindowWidget();
   void SetHideTitlebarSeparator(bool);
   void HideWindowChrome(bool aShouldHide);
-  void SetCustomTitlebar(bool);
+  void SetChromeMargins(const nsAttrValue* aValue);
+
+ private:
+  void ResetChromeMargins();
   ~ChromeObserver() = default;
   // A weak pointer cleared when the element will be destroyed.
   Document* MOZ_NON_OWNING_REF mDocument;

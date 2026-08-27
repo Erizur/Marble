@@ -4009,13 +4009,15 @@ nsDOMWindowUtils::PostRestyleSelfEvent(Element* aElement) {
 }
 
 NS_IMETHODIMP
-nsDOMWindowUtils::SetCustomTitlebar(bool aCustomTitlebar) {
+nsDOMWindowUtils::SetChromeMargin(int32_t aTop, int32_t aRight, int32_t aBottom,
+                                  int32_t aLeft) {
   // TODO(emilio): Can't we use nsDOMWindowUtils::GetWidget()?
   if (nsCOMPtr<nsPIDOMWindowOuter> window = do_QueryReferent(mWindow)) {
     if (nsCOMPtr<nsIBaseWindow> baseWindow =
             do_QueryInterface(window->GetDocShell())) {
       if (nsCOMPtr<nsIWidget> widget = baseWindow->GetMainWidget()) {
-        widget->SetCustomTitlebar(aCustomTitlebar);
+        LayoutDeviceIntMargin margins(aTop, aRight, aBottom, aLeft);
+        return widget->SetNonClientMargins(margins);
       }
     }
   }

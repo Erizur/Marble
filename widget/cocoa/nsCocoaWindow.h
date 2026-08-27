@@ -462,7 +462,7 @@ class nsCocoaWindow final : public nsIWidget {
   void SetWindowAnimationType(WindowAnimationType aType) override;
   void SetHideTitlebarSeparator(bool) override;
   bool IsMacTitlebarDirectionRTL() override;
-  void SetCustomTitlebar(bool) override;
+  nsresult SetNonClientMargins(const LayoutDeviceIntMargin&) override;
   void UpdateThemeGeometries(
       const nsTArray<ThemeGeometry>& aThemeGeometries) override;
   void LockAspectRatio(bool aShouldLock) override;

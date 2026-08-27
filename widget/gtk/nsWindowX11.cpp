@@ -175,7 +175,7 @@ void nsWindowX11::ConfigureToplevelWindowNative() {
   // vblank.
   //
   // This must be (re-)applied whenever the shell's X window is created,
-  // including after CSD-triggered re-realize in SetCustomTitlebar().
+  // including after CSD-triggered re-realize in SetNonClientMargins().
   SetCompositorHint(GTK_WIDGET_COMPOSITED_ENABLED);
 }
 

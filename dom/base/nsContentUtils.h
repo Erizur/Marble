@@ -924,6 +924,17 @@ class nsContentUtils {
                                       ParseHTMLIntegerResultFlags* aResult);
 
  public:
+  /**
+   * Parse a margin string of format 'top, right, bottom, left' into
+   * an nsIntMargin.
+   *
+   * @param aString the string to parse
+   * @param aResult the resulting integer
+   * @return whether the value could be parsed
+   */
+  static bool ParseIntMarginValue(const nsAString& aString,
+                                  nsIntMargin& aResult);
+
   /* Parse a float as per
    * https://html.spec.whatwg.org/#valid-floating-point-number */
   static mozilla::Maybe<double> ParseHTMLFloatingPointNumber(const nsAString&);
