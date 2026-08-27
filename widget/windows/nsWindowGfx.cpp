@@ -222,22 +222,23 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
       region.OrWith(translucentRegion);
     }
 
-    if (mNeedsNCAreaClear ||
-        (didResize && mTransparencyMode == TransparencyMode::Transparent)) {
-      // We need to clear the non-client-area region, and the transparent parts
-      // of the window to black (once).
-      auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
-      nsAutoRegion regionToClear(ComputeNonClientHRGN());
-      // Don't clear the translucent region for unaccelerated transparent
-      // windows; We clear the whole window below anyways, and doing so could
-      // cause flicker, as Windows doesn't guarantee atomicity even between
-      // ::BeginPaint and ::EndPaint, see bug 1958631.
-      if (!translucentRegion.IsEmpty() && !isFallback) {
-        nsAutoRegion translucent(WinUtils::RegionToHRGN(translucentRegion));
-        ::CombineRgn(regionToClear, regionToClear, translucent, RGN_OR);
-      }
-      ::FillRgn(hDC, regionToClear, black);
+  }
+
+  if (!usingMemoryDC && (mNeedsNCAreaClear || didResize)) {
+    // We need to clear the non-client-area region, and the transparent parts
+    // of the window to black (once).
+    auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
+    nsAutoRegion regionToClear(ComputeNonClientHRGN());
+    // Don't clear the translucent region for unaccelerated transparent
+    // windows; We clear the whole window below anyways, and doing so could
+    // cause flicker, as Windows doesn't guarantee atomicity even between
+    // ::BeginPaint and ::EndPaint, see bug 1958631.
+    if (mTransparencyMode == TransparencyMode::Transparent &&
+        !translucentRegion.IsEmpty() && !isFallback) {
+      nsAutoRegion translucent(WinUtils::RegionToHRGN(translucentRegion));
+      ::CombineRgn(regionToClear, regionToClear, translucent, RGN_OR);
     }
+    ::FillRgn(hDC, regionToClear, black);
   }
   mNeedsNCAreaClear = false;
 
