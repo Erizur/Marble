@@ -2784,7 +2784,8 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
     metrics.mOffset.top = metrics.mCaptionHeight - verticalResize;
 
     if (StaticPrefs::widget_windows_hidden_taskbar_hack_size()) {
-      if (mozilla::Maybe<UINT> maybeEdge = GetHiddenTaskbarEdge()) {
+      mozilla::Maybe<UINT> maybeEdge = GetHiddenTaskbarEdge();
+      if (maybeEdge) {
         auto edge = maybeEdge.value();
         if (ABE_LEFT == edge) {
           metrics.mOffset.left -= kHiddenTaskbarSize;
@@ -2793,6 +2794,13 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
         } else if (ABE_BOTTOM == edge || ABE_TOP == edge) {
           metrics.mOffset.bottom -= kHiddenTaskbarSize;
         }
+
+        // When we are drawing the non-client region, we need
+        // to clear the portion of the NC region that is exposed by the
+        // hidden taskbar.  As above, we clear the bottom of the NC region
+        // when the taskbar is at the top of the screen.
+        UINT clearEdge = (edge == ABE_TOP) ? ABE_BOTTOM : edge;
+        mClearNCEdge = Some(clearEdge);
       }
     }
   } else {
@@ -2800,11 +2808,6 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
   }
 
   UpdateOpaqueRegionInternal();
-  if (StaticPrefs::widget_windows_hidden_taskbar_hack_paint()) {
-    // We probably shouldn't need to clear the NC-area if we're an opaque
-    // window, but we need to in order to work around bug 642851.
-    mNeedsNCAreaClear = true;
-  }
 
   if (aReflowWindow) {
     // Force a reflow of content based on the new client
@@ -2864,7 +2867,7 @@ void nsWindow::SetResizeMargin(mozilla::LayoutDeviceIntCoord aResizeMargin) {
   UpdateNonClientMargins();
 }
 
-nsAutoRegion nsWindow::ComputeNonClientHRGN() {
+void nsWindow::InvalidateNonClientRegion() {
   // +-+-----------------------+-+
   // | | app non-client chrome | |
   // | +-----------------------+ |
@@ -2880,27 +2883,25 @@ nsAutoRegion nsWindow::ComputeNonClientHRGN() {
   RECT rect;
   GetWindowRect(mWnd, &rect);
   MapWindowPoints(nullptr, mWnd, (LPPOINT)&rect, 2);
-  nsAutoRegion winRgn(::CreateRectRgnIndirect(&rect));
+  HRGN winRgn = CreateRectRgnIndirect(&rect);
 
   // Subtract app client chrome and app content leaving
   // windows non-client chrome and app non-client chrome
   // in winRgn.
-  ::GetWindowRect(mWnd, &rect);
+  GetWindowRect(mWnd, &rect);
   rect.top += mCustomNonClientMetrics.mCaptionHeight +
               mCustomNonClientMetrics.mVertResizeMargin;
   rect.right -= mCustomNonClientMetrics.mHorResizeMargin;
   rect.bottom -= mCustomNonClientMetrics.mVertResizeMargin;
   rect.left += mCustomNonClientMetrics.mHorResizeMargin;
-  ::MapWindowPoints(nullptr, mWnd, (LPPOINT)&rect, 2);
-  nsAutoRegion clientRgn(::CreateRectRgnIndirect(&rect));
-  ::CombineRgn(winRgn, winRgn, clientRgn, RGN_DIFF);
-  return nsAutoRegion(winRgn.out());
-}
+  MapWindowPoints(nullptr, mWnd, (LPPOINT)&rect, 2);
+  HRGN clientRgn = CreateRectRgnIndirect(&rect);
+  CombineRgn(winRgn, winRgn, clientRgn, RGN_DIFF);
+  DeleteObject(clientRgn);
 
-void nsWindow::InvalidateNonClientRegion() {
-  nsAutoRegion winRgn(ComputeNonClientHRGN());
   // triggers ncpaint and paint events for the two areas
   RedrawWindow(mWnd, nullptr, winRgn, RDW_FRAME | RDW_INVALIDATE);
+  DeleteObject(winRgn);
 }
 
 /**************************************************************
@@ -5045,7 +5046,12 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
       auto GeckoClientToWinScreenRect =
           [&origin](LayoutDeviceIntRect aRect) -> RECT {
         aRect.MoveBy(origin);
-        return WinUtils::ToWinRect(aRect);
+        return {
+            .left = aRect.x,
+            .top = aRect.y,
+            .right = aRect.XMost(),
+            .bottom = aRect.YMost(),
+        };
       };
       auto SetButton = [&](size_t aIndex, WindowButtonType aType) {
         info->rgrect[aIndex] =
@@ -7434,7 +7440,6 @@ void nsWindow::UpdateOpaqueRegionInternal() {
   }
   DwmExtendFrameIntoClientArea(mWnd, &margins);
   if (mTransparencyMode == TransparencyMode::Transparent) {
-    mNeedsNCAreaClear = true;
     Invalidate();
   }
 }

@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "WinUtils.h"
+#include "nsWindowsHelpers.h"
 
 #include "nsDirectoryServiceDefs.h"
 #include "nsIFile.h"
