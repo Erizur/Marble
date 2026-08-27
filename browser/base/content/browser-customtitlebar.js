@@ -39,7 +39,7 @@ var CustomTitlebar = {
   },
 
   get enabled() {
-    return document.documentElement.hasAttribute("customtitlebar");
+    return document.documentElement.getAttribute("customtitlebar") == "true";
   },
 
   observe(subject, topic) {
@@ -67,7 +67,11 @@ var CustomTitlebar = {
       !window.fullScreen &&
       !Object.keys(this._disallowed).length;
 
-    document.documentElement.toggleAttribute("customtitlebar", allowed);
+    if (allowed) {
+      document.documentElement.setAttribute("customtitlebar", "true");
+    } else {
+      document.documentElement.removeAttribute("customtitlebar");
+    }
 
     ToolbarIconColor.inferFromText("customtitlebar", allowed);
     TabBarVisibility.update(true);

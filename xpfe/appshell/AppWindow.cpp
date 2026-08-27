@@ -1500,12 +1500,11 @@ void AppWindow::SyncAttributesToWidget() {
   bool maintainClientSize = mDominantClientSize;
 
   // "hidechrome" attribute
-  // FIXME(emilio): This should arguably be
-  // HideWindowChrome(windowElement->GetBoolAttr(...)), but that has
-  // side-effects in some platforms.
-  if (windowElement->GetBoolAttr(nsGkAtoms::hidechrome)) {
+  if (windowElement->AttrValueIs(kNameSpaceID_None, nsGkAtoms::hidechrome,
+                                 nsGkAtoms::_true, eCaseMatters)) {
     mWindow->HideWindowChrome(true);
   }
+
   NS_ENSURE_TRUE_VOID(mWindow);
 
   // "customtitlebar" attribute
@@ -1548,8 +1547,8 @@ void AppWindow::SyncAttributesToWidget() {
   NS_ENSURE_TRUE_VOID(mWindow);
 
   // "toggletoolbar" attribute
-  mWindow->SetShowsToolbarButton(
-      windowElement->HasAttribute(u"toggletoolbar"_ns));
+  windowElement->GetAttribute(u"toggletoolbar"_ns, attr);
+  mWindow->SetShowsToolbarButton(attr.LowerCaseEqualsLiteral("true"));
   NS_ENSURE_TRUE_VOID(mWindow);
 
   // "macnativefullscreen" attribute. Only override the creation-time default
