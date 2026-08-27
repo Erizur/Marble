@@ -5166,7 +5166,7 @@ void nsWindow::SetDBusMenuBar(
 LayoutDeviceIntCoord nsWindow::GetTitlebarRadius() {
   MOZ_RELEASE_ASSERT(NS_IsMainThread());
   int32_t cssCoord = LookAndFeel::GetInt(LookAndFeel::IntID::TitlebarRadius);
-  return GdkCoordToDevicePixels(cssCoord);
+  return int(round(cssCoord * FractionalScaleFactor()));
 }
 
 LayoutDeviceIntRegion nsWindow::GetOpaqueRegion() const {
@@ -5196,7 +5196,7 @@ static void SubtractTitlebarCorners(LayoutDeviceIntRegion& aRegion,
 
 void nsWindow::UpdateOpaqueRegion(const LayoutDeviceIntRegion& aRegion) {
   LayoutDeviceIntRegion region = aRegion;
-  SubtractTitlebarCorners(region, LayoutDeviceIntRect({}, mBounds.Size()),
+  SubtractTitlebarCorners(region, LayoutDeviceIntRect({}, GetBounds().Size()),
                           GetTitlebarRadius());
   {
     AutoReadLock r(mOpaqueRegionLock);
