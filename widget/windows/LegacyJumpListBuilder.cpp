@@ -19,7 +19,6 @@
 #include "mozilla/LazyIdleThread.h"
 #include "nsIObserverService.h"
 #include "mozilla/ScopeExit.h"
-#include "mozilla/Unused.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/mscom/ApartmentRegion.h"
 #include "mozilla/mscom/EnsureMTA.h"
@@ -59,7 +58,7 @@ class DoneCommitListBuildCallback final : public nsIRunnable {
   NS_IMETHOD Run() override {
     MOZ_ASSERT(NS_IsMainThread());
     if (mCallback) {
-      Unused << mCallback->Done(mResult);
+      (void)mCallback->Done(mResult);
     }
     // Ensure we are releasing on the main thread.
     Destroy();
@@ -480,7 +479,7 @@ NS_IMETHODIMP LegacyJumpListBuilder::CommitListBuild(
       NewNonOwningRunnableMethod<RefPtr<detail::DoneCommitListBuildCallback>>(
           "LegacyJumpListBuilder::DoCommitListBuild", this,
           &LegacyJumpListBuilder::DoCommitListBuild, std::move(callback));
-  Unused << mIOThread->Dispatch(event, NS_DISPATCH_NORMAL);
+  (void)mIOThread->Dispatch(event, NS_DISPATCH_NORMAL);
 
   return NS_OK;
 }
@@ -500,7 +499,7 @@ void LegacyJumpListBuilder::DoCommitListBuild(
   auto onExit = MakeScopeExit([&hr, &aCallback]() {
     // XXX We might want some specific error data here.
     aCallback->SetResult(SUCCEEDED(hr));
-    Unused << NS_DispatchToMainThread(aCallback);
+    (void)NS_DispatchToMainThread(aCallback);
   });
 
   RefPtr<ICustomDestinationList> jumpListMgr = mJumpListMgr.Resolve();
