@@ -2673,18 +2673,52 @@ void nsWindow::SetColorScheme(const Maybe<ColorScheme>& aScheme) {
 }
 
 LayoutDeviceIntMargin nsWindow::NormalWindowNonClientOffset() const {
-  MOZ_ASSERT(mCustomNonClient);
+  LayoutDeviceIntMargin nonClientOffset;
+
   // We're dealing with a "normal" window (not maximized, minimized, or
-  // fullscreen), so set `mNonClientOffset` accordingly.
+  // fullscreen), so process `mNonClientMargins` and set `mNonClientOffset`
+  // accordingly.
   //
   // Setting `mNonClientOffset` to 0 has the effect of leaving the default
   // frame intact.  Setting it to a value greater than 0 reduces the frame
   // size by that amount.
-  //
-  // When using custom titlebar, we hide the titlebar and leave the default
-  // frame on the other sides.
-  return LayoutDeviceIntMargin(mCustomNonClientMetrics.DefaultMargins().top, 0,
-                               0, 0);
+
+  const auto& metrics = mCustomNonClientMetrics;
+  if (mNonClientMargins.top > 0) {
+    nonClientOffset.top = std::min(metrics.mCaptionHeight, mNonClientMargins.top);
+  } else if (mNonClientMargins.top == 0) {
+    nonClientOffset.top = metrics.mCaptionHeight;
+  } else {
+    nonClientOffset.top = 0;
+  }
+
+  if (mNonClientMargins.bottom > 0) {
+    nonClientOffset.bottom =
+        std::min(metrics.mVertResizeMargin, mNonClientMargins.bottom);
+  } else if (mNonClientMargins.bottom == 0) {
+    nonClientOffset.bottom = metrics.mVertResizeMargin;
+  } else {
+    nonClientOffset.bottom = 0;
+  }
+
+  if (mNonClientMargins.left > 0) {
+    nonClientOffset.left =
+        std::min(metrics.mHorResizeMargin, mNonClientMargins.left);
+  } else if (mNonClientMargins.left == 0) {
+    nonClientOffset.left = metrics.mHorResizeMargin;
+  } else {
+    nonClientOffset.left = 0;
+  }
+
+  if (mNonClientMargins.right > 0) {
+    nonClientOffset.right =
+        std::min(metrics.mHorResizeMargin, mNonClientMargins.right);
+  } else if (mNonClientMargins.right == 0) {
+    nonClientOffset.right = metrics.mHorResizeMargin;
+  } else {
+    nonClientOffset.right = 0;
+  }
+  return nonClientOffset;
 }
 
 /**
@@ -2696,8 +2730,9 @@ LayoutDeviceIntMargin nsWindow::NormalWindowNonClientOffset() const {
  * The offsets calculated here are based on the value of `mNonClientMargins`
  * which is specified in the "chromemargins" attribute of the window.  For
  * each margin, the value specified has the following meaning:
- *    -1  - leave the default frame in place
- *    >=0 - frame size equals min(0, (default frame size - margin value))
+ *    -1 - leave the default frame in place
+ *     0 - remove the frame
+ *    >0 - frame size equals min(0, (default frame size - margin value))
  *
  * This function calculates and populates `mNonClientOffset`.
  * In our processing of `WM_NCCALCSIZE`, the frame size will be calculated
@@ -2729,6 +2764,7 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
 
   auto& metrics = mCustomNonClientMetrics;
 
+  if (!mUseResizeMarginOverrides) {
   // mHorResizeMargin is the size of the default NC areas on the
   // left and right sides of our window.  It is calculated as
   // the sum of:
@@ -2755,12 +2791,24 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
       WinUtils::GetSystemMetricsForDpi(SM_CYFRAME, dpi) +
       (hasCaption ? WinUtils::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
                   : 0);
+  }
 
-  // mCaptionHeight is the default size of the caption. You need to include
-  // mVertResizeMargin if you want the whole size of the default NC area at the
-  // top of the window.
+  // mCaptionHeight is the default size of the NC area at
+  // the top of the window. If the window has a caption,
+  // the size is calculated as the sum of:
+  //      SM_CYFRAME        - The thickness of the sizing border
+  //                          around a resizable window
+  //      SM_CXPADDEDBORDER - The amount of border padding
+  //                          for captioned windows
+  //      SM_CYCAPTION      - The height of the caption area
+  //
+  // If the window does not have a caption, mCaptionHeight will be equal to
+  // `WinUtils::GetSystemMetricsForDpi(SM_CYFRAME, dpi)`
   metrics.mCaptionHeight =
-      hasCaption ? WinUtils::GetSystemMetricsForDpi(SM_CYCAPTION, dpi) : 0;
+      WinUtils::GetSystemMetricsForDpi(SM_CYFRAME, dpi) +
+      (hasCaption ? WinUtils::GetSystemMetricsForDpi(SM_CYCAPTION, dpi) +
+                        WinUtils::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
+                  : 0);
 
   metrics.mOffset = {};
   if (sizeMode == nsSizeMode_Fullscreen) {
@@ -2768,18 +2816,20 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
     // makes the whole caption part of our client area, allowing us to draw
     // in the whole caption area.  Additionally remove the default frame from
     // the left, right, and bottom.
-    //
-    // NOTE(emilio): Fullscreen windows have completely different window styles
-    // because of HideWindowChrome(), so we actually need to apply the offsets
-    // and extend into the frame. It might be worth investigating if we can
-    // make fullscreen work without messing with window styles (like
-    // maximized windows work).
-    metrics.mOffset = metrics.DefaultMargins();
+    metrics.mOffset.top = metrics.mCaptionHeight;
+    metrics.mOffset.bottom = metrics.mVertResizeMargin;
+    metrics.mOffset.left = metrics.mHorResizeMargin;
+    metrics.mOffset.right = metrics.mHorResizeMargin;
   } else if (sizeMode == nsSizeMode_Maximized) {
     // We make the entire frame part of the client area. We leave the default
     // frame sizes for left, right and bottom since Windows will automagically
     // position the edges "offscreen" for maximized windows.
-    metrics.mOffset.top = metrics.mCaptionHeight;
+    int verticalResize =
+        WinUtils::GetSystemMetricsForDpi(SM_CYFRAME, dpi) +
+        (hasCaption ? WinUtils::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi)
+                    : 0);
+
+    metrics.mOffset.top = metrics.mCaptionHeight - verticalResize;
 
     if (StaticPrefs::widget_windows_hidden_taskbar_hack_size()) {
       if (mozilla::Maybe<UINT> maybeEdge = GetHiddenTaskbarEdge()) {
@@ -2847,10 +2897,14 @@ nsresult nsWindow::SetNonClientMargins(const LayoutDeviceIntMargin& margins) {
     mCustomNonClientMetrics = {};
     ResetLayout();
   }
+  return NS_OK;
 }
 
 void nsWindow::SetResizeMargin(mozilla::LayoutDeviceIntCoord aResizeMargin) {
-  mCustomResizeMargin = aResizeMargin;
+  mUseResizeMarginOverrides = true;
+  mCustomNonClientMetrics.mHorResizeMargin = aResizeMargin;
+  mCustomNonClientMetrics.mVertResizeMargin = aResizeMargin;
+  UpdateNonClientMargins();
 }
 
 nsAutoRegion nsWindow::ComputeNonClientHRGN() {
@@ -6063,7 +6117,11 @@ void nsWindow::FinishLiveResizing(ResizeState aNewState) {
 
 LayoutDeviceIntMargin nsWindow::NonClientSizeMargin(
     const LayoutDeviceIntMargin& aNonClientOffset) const {
-  return mCustomNonClientMetrics.DefaultMargins() - aNonClientOffset;
+  return LayoutDeviceIntMargin(
+      mCustomNonClientMetrics.mCaptionHeight - aNonClientOffset.top,
+      mCustomNonClientMetrics.mHorResizeMargin - aNonClientOffset.right,
+      mCustomNonClientMetrics.mVertResizeMargin - aNonClientOffset.bottom,
+      mCustomNonClientMetrics.mHorResizeMargin - aNonClientOffset.left);
 }
 
 int32_t nsWindow::ClientMarginHitTestPoint(int32_t aX, int32_t aY) {
@@ -6114,12 +6172,6 @@ int32_t nsWindow::ClientMarginHitTestPoint(int32_t aX, int32_t aY) {
   // even when the user clicks on the above edge of it.
   LayoutDeviceIntMargin borderSize = nonClientSizeMargin;
   borderSize.EnsureAtLeast(mCustomNonClientMetrics.ResizeMargins());
-  // If we have a custom resize margin, check for it too.
-  if (mCustomResizeMargin) {
-    borderSize.EnsureAtLeast(
-        LayoutDeviceIntMargin(mCustomResizeMargin, mCustomResizeMargin,
-                              mCustomResizeMargin, mCustomResizeMargin));
-  }
 
   bool top = false;
   bool bottom = false;
