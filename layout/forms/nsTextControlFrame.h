@@ -182,6 +182,10 @@ class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
   // Our first baseline, or NS_INTRINSIC_ISIZE_UNKNOWN if we have a pending
   // Reflow (or if we're contain:layout, which means we have no baseline).
   nscoord mFirstBaseline = NS_INTRINSIC_ISIZE_UNKNOWN;
+
+  // these packed bools could instead use the high order bits on mState, saving
+  // 4 bytes
+  bool mIsProcessing = false;
 };
 
 #endif
