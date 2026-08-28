@@ -1315,11 +1315,6 @@ nscoord ScrollContainerFrame::IntrinsicISize(const IntrinsicSizeInput& aInput,
     return mScrolledFrame->IntrinsicISize(aInput, aType);
   }();
 
-  if (nsIFrame* button = GetButtonBoxFrame()) {
-    result =
-        NSCoordSaturatingAdd(result, button->IntrinsicISize(aInput, aType));
-  }
-
   return NSCoordSaturatingAdd(result,
                               IntrinsicScrollbarGutterSizeAtInlineEdges());
 }
