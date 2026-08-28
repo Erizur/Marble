@@ -151,7 +151,7 @@ class ScrollContainerFrame : public nsContainerFrame,
                     nsFrameList&& aFrameList) final;
   void RemoveFrame(DestroyContext&, ChildListID, nsIFrame*) final;
 
-  void DidSetComputedStyle(ComputedStyle* aOldComputedStyle) override;
+  void DidSetComputedStyle(ComputedStyle* aOldComputedStyle) final;
 
   void Destroy(DestroyContext&) override;
 

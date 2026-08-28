@@ -10,6 +10,9 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/ScrollContainerFrame.h"
 #include "mozilla/TextControlElement.h"
+#include "nsContainerFrame.h"
+#include "nsIContent.h"
+#include "nsIStatefulFrame.h"
 
 namespace mozilla {
 enum class PseudoStyleType : uint8_t;
@@ -30,8 +33,6 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
   nsresult CreateAnonymousContent(nsTArray<ContentInfo>&) override;
   void AppendAnonymousContentTo(nsTArray<nsIContent*>&,
                                 uint32_t aFilter) override;
-
-  void DidSetComputedStyle(ComputedStyle* aOldComputedStyle) override;
 
   virtual ~nsTextControlFrame();
 
@@ -90,6 +91,8 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
 
   void InitPrimaryFrame() override;
 
+  //==== OVERLOAD of nsIFrame
+
   void ElementStateChanged(mozilla::dom::ElementState aStates) override;
 
   nsresult PeekOffset(mozilla::PeekOffsetStruct* aPos) override;
@@ -102,13 +105,24 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
   static Maybe<nscoord> ComputeBaseline(const nsIFrame*, const ReflowInput&,
                                         bool aForSingleLineControl);
 
+  Element* GetRootNode() const { return ControlElement()->GetTextEditorRoot(); }
+
+  Element* GetPreviewNode() const {
+    return ControlElement()->GetTextEditorPreview();
+  }
+
+  Element* GetPlaceholderNode() const {
+    return ControlElement()->GetTextEditorPlaceholder();
+  }
+
   Element* GetButton() const;
-  nsIFrame* GetButtonBoxFrame() const override;
 
   bool IsButtonBox(const nsIFrame* aFrame) const {
     return mozilla::TextControlElement::IsButtonPseudoElement(
         aFrame->Style()->GetPseudoType());
   }
+
+  nsIFrame* GetButtonBoxFrame() const override;
 
   // called by the focus listener
   nsresult MaybeBeginSecureKeyboardInput();
@@ -132,9 +146,11 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
 #undef DEFINE_TEXTCTRL_CONST_FORWARDER
 
  protected:
-  // Compute our fixed size (our intrinsic size if we have field-sizing: fixed,
-  // i.e. not considering our content itself).
-  mozilla::LogicalSize CalcFixedSize(gfxContext*, mozilla::WritingMode) const;
+  // Compute our intrinsic size.  This does not include any borders, paddings,
+  // etc.  Just the size of our actual area for the text (and the scrollbars,
+  // for <textarea>).
+  mozilla::LogicalSize CalcIntrinsicSize(gfxContext* aRenderingContext,
+                                         mozilla::WritingMode aWM) const;
 
   // Our first baseline, or NS_INTRINSIC_ISIZE_UNKNOWN if we have a pending
   // Reflow (or if we're contain:layout, which means we have no baseline).
