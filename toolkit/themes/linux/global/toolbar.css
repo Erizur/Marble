@@ -9,28 +9,24 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 toolbar {
+  background-color: -moz-headerbar;
+  color: -moz-headerbartext;
   min-width: 1px;
   /* In theory, if toolbars have no contents, we want a min-height so things can be dragged into them. */
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-height: 20px;
+  /* Prefer pixels over rem spacing in chrome */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  padding: 2px 0;
 
-  /* TODO(emilio): Consider making this consistent across platforms. */
-  @media (-moz-platform: linux) {
-    background-color: -moz-headerbar;
-    color: -moz-headerbartext;
-    /* Prefer pixels over rem spacing in chrome */
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-    padding: 2px 0;
+  &:where(:-moz-window-inactive) {
+    background-color: -moz-headerbarinactive;
+    color: -moz-headerbarinactivetext;
+  }
 
-    &:where(:-moz-window-inactive) {
-      background-color: -moz-headerbarinactive;
-      color: -moz-headerbarinactivetext;
-    }
-
-    &[type="menubar"] {
-      background-color: transparent;
-      padding: 1px 0;
-    }
+  &[type="menubar"] {
+    background-color: transparent;
+    padding: 1px 0;
   }
 }
 
