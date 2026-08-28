@@ -718,7 +718,13 @@ void TextInputSelectionController::SelectionWillLoseFocus() {
 TextInputListener::TextInputListener(TextControlElement* aTxtCtrlElement)
     : mTxtCtrlElement(aTxtCtrlElement),
       mTextControlState(aTxtCtrlElement ? aTxtCtrlElement->GetTextControlState()
-                                        : nullptr) {}
+                                        : nullptr),
+      mSelectionWasCollapsed(true),
+      mHadUndoItems(false),
+      mHadRedoItems(false),
+      mSettingValue(false),
+      mSetValueChanged(true),
+      mListeningToSelectionChange(false) {}
 
 NS_IMPL_CYCLE_COLLECTING_ADDREF(TextInputListener)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(TextInputListener)
@@ -819,41 +825,6 @@ static void DoCommandCallback(Command aCommand, void* aData) {
   }
   if (commandEnabled) {
     controller->DoCommand(commandStr);
-  }
-}
-
-void TextInputListener::StartToHandleShortcutKeys() {
-  if (mListeningToKeyboardEvents) {
-    return;
-  }
-  EventListenerManager* const manager =
-      mTxtCtrlElement->GetOrCreateListenerManager();
-  if (!manager) {
-    return;
-  }
-  mListeningToKeyboardEvents = true;
-  manager->AddEventListenerByType(this, u"keydown"_ns,
-                                  TrustedEventsAtSystemGroupBubble());
-  manager->AddEventListenerByType(this, u"keypress"_ns,
-                                  TrustedEventsAtSystemGroupBubble());
-  manager->AddEventListenerByType(this, u"keyup"_ns,
-                                  TrustedEventsAtSystemGroupBubble());
-}
-
-void TextInputListener::EndHandlingShortcutKeys() {
-  if (!mListeningToKeyboardEvents) {
-    return;
-  }
-  mListeningToKeyboardEvents = false;
-  EventListenerManager* const manager =
-      mTxtCtrlElement->GetExistingListenerManager();
-  if (manager) {
-    manager->RemoveEventListenerByType(this, u"keydown"_ns,
-                                       TrustedEventsAtSystemGroupBubble());
-    manager->RemoveEventListenerByType(this, u"keypress"_ns,
-                                       TrustedEventsAtSystemGroupBubble());
-    manager->RemoveEventListenerByType(this, u"keyup"_ns,
-                                       TrustedEventsAtSystemGroupBubble());
   }
 }
 
@@ -1054,9 +1025,12 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
       : mParent(aTextControlState.mHandlingState),
         mTextControlState(aTextControlState),
         mTextCtrlElement(aTextControlState.mTextCtrlElement),
+        mTextInputListener(aTextControlState.mTextListener),
         mTextControlAction(aTextControlAction) {
     MOZ_ASSERT(aTextControlAction != TextControlAction::SetValue,
                "Use specific constructor");
+    MOZ_DIAGNOSTIC_ASSERT_IF(!aTextControlState.mTextListener,
+                             !aTextControlState.mEditorInitialized);
     mTextControlState.mHandlingState = this;
     if (Is(TextControlAction::CommitComposition)) {
       MOZ_ASSERT(mParent);
@@ -1080,6 +1054,7 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
       : mParent(aTextControlState.mHandlingState),
         mTextControlState(aTextControlState),
         mTextCtrlElement(aTextControlState.mTextCtrlElement),
+        mTextInputListener(aTextControlState.mTextListener),
         mSettingValue(aSettingValue),
         mOldValue(aOldValue),
         mValueSetterOptions(aOptions),
@@ -1144,20 +1119,18 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
    */
   void WillSetValueWithTextEditor() {
     MOZ_ASSERT(Is(TextControlAction::SetValue));
-    // If we're emulating user input, we don't need to manage mTextInputListener
+    // If we'reemulating user input, we don't need to manage mTextInputListener
     // by ourselves since everything should be handled by TextEditor as normal
     // user input.
     if (mValueSetterOptions.contains(ValueSetterOption::BySetUserInputAPI)) {
       return;
     }
-    // Otherwise, if we're setting the value programmatically, we need to manage
-    // the TextInputListener by ourselves since TextEditor users special path
+    // Otherwise, if we're setting the value programatically, we need to manage
+    // mTextInputListener by ourselves since TextEditor users special path
     // for the performance.
-    if (auto* const listener = GetTextInputListener()) [[likely]] {
-      listener->SettingValue(true);
-      listener->SetValueChanged(
-          mValueSetterOptions.contains(ValueSetterOption::SetValueChanged));
-    }
+    mTextInputListener->SettingValue(true);
+    mTextInputListener->SetValueChanged(
+        mValueSetterOptions.contains(ValueSetterOption::SetValueChanged));
     mEditActionHandled = false;
     // Even if falling back to `TextControlState::SetValueWithoutTextEditor()`
     // due to editor destruction, it shouldn't dispatch "beforeinput" event
@@ -1185,11 +1158,9 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
       return NS_OK;
     }
     if (!mValueSetterOptions.contains(ValueSetterOption::BySetUserInputAPI)) {
-      if (auto* const listener = GetTextInputListener()) {
-        listener->SetValueChanged(true);
-        listener->SettingValue(
-            mParent && mParent->IsHandling(TextControlAction::SetValue));
-      }
+      mTextInputListener->SetValueChanged(true);
+      mTextInputListener->SettingValue(
+          mParent && mParent->IsHandling(TextControlAction::SetValue));
     }
     return NS_OK;
   }
@@ -1211,9 +1182,7 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
     return mParent && mParent->IsHandling(aTextControlAction);
   }
   TextControlElement* GetTextControlElement() const { return mTextCtrlElement; }
-  TextInputListener* GetTextInputListener() const {
-    return mTextControlState.mTextInputListener;
-  }
+  TextInputListener* GetTextInputListener() const { return mTextInputListener; }
   const ValueSetterOptions& ValueSetterOptionsRef() const {
     MOZ_ASSERT(Is(TextControlAction::SetValue));
     return mValueSetterOptions;
@@ -1253,6 +1222,9 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
   // if the text control element releases mTextControlState, only this
   // can guarantee the instance of the text control element.
   RefPtr<TextControlElement> const mTextCtrlElement;
+  // mTextInputListener grabs TextControlState::mTextListener because if
+  // TextControlState is unbind from the frame, it's released.
+  RefPtr<TextInputListener> const mTextInputListener;
   nsAutoString mSettingValue;
   const nsAString* mOldValue = nullptr;
   ValueSetterOptions mValueSetterOptions;
@@ -1373,17 +1345,9 @@ void TextControlState::Clear() {
   if (mTextEditor) {
     mTextEditor->SetTextInputListener(nullptr);
   }
-  // Currently, DeinitializeSelection() is called when the text control frame is
-  // destroyed. Therefore, mTextInputListener has already stopped listening to
-  // the keyboard events. However, we own it and we're the only requester of
-  // doing that. Thus, we should ensure that it stops listening to the keyboard
-  // events before we abandon the ownership.
-  if (mTextInputListener) {
-    mTextInputListener->EndHandlingShortcutKeys();
-  }
   DestroyEditor();
   mTextEditor = nullptr;
-  mTextInputListener = nullptr;
+  mTextListener = nullptr;
 }
 
 void TextControlState::Unlink() {
@@ -1461,7 +1425,9 @@ nsresult TextControlState::InitializeSelection(PresShell* aPresShell) {
 
   // Create a SelectionController
   mSelCon = new TextInputSelectionController(aPresShell, *editorRoot);
-  EnsureTextInputListener();
+  MOZ_ASSERT(!mTextListener, "Should not overwrite the object");
+  mTextListener = new TextInputListener(mTextCtrlElement);
+  InitializeKeyboardEventListeners();
 
   // Editor will override this as needed from InitializeSelection.
   mSelCon->SetDisplaySelection(nsISelectionController::SELECTION_HIDDEN);
@@ -1476,7 +1442,7 @@ nsresult TextControlState::InitializeSelection(PresShell* aPresShell) {
     if (caret) {
       selection->AddSelectionListener(caret);
     }
-    mTextInputListener->StartToListenToSelectionChange();
+    mTextListener->StartToListenToSelectionChange();
   }
 
   // If an editor exists from before, prepare it for usage
@@ -1519,18 +1485,6 @@ void TextControlState::UpdateEditorOnTypeChange() {
     RefPtr editor = mTextEditor;
     editor->SetFlags(newFlags);
   }
-}
-
-void TextControlState::EnsureTextInputListener() {
-  if (!mTextInputListener) {
-    mTextInputListener = new TextInputListener(mTextCtrlElement);
-    // Now, we have new TextInputListener. mTextEditor and this should work with
-    // the latest one. Therefore, let's notify mTextEditor of the new instance.
-    if (mEditorInitialized) {
-      mTextEditor->SetTextInputListener(mTextInputListener);
-    }
-  }
-  mTextInputListener->StartToHandleShortcutKeys();
 }
 
 bool TextControlState::IsPreparingEditor() const {
@@ -1753,14 +1707,15 @@ nsresult TextControlState::PrepareEditor() {
   NS_WARNING_ASSERTION(enabledUndoRedo,
                        "Failed to enable undo/redo transaction");
 
-  EnsureTextInputListener();
-
   if (!mEditorInitialized) {
     newTextEditor->PostCreate();
     mEverInited = true;
     mEditorInitialized = true;
   }
-  newTextEditor->SetTextInputListener(mTextInputListener);
+
+  if (mTextListener) {
+    newTextEditor->SetTextInputListener(mTextListener);
+  }
 
   // Restore our selection after initializing the editor.
   if (mSelectionCached) {
@@ -2265,16 +2220,27 @@ void TextControlState::DeinitSelection() {
   }
 
   if (mSelCon) {
-    if (mTextInputListener) {
-      mTextInputListener->EndListeningToSelectionChange();
+    if (mTextListener) {
+      mTextListener->EndListeningToSelectionChange();
     }
 
     mSelCon->DisconnectFromPresShell();
     mSelCon = nullptr;
   }
 
-  if (mTextInputListener) {
-    mTextInputListener->EndHandlingShortcutKeys();
+  if (mTextListener) {
+    EventListenerManager* manager =
+        mTextCtrlElement->GetExistingListenerManager();
+    if (manager) {
+      manager->RemoveEventListenerByType(mTextListener, u"keydown"_ns,
+                                         TrustedEventsAtSystemGroupBubble());
+      manager->RemoveEventListenerByType(mTextListener, u"keypress"_ns,
+                                         TrustedEventsAtSystemGroupBubble());
+      manager->RemoveEventListenerByType(mTextListener, u"keyup"_ns,
+                                         TrustedEventsAtSystemGroupBubble());
+    }
+
+    mTextListener = nullptr;
   }
 }
 
@@ -2349,7 +2315,7 @@ bool TextControlState::SetValue(const nsAString& aValue,
   ErrorResult error;
   AutoTextControlHandlingState handlingSetValue(
       *this, TextControlAction::SetValue, aValue, aOldValue, aOptions, error);
-  if (error.Failed()) [[unlikely]] {
+  if (error.Failed()) {
     MOZ_ASSERT(error.ErrorCodeIs(NS_ERROR_OUT_OF_MEMORY));
     error.SuppressException();
     return false;
@@ -2487,8 +2453,6 @@ bool TextControlState::SetValueWithTextEditor(
     AutoTextControlHandlingState& aHandlingSetValue) {
   MOZ_ASSERT(aHandlingSetValue.Is(TextControlAction::SetValue));
   MOZ_ASSERT(mTextEditor);
-  MOZ_DIAGNOSTIC_ASSERT(mEditorInitialized);
-  MOZ_DIAGNOSTIC_ASSERT(mTextInputListener);
   NS_WARNING_ASSERTION(!EditorHasComposition(),
                        "Failed to commit composition before setting value.  "
                        "Investigate the cause!");
@@ -2768,6 +2732,22 @@ bool TextControlState::SetValueWithoutTextEditor(
   }
 
   return true;
+}
+
+void TextControlState::InitializeKeyboardEventListeners() {
+  // register key listeners
+  EventListenerManager* manager =
+      mTextCtrlElement->GetOrCreateListenerManager();
+  if (!manager) {
+    return;
+  }
+  MOZ_ASSERT(mTextListener);
+  manager->AddEventListenerByType(mTextListener, u"keydown"_ns,
+                                  TrustedEventsAtSystemGroupBubble());
+  manager->AddEventListenerByType(mTextListener, u"keypress"_ns,
+                                  TrustedEventsAtSystemGroupBubble());
+  manager->AddEventListenerByType(mTextListener, u"keyup"_ns,
+                                  TrustedEventsAtSystemGroupBubble());
 }
 
 bool TextControlState::EditorHasComposition() {

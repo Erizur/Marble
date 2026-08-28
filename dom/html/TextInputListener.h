@@ -26,7 +26,7 @@ class Selection;
 class TextInputListener final : public nsIDOMEventListener,
                                 public nsSupportsWeakReference {
  public:
-  explicit TextInputListener(TextControlElement*);
+  explicit TextInputListener(TextControlElement* aTextControlElement);
 
   void SettingValue(bool aValue) { mSettingValue = aValue; }
   void SetValueChanged(bool aSetValueChanged) {
@@ -52,9 +52,6 @@ class TextInputListener final : public nsIDOMEventListener,
   void StartToListenToSelectionChange() { mListeningToSelectionChange = true; }
   void EndListeningToSelectionChange() { mListeningToSelectionChange = false; }
 
-  void StartToHandleShortcutKeys();
-  void EndHandlingShortcutKeys();
-
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS_FINAL
   NS_DECL_CYCLE_COLLECTION_CLASS_AMBIGUOUS(TextInputListener,
                                            nsIDOMEventListener)
@@ -69,36 +66,32 @@ class TextInputListener final : public nsIDOMEventListener,
   TextControlElement* const mTxtCtrlElement;
   WeakPtr<TextControlState> const mTextControlState;
 
-  bool mSelectionWasCollapsed : 1 = true;
+  bool mSelectionWasCollapsed;
 
   /**
    * Whether we had undo items or not the last time we got EditAction()
    * notification (when this state changes we update undo and redo menus)
    */
-  bool mHadUndoItems : 1 = false;
+  bool mHadUndoItems;
   /**
    * Whether we had redo items or not the last time we got EditAction()
    * notification (when this state changes we update undo and redo menus)
    */
-  bool mHadRedoItems : 1 = false;
+  bool mHadRedoItems;
   /**
    * Whether we're in the process of a SetValue call, and should therefore
    * refrain from calling OnValueChanged.
    */
-  bool mSettingValue : 1 = false;
+  bool mSettingValue;
   /**
    * Whether we are in the process of a SetValue call that doesn't want
    * |SetValueChanged| to be called.
    */
-  bool mSetValueChanged : 1 = true;
+  bool mSetValueChanged;
   /**
    * Whether we're listening to selection change in the editor.
    */
-  bool mListeningToSelectionChange : 1 = false;
-  /**
-   * Whether we're listening to keyboard events of the text control element.
-   */
-  bool mListeningToKeyboardEvents : 1 = false;
+  bool mListeningToSelectionChange;
 };
 
 }  // namespace mozilla
