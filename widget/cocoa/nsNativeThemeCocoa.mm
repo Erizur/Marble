@@ -1687,6 +1687,8 @@ bool nsNativeThemeCocoa::WidgetAttributeChangeRequiresRepaint(
     StyleAppearance aAppearance, nsAtom* aAttribute) {
   // Some widget types just never change state.
   switch (aAppearance) {
+    case StyleAppearance::Toolbox:
+    case StyleAppearance::Toolbar:
     case StyleAppearance::MozWindowTitlebar:
     case StyleAppearance::MozSidebar:
     case StyleAppearance::Tooltip:
@@ -1832,6 +1834,7 @@ nsITheme::Transparency nsNativeThemeCocoa::GetWidgetTransparency(
   switch (aAppearance) {
     case StyleAppearance::Menupopup:
     case StyleAppearance::Tooltip:
+    case StyleAppearance::Toolbar:
       return eTransparent;
     case StyleAppearance::MozMacWindow:
       // We want these to be treated as opaque by Gecko. We ensure there's an

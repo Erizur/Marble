@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #placesToolbar {
+  appearance: none;
   --toolbar-item-height: 26px;
   --toolbar-item-margin: 0px 4px;
 
