@@ -353,22 +353,11 @@ nsIFrame* nsCaret::GetGeometry(const Selection* aSelection, nsRect* aRect) {
   return data.mFrame;
 }
 
-// Generally we want the caret to paint from the containing block of the frame
-// the caret is positioned at. The one exception is the
-// ::-moz-text-control-editing-root, in which case we want the caret to paint
-// from the input itself, so that it paints atop the placeholder and such
-// without having to do magic elsewhere.
 [[nodiscard]] static nsIFrame* GetContainingBlockIfNeeded(nsIFrame* aFrame) {
-  for (auto* f = aFrame; f; f = f->GetContainingBlock()) {
-    if (f->Style()->GetPseudoType() ==
-        PseudoStyleType::MozTextControlEditingRoot) {
-      continue;
-    }
-    if (f != aFrame || f->IsBlockOutside() || f->IsBlockFrameOrSubclass()) {
-      return f == aFrame ? nullptr : f;
-    }
+  if (aFrame->IsBlockOutside() || aFrame->IsBlockFrameOrSubclass()) {
+    return nullptr;
   }
-  return nullptr;
+  return aFrame->GetContainingBlock();
 }
 
 void nsCaret::SchedulePaint() {

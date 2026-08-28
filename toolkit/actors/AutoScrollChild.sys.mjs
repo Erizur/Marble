@@ -47,14 +47,6 @@ export class AutoScrollChild extends JSWindowActorChild {
       }
 
       // Or if we're pasting into an input field of sorts.
-      if (
-        content.HTMLInputElement.isInstance(node) ||
-        content.HTMLTextAreaElement.isInstance(node)
-      ) {
-        return true;
-      }
-
-      // Gotta check also the internal nodes.
       let containingHost = node.getRootNode().host;
       if (
         containingHost &&

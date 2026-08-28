@@ -548,9 +548,9 @@ add_task(async function search_synced_tabs() {
     );
 
     info("Clear the search query.");
-    let clearButton = SpecialPowers.getInputButton(
+    let clearButton = SpecialPowers.wrap(
       syncedTabsComponent.searchTextbox.inputEl
-    );
+    ).openOrClosedShadowRoot.querySelector("button");
     info(`CLEAR BUTTON: ${clearButton}`);
     EventUtils.synthesizeMouseAtCenter(clearButton, {}, content);
     await TestUtils.waitForCondition(
@@ -614,9 +614,9 @@ add_task(async function search_synced_tabs() {
     );
 
     info("Clear the search query.");
-    clearButton = SpecialPowers.getInputButton(
+    clearButton = SpecialPowers.wrap(
       syncedTabsComponent.searchTextbox.inputEl
-    );
+    ).openOrClosedShadowRoot.querySelector("button");
     EventUtils.synthesizeMouseAtCenter(clearButton, {}, content);
     await TestUtils.waitForCondition(
       () => syncedTabsComponent.fullyUpdated,

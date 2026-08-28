@@ -304,11 +304,11 @@ class TextInputSelectionController final : public nsSupportsWeakReference,
     if (!limiter) {
       return nullptr;
     }
-    auto* textControl = limiter->GetContainingShadowHost();
-    if (!textControl) {
+    auto* frame = limiter->GetPrimaryFrame();
+    if (!frame) {
       return nullptr;
     }
-    return do_QueryFrame(textControl->GetPrimaryFrame());
+    return frame->GetScrollTargetFrame();
   }
 
  private:

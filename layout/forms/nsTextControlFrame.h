@@ -8,31 +8,34 @@
 #define nsTextControlFrame_h_
 
 #include "mozilla/Attributes.h"
-#include "mozilla/ScrollContainerFrame.h"
 #include "mozilla/TextControlElement.h"
 #include "nsContainerFrame.h"
 #include "nsIContent.h"
 #include "nsIStatefulFrame.h"
 
 namespace mozilla {
+class ScrollContainerFrame;
 enum class PseudoStyleType : uint8_t;
 namespace dom {
 class Element;
 }  // namespace dom
 }  // namespace mozilla
 
-class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
+class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
   using Element = mozilla::dom::Element;
 
  public:
   NS_DECL_FRAMEARENA_HELPERS(nsTextControlFrame)
 
-  nsTextControlFrame(ComputedStyle*, nsPresContext*);
+  NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(ContentScrollPos, nsPoint)
 
-  // nsIAnonymousContentCreator
-  nsresult CreateAnonymousContent(nsTArray<ContentInfo>&) override;
-  void AppendAnonymousContentTo(nsTArray<nsIContent*>&,
-                                uint32_t aFilter) override;
+ protected:
+  nsTextControlFrame(ComputedStyle*, nsPresContext*, nsIFrame::ClassID);
+
+ public:
+  explicit nsTextControlFrame(ComputedStyle* aStyle,
+                              nsPresContext* aPresContext)
+      : nsTextControlFrame(aStyle, aPresContext, kClassID) {}
 
   virtual ~nsTextControlFrame();
 
@@ -45,6 +48,8 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
    * Therefore, this won't run unsafe script.
    */
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void Destroy(DestroyContext&) override;
+
+  mozilla::ScrollContainerFrame* GetScrollTargetFrame() const override;
 
   nscoord IntrinsicISize(const mozilla::IntrinsicSizeInput& aInput,
                          mozilla::IntrinsicISizeType aType) override;
@@ -85,11 +90,21 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
   }
 #endif
 
+  void SetInitialChildList(ChildListID, nsFrameList&&) override;
+
+  void BuildDisplayList(nsDisplayListBuilder* aBuilder,
+                        const nsDisplayListSet& aLists) override;
+
   nsFrameSelection* GetOwnedFrameSelection() {
     return ControlElement()->GetIndependentFrameSelection();
   }
 
-  void InitPrimaryFrame() override;
+  //==== NSISTATEFULFRAME
+
+  mozilla::UniquePtr<mozilla::PresState> SaveState() override;
+  NS_IMETHOD RestoreState(mozilla::PresState* aState) override;
+
+  //=== END NSISTATEFULFRAME
 
   //==== OVERLOAD of nsIFrame
 
@@ -99,7 +114,18 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
 
   NS_DECL_QUERYFRAME
 
+ protected:
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void HandleReadonlyOrDisabledChange();
+
+  /**
+   * Launch the reflow on the child frames - see nsTextControlFrame::Reflow()
+   */
+  void ReflowTextControlChild(nsIFrame* aKid, nsPresContext* aPresContext,
+                              const ReflowInput& aReflowInput,
+                              nsReflowStatus& aStatus,
+                              ReflowOutput& aParentDesiredSize,
+                              const mozilla::LogicalSize& aParentContentBoxSize,
+                              nscoord& aButtonBoxISize);
 
  public:
   static Maybe<nscoord> ComputeBaseline(const nsIFrame*, const ReflowInput&,
@@ -115,14 +141,12 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
     return ControlElement()->GetTextEditorPlaceholder();
   }
 
-  Element* GetButton() const;
+  Element* GetButton() const { return ControlElement()->GetTextEditorButton(); }
 
   bool IsButtonBox(const nsIFrame* aFrame) const {
     return mozilla::TextControlElement::IsButtonPseudoElement(
         aFrame->Style()->GetPseudoType());
   }
-
-  nsIFrame* GetButtonBoxFrame() const override;
 
   // called by the focus listener
   nsresult MaybeBeginSecureKeyboardInput();
@@ -152,12 +176,12 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
   mozilla::LogicalSize CalcIntrinsicSize(gfxContext* aRenderingContext,
                                          mozilla::WritingMode aWM) const;
 
+  void Init(nsIContent* aContent, nsContainerFrame* aParent,
+            nsIFrame* aPrevInFlow) override;
+
   // Our first baseline, or NS_INTRINSIC_ISIZE_UNKNOWN if we have a pending
   // Reflow (or if we're contain:layout, which means we have no baseline).
   nscoord mFirstBaseline = NS_INTRINSIC_ISIZE_UNKNOWN;
-
-  // The button element (spin-box, reveal, clear) created as anonymous content.
-  RefPtr<Element> mButtonContent;
 };
 
 #endif

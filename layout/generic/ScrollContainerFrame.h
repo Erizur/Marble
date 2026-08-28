@@ -172,20 +172,14 @@ class ScrollContainerFrame : public nsContainerFrame,
   }
 
   // nsIAnonymousContentCreator
-  nsresult CreateAnonymousContent(nsTArray<ContentInfo>&) override;
-  void AppendAnonymousContentTo(nsTArray<nsIContent*>&,
-                                uint32_t aFilter) override;
+  nsresult CreateAnonymousContent(nsTArray<ContentInfo>&) final;
+  void AppendAnonymousContentTo(nsTArray<nsIContent*>&, uint32_t aFilter) final;
 
   /**
    * Get the frame for the content that we are scrolling within
    * this scrollable frame.
    */
   nsIFrame* GetScrolledFrame() const { return mScrolledFrame; }
-
-  // Returns the frame for the "button box" (e.g., number spin-box, password
-  // reveal button) that lives outside the scrolled area. Used by
-  // nsTextControlFrame.
-  virtual nsIFrame* GetButtonBoxFrame() const { return nullptr; }
 
   /**
    * Get the overflow styles (StyleOverflow::Scroll, StyleOverflow::Hidden, or
@@ -211,11 +205,7 @@ class ScrollContainerFrame : public nsContainerFrame,
   };
 
   static PerAxisScrollDirections ComputePerAxisScrollDirections(
-      const nsIFrame* aScrolledFrame, bool aForTextInput = false);
-
-  PerAxisScrollDirections ComputePerAxisScrollDirections() const {
-    return ComputePerAxisScrollDirections(mScrolledFrame, IsTextInputFrame());
-  }
+      const nsIFrame* aScrolledFrame);
 
   /**
    * Get the overscroll-behavior styles.
@@ -1163,7 +1153,6 @@ class ScrollContainerFrame : public nsContainerFrame,
   void LayoutScrollbars(ScrollReflowInput& aState,
                         const nsRect& aInsideBorderArea,
                         const nsRect& aOldScrollPort);
-  void LayoutButtonBox(const ScrollReflowInput& aState, nsIFrame* aButtonBox);
 
   void LayoutScrollbarPartAtRect(const ScrollReflowInput&,
                                  ReflowInput& aKidReflowInput, const nsRect&);
@@ -1347,6 +1336,7 @@ class ScrollContainerFrame : public nsContainerFrame,
   bool HasPerspective() const { return ChildrenHavePerspective(); }
   bool HasBgAttachmentLocal() const;
   StyleDirection GetScrolledFrameDir() const;
+  static StyleDirection GetScrolledFrameDir(const nsIFrame*);
 
   // Ask APZ to smooth scroll to |aDestination|.
   // This method does not clamp the destination; callers should clamp it to
@@ -1365,9 +1355,6 @@ class ScrollContainerFrame : public nsContainerFrame,
   void RemoveObservers();
 
  private:
-  static StyleDirection GetScrolledFrameDir(const nsIFrame*,
-                                            bool aForTextInput);
-
   class AsyncScroll;
   class AsyncSmoothMSDScroll;
   class AutoMinimumScaleSizeChangeDetector;

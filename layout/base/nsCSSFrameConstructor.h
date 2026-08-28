@@ -1382,12 +1382,6 @@ class nsCSSFrameConstructor final : public nsFrameManager {
                                         const nsStyleDisplay* aStyleDisplay,
                                         nsFrameList& aFrameList);
 
-  nsIFrame* ConstructTextControl(nsFrameConstructorState& aState,
-                                 FrameConstructionItem& aItem,
-                                 nsContainerFrame* aParentFrame,
-                                 const nsStyleDisplay* aStyleDisplay,
-                                 nsFrameList& aFrameList);
-
   // Creates a block frame wrapping an anonymous ruby frame.
   nsIFrame* ConstructBlockRubyFrame(nsFrameConstructorState& aState,
                                     FrameConstructionItem& aItem,
@@ -1574,13 +1568,6 @@ class nsCSSFrameConstructor final : public nsFrameManager {
                                         nsContainerFrame* aParentFrame,
                                         const nsStyleDisplay* aDisplay,
                                         nsFrameList& aFrameList);
-
-  // Construct a scrollable block with an already created subclass of
-  // ScrollContainerFrame, or nullptr for a plain ScrollContainerFrame.
-  void ConstructScrollableBlockWithScrollContainer(
-      nsFrameConstructorState& aState, FrameConstructionItem& aItem,
-      nsContainerFrame* aParentFrame, const nsStyleDisplay* aDisplay,
-      nsFrameList& aFrameList, nsContainerFrame*&);
 
   /**
    * This adds FrameConstructionItem objects to aItemsToConstruct for the

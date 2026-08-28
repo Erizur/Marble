@@ -264,7 +264,9 @@ async function test_history_search({ component, contentWindow }) {
   }, "There are no matching search results.");
 
   info("Clear the search query.");
-  let clearButton = SpecialPowers.getInputButton(searchTextbox.inputEl);
+  let clearButton = SpecialPowers.wrap(
+    searchTextbox.inputEl
+  ).openOrClosedShadowRoot.querySelector("button");
   EventUtils.synthesizeMouseAtCenter(clearButton, {}, contentWindow);
   await TestUtils.waitForCondition(
     () => !component.lists[0].emptyState,

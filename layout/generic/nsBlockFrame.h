@@ -532,34 +532,17 @@ class nsBlockFrame : public nsContainerFrame {
            IsComboboxControlFrame();
   }
 
-  bool IsTextInput() const {
-    return Style()->GetPseudoType() ==
-               mozilla::PseudoStyleType::MozScrolledContent &&
-           mParent->IsTextInputFrame();
-  }
-
-  bool IsSingleLineTextInput() const {
-    return IsTextInput() && mContent->IsHTMLElement(nsGkAtoms::input);
-  }
-
   bool IsButtonLike() const {
-    if (!Style()->IsAnonBox() &&
-        mContent->IsAnyOfHTMLElements(nsGkAtoms::button)) {
+    if (!Style()->IsAnonBox() && mContent->IsHTMLElement(nsGkAtoms::button)) {
       return true;
     }
     return IsButtonControlFrame();
   }
 
-  bool IsButtonOrTextInput() const { return IsButtonLike() || IsTextInput(); }
-
   /** Returns the effective align-content of this frame */
   mozilla::StyleAlignFlags EffectiveAlignContent() const {
     if (IsButtonLike()) {
       return mozilla::StyleAlignFlags::CENTER;
-    }
-    if (IsSingleLineTextInput()) {
-      return mozilla::StyleAlignFlags::CENTER |
-             mozilla::StyleAlignFlags::UNSAFE;
     }
     return StylePosition()->mAlignContent.primary;
   }
