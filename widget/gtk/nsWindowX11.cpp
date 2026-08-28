@@ -164,7 +164,7 @@ void nsWindowX11::CreateNative() {
   gtk_widget_set_double_buffered(GTK_WIDGET(mContainer), FALSE);
 #pragma GCC diagnostic pop
 
-  mSurfaceProvider.Initialize(GetX11Window());
+  mSurfaceProvider.Initialize(GetX11Window(), GetShapedState());
 }
 
 void nsWindowX11::ConfigureToplevelWindowNative() {

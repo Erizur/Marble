@@ -379,9 +379,19 @@ class nsWindow : public nsIWidget {
       const mozilla::WidgetKeyboardEvent& aEvent,
       nsTArray<mozilla::CommandInt>& aCommands) override;
 
+  // These methods are for toplevel windows only.
+  void ResizeTransparencyBitmap();
+  void ApplyTransparencyBitmap();
+  void ClearTransparencyBitmap();
+
   void SetTransparencyMode(TransparencyMode aMode) override;
   TransparencyMode GetTransparencyMode() override;
   void SetInputRegion(const InputRegion&) override;
+  nsresult UpdateTranslucentWindowAlphaInternal(const nsIntRect& aRect,
+                                                uint8_t* aAlphas,
+                                                int32_t aStride);
+
+  void UpdateTitlebarTransparencyBitmap();
 
   nsresult SynthesizeNativeMouseEvent(
       LayoutDeviceIntPoint aPoint, NativeMouseMessage aNativeMessage,
@@ -472,7 +482,8 @@ class nsWindow : public nsIWidget {
    */
   static GtkWindowDecoration GetSystemGtkWindowDecoration();
 
-  bool IsRemoteContent() const { return HasRemoteContent(); }
+  static bool TitlebarUseShapeMask();
+  bool IsRemoteContent() { return HasRemoteContent(); }
 
   static bool IsToplevelWindowTransparent();
 
@@ -536,6 +547,9 @@ class nsWindow : public nsIWidget {
 
   void RegisterTouchWindow() override;
 
+  void UpdateAlpha(mozilla::gfx::SourceSurface* aSourceSurface,
+                   nsIntRect aBoundsRect);
+
   void NativeMoveResize(bool aMoved, bool aResized);
 
   virtual void NativeShow(bool aAction) = 0;
@@ -558,6 +572,7 @@ class nsWindow : public nsIWidget {
   void DestroyChildWindows();
   nsWindow* GetContainerWindow() const;
   Window GetX11Window();
+  bool GetShapedState();
   void SetUrgencyHint(GtkWidget* top_window, bool state);
   void SetDefaultIcon(void);
   void SetWindowDecoration(BorderStyle aStyle);
@@ -761,6 +776,10 @@ class nsWindow : public nsIWidget {
 
   // True when we're on compositing window manager and this
   // window is using visual with alpha channel.
+  // The transparency bitmap is used instead of ARGB visual for toplevel
+  // window to draw titlebar.
+  bool mTransparencyBitmapForTitlebar : 1;
+
   bool mHasAlphaVisual : 1;
 
   // Whether we've configured default clear color already.
@@ -784,6 +803,13 @@ class nsWindow : public nsIWidget {
   // If we're waiting for session restore, don't fiddle with window
   // size/focus etc.
   bool mWaitingToSessionRestore : 1;
+
+  // This bitmap tracks which pixels are transparent. We don't support
+  // full translucency at this time; each pixel is either fully opaque
+  // or fully transparent.
+  gchar* mTransparencyBitmap = nullptr;
+  int32_t mTransparencyBitmapWidth = 0;
+  int32_t mTransparencyBitmapHeight = 0;
 
   // all of our DND stuff
   void InitDragEvent(mozilla::WidgetDragEvent& aEvent);

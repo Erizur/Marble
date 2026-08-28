@@ -13,8 +13,7 @@ CompositorWidgetChild::CompositorWidgetChild(
     RefPtr<CompositorVsyncDispatcher> aVsyncDispatcher,
     RefPtr<CompositorWidgetVsyncObserver> aVsyncObserver,
     const CompositorWidgetInitData&)
-    : mVsyncDispatcher(std::move(aVsyncDispatcher)),
-      mVsyncObserver(std::move(aVsyncObserver)) {
+    : mVsyncDispatcher(aVsyncDispatcher), mVsyncObserver(aVsyncObserver) {
   MOZ_ASSERT(XRE_IsParentProcess());
   MOZ_ASSERT(!gfxPlatform::IsHeadless());
 }
@@ -40,8 +39,9 @@ void CompositorWidgetChild::NotifyClientSizeChanged(
 
 void CompositorWidgetChild::CleanupResources() { (void)SendCleanupResources(); }
 
-void CompositorWidgetChild::SetRenderingSurface(const uintptr_t aXWindow) {
-  (void)SendSetRenderingSurface(aXWindow);
+void CompositorWidgetChild::SetRenderingSurface(const uintptr_t aXWindow,
+                                                const bool aShaped) {
+  (void)SendSetRenderingSurface(aXWindow, aShaped);
 }
 
 }  // namespace widget

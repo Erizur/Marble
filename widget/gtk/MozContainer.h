@@ -54,6 +54,7 @@ typedef struct _MozContainerClass MozContainerClass;
 struct _MozContainer {
   GtkContainer container;
   gboolean destroyed;
+  gboolean force_default_visual = false;
   // Child widget is used for GtkEntry of emoji selector
   GtkWidget* entry_widget = nullptr;
 #ifdef MOZ_WAYLAND
@@ -73,6 +74,7 @@ GType moz_container_get_type(void);
 GtkWidget* moz_container_new(void* aWindow,
                              mozilla::widget::WaylandSurface* aSurface);
 void moz_container_unmap(GtkWidget* widget);
+void moz_container_force_default_visual(MozContainer* container);
 void moz_container_class_init(MozContainerClass* klass);
 
 class nsWindow;

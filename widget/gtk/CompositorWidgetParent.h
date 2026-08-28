@@ -30,8 +30,8 @@ class CompositorWidgetParent final : public PCompositorWidgetParent,
       const LayoutDeviceIntSize& aClientSize) override;
 
   mozilla::ipc::IPCResult RecvCleanupResources() override;
-  mozilla::ipc::IPCResult RecvSetRenderingSurface(
-      const uintptr_t& aXWindow) override;
+  mozilla::ipc::IPCResult RecvSetRenderingSurface(const uintptr_t& aXWindow,
+                                                  const bool& aShaped) override;
 
  private:
   ~CompositorWidgetParent() override;
