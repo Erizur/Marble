@@ -155,8 +155,6 @@ skip-if = [
 
 ["test_input_time_sec_millisec_field.html"]
 
-["test_input_type_change_key_event.html"]
-
 ["test_input_types_pref.html"]
 
 ["test_input_typing_sanitization.html"]

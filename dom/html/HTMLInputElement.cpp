@@ -1204,15 +1204,14 @@ HTMLInputElement::~HTMLInputElement() {
     StopNumberControlSpinnerSpin(eDisallowDispatchingEvents);
   }
   nsImageLoadingContent::Destroy();
-  FreeData(TextControlStateDisposition::Destroy);
+  FreeData();
 }
 
-void HTMLInputElement::FreeData(TextControlStateDisposition aStateDisposition) {
+void HTMLInputElement::FreeData() {
   if (!IsSingleLineTextControl(false)) {
     free(mInputData.mValue);
     mInputData.mValue = nullptr;
-  } else if (mInputData.mState &&
-             aStateDisposition == TextControlStateDisposition::Destroy) {
+  } else if (mInputData.mState) {
     mInputData.mState->Destroy();
     mInputData.mState = nullptr;
   }
@@ -4762,31 +4761,23 @@ void HTMLInputElement::HandleTypeChange(FormControlType aNewType,
     GetValue(oldValue, CallerType::NonSystem);
   }
 
-  const bool wasTextControl = IsSingleLineTextControl(false, oldType);
-  const bool isTextControl = IsSingleLineTextControl(false, aNewType);
-  if (wasTextControl && !isTextControl && mInputData.mState) {
+  TextControlState::SelectionProperties sp;
+
+  if (IsSingleLineTextControl(false) && mInputData.mState) {
     mInputData.mState->DeinitSelection();
+    sp = mInputData.mState->GetSelectionProperties();
   }
 
   // We already have a copy of the value, lets free it and changes the type.
-  FreeData(isTextControl ? TextControlStateDisposition::Reuse
-                         : TextControlStateDisposition::Destroy);
+  FreeData();
   mType = aNewType;
   void* memory = mInputTypeMem;
   mInputType = InputType::Create(this, mType, memory);
 
-  if (isTextControl) {
-    if (!mInputData.mState) {
-      mInputData.mState = TextControlState::Construct(this);
-    } else {
-      if (!SupportsTextSelection(oldType)) {
-        // Collapse our selection if whether we honor
-        // selection{Start,End,select()} has changed.
-        mInputData.mState->SetSelectionRange(
-            0, 0, SelectionDirection::Forward, IgnoreErrors(),
-            TextControlState::ScrollAfterSelection::No);
-      }
-      mInputData.mState->UpdateEditorOnTypeChange();
+  if (IsSingleLineTextControl()) {
+    mInputData.mState = TextControlState::Construct(this);
+    if (!sp.IsDefault()) {
+      mInputData.mState->SetSelectionProperties(sp);
     }
   }
 
@@ -4948,19 +4939,14 @@ void HTMLInputElement::HandleTypeChange(FormControlType aNewType,
     if (mDoneCreating) {
       const auto oldNotifiesUAWidget = NotifiesUAWidget(oldType);
       if (CreatesUAShadowTree()) {
-        if (wasTextControl && isTextControl) {
-          // Keep existing shadow
-          UpdateTextEditorShadowTree();
+        const auto notifiesUAWidget = NotifiesUAWidget();
+        if (oldNotifiesUAWidget == notifiesUAWidget &&
+            notifiesUAWidget == NotifyUAWidget::Yes) {
+          NotifyUAWidgetSetupOrChange();
         } else {
-          const auto notifiesUAWidget = NotifiesUAWidget();
-          if (oldNotifiesUAWidget == notifiesUAWidget &&
-              notifiesUAWidget == NotifyUAWidget::Yes) {
-            NotifyUAWidgetSetupOrChange();
-          } else {
-            TeardownUAShadowRoot(oldNotifiesUAWidget);
-            if (notifiesUAWidget == NotifyUAWidget::Yes) {
-              SetupShadowTree(aNotify);
-            }
+          TeardownUAShadowRoot(oldNotifiesUAWidget);
+          if (notifiesUAWidget == NotifyUAWidget::Yes) {
+            SetupShadowTree(aNotify);
           }
         }
       } else {
