@@ -91,18 +91,6 @@ nsLineLayout::nsLineLayout(nsPresContext* aPresContext,
   }
 }
 
-static bool ShouldApplyTextIndent(nsIFrame* aLineContainer) {
-  if (aLineContainer->IsRubyTextContainerFrame()) {
-    return false;
-  }
-  if (nsBlockFrame* block = do_QueryFrame(aLineContainer);
-      block && block->IsTextInput()) {
-    // text-indent applies to the inner text input frames individually.
-    return false;
-  }
-  return true;
-}
-
 void nsLineLayout::BeginLineReflow(nscoord aICoord, nscoord aBCoord,
                                    nscoord aISize, nscoord aBSize,
                                    bool aImpactedByFloats, bool aIsTopOfPage,
@@ -174,8 +162,7 @@ void nsLineLayout::BeginLineReflow(nscoord aICoord, nscoord aBCoord,
   // Determine if this is the first line of the block (or first after a hard
   // line-break, if `each-line` is in effect).
   nsIFrame* containerFrame = LineContainerFrame();
-  if (!mStyleText->mTextIndent.length.IsDefinitelyZero() &&
-      ShouldApplyTextIndent(containerFrame)) {
+  if (!containerFrame->IsRubyTextContainerFrame()) {
     bool isFirstLineOrAfterHardBreak = [&] {
       if (mLineNumber > 0) {
         return mStyleText->mTextIndent.each_line && GetLine() &&
