@@ -161,11 +161,6 @@ button,
   margin-inline-start: -100%;
 }
 
-input::placeholder,
-input::-moz-text-control-preview {
-  overflow-inline: clip;
-}
-
 ::-moz-text-control-preview {
   font-family: system-ui;
 }
