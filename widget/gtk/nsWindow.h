@@ -190,6 +190,7 @@ class nsWindow : public nsIWidget {
   mozilla::DesktopToLayoutDeviceScale GetDesktopToDeviceScale() const override;
   void SetModal(bool aModal) override;
   bool IsVisible() const override;
+  bool IsMapped() const override;
   void ConstrainPosition(DesktopIntPoint&) override;
   void SetSizeConstraints(const SizeConstraints&) override;
   void LockAspectRatio(bool aShouldLock) override;
@@ -479,6 +480,8 @@ class nsWindow : public nsIWidget {
 
   mozilla::UniquePtr<mozilla::widget::WaylandSurfaceLock> LockSurface();
 
+  void ResumeCompositorImpl();
+
   bool ApplyEnterLeaveMutterWorkaround();
 
   void NotifyOcclusionState(mozilla::widget::OcclusionState aState) override;
@@ -550,6 +553,8 @@ class nsWindow : public nsIWidget {
   bool DoTitlebarAction(mozilla::LookAndFeel::TitlebarEvent aEvent,
                         GdkEventButton* aButtonEvent);
 
+  void WaylandStartVsync();
+  void WaylandStopVsync();
   void DestroyChildWindows();
   nsWindow* GetContainerWindow() const;
   Window GetX11Window();
@@ -707,7 +712,7 @@ class nsWindow : public nsIWidget {
 
   // This track real window visibility from OS perspective.
   // It's set by OnMap/OnUnmap which is based on Gtk events.
-  bool mIsMapped;
+  mozilla::Atomic<bool, mozilla::Relaxed> mIsMapped;
   // Has this widget been destroyed yet?
   mozilla::Atomic<bool, mozilla::Relaxed> mIsDestroyed;
   // mIsShown tracks requested visible status from browser perspective, i.e.
@@ -790,6 +795,8 @@ class nsWindow : public nsIWidget {
   bool DragInProgress(void);
 
   void DispatchMissedButtonReleases(GdkEventCrossing* aGdkEvent);
+
+  void ConfigureCompositor();
 
   bool IsAlwaysUndecoratedWindow() const;
 

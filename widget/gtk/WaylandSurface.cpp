@@ -597,7 +597,7 @@ void WaylandSurface::UnmapLocked(WaylandSurfaceLock& aSurfaceLock) {
       [](void* aData, struct wl_callback* callback, uint32_t time) {
         RefPtr surface = dont_AddRef(static_cast<WaylandSurface*>(aData));
         LOGS_VERBOSE("WaylandSurface::UnmapLocked() finished callback [%p] ",
-                     surface->mLoggingWidget);
+                     aData);
       }};
   wl_callback_add_listener(wl_display_sync(WaylandDisplayGetWLDisplay()),
                            &listener, this);
@@ -1287,8 +1287,8 @@ void WaylandSurface::RemoveTransactionLocked(
   if (mBufferTransactions.IsEmpty()) {
     return;
   }
-  LOGVERBOSE("WaylandSurface::RemoveTransactionLocked() [%p] num %d",
-             (void*)aTransaction, (int)mBufferTransactions.Length());
+  LOGVERBOSE("WaylandSurface::RemoveTransactionLocked() [%p]",
+             (void*)aTransaction);
   MOZ_DIAGNOSTIC_ASSERT(aTransaction->IsDeleted());
   [[maybe_unused]] bool removed =
       mBufferTransactions.RemoveElement(aTransaction);

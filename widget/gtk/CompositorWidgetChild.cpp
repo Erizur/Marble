@@ -40,5 +40,9 @@ void CompositorWidgetChild::NotifyClientSizeChanged(
 
 void CompositorWidgetChild::CleanupResources() { (void)SendCleanupResources(); }
 
+void CompositorWidgetChild::SetRenderingSurface(const uintptr_t aXWindow) {
+  (void)SendSetRenderingSurface(aXWindow);
+}
+
 }  // namespace widget
 }  // namespace mozilla
