@@ -9,7 +9,6 @@
 #include "mozilla/CaretAssociationHint.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/EventListenerManager.h"
-#include "mozilla/EventStateManager.h"
 #include "mozilla/IMEStateManager.h"
 #include "mozilla/InputEventOptions.h"
 #include "mozilla/KeyEventHandler.h"
@@ -334,16 +333,6 @@ TextInputSelectionController::TextInputSelectionController(
     mFrameSelection = new nsFrameSelection(aPresShell, accessibleCaretEnabled,
                                            &aEditorRootAnonymousDiv);
     mPresShellWeak = do_GetWeakReference(aPresShell);
-
-    // Restore drag state if needed.
-    // FIXME(emilio): This is a bit hacky...
-    auto* draggingNode = aPresShell->GetPresContext()
-                             ->EventStateManager()
-                             ->GetTrackingDragGestureContent();
-    if (draggingNode && draggingNode->GetAsElementOrParentElement() ==
-                            &aEditorRootAnonymousDiv) {
-      mFrameSelection->RestoreDragState();
-    }
   }
 }
 
