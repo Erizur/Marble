@@ -22,6 +22,7 @@
 #include "mozilla/TextEditor.h"
 #include "mozilla/dom/HTMLInputElement.h"
 #include "mozilla/dom/HTMLTextAreaElement.h"
+#include "mozilla/dom/NodeList.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/Selection.h"
 #include "mozilla/dom/Text.h"
@@ -83,6 +84,7 @@ ScrollContainerFrame* nsTextControlFrame::GetScrollTargetFrame() const {
 }
 
 void nsTextControlFrame::Destroy(DestroyContext& aContext) {
+  RemoveProperty(TextControlInitializer());
   if (auto* ts = ControlElement()->GetTextControlState()) {
     ts->DeinitSelection();
   }
@@ -174,6 +176,35 @@ LogicalSize nsTextControlFrame::CalcIntrinsicSize(gfxContext* aRenderingContext,
 void nsTextControlFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
                               nsIFrame* aPrevInFlow) {
   nsContainerFrame::Init(aContent, aParent, aPrevInFlow);
+  InitializeEagerlyIfNeeded();
+}
+
+bool nsTextControlFrame::ShouldInitializeEagerly() const {
+  // Input elements which have a cached selection should get eager
+  // editor initialization.
+  TextControlElement* textControlElement = ControlElement();
+  if (textControlElement->HasCachedSelection()) {
+    return true;
+  }
+
+  // So do input text controls with spellcheck=true
+  if (textControlElement->Spellcheck()) {
+    return true;
+  }
+
+  return false;
+}
+
+void nsTextControlFrame::InitializeEagerlyIfNeeded() {
+  MOZ_ASSERT(!nsContentUtils::IsSafeToRunScript(),
+             "Someone forgot a script blocker?");
+  if (!ShouldInitializeEagerly()) {
+    return;
+  }
+
+  EditorInitializer* initializer = new EditorInitializer(this);
+  SetProperty(TextControlInitializer(), initializer);
+  nsContentUtils::AddScriptRunner(initializer);
 }
 
 nscoord nsTextControlFrame::IntrinsicISize(const IntrinsicSizeInput& aInput,
@@ -365,6 +396,138 @@ void nsTextControlFrame::ReflowTextControlChild(
   aParentDesiredSize.mOverflowAreas.UnionWith(desiredSize.mOverflowAreas);
 }
 
+// IMPLEMENTING NS_IFORMCONTROLFRAME
+void nsTextControlFrame::OnFocus() {
+  nsISelectionController* selCon = GetSelectionController();
+  if (!selCon) {
+    return;
+  }
+
+  RefPtr<Selection> ourSel =
+      selCon->GetSelection(nsISelectionController::SELECTION_NORMAL);
+  if (!ourSel) {
+    return;
+  }
+
+  RefPtr<mozilla::PresShell> presShell = PresShell();
+  RefPtr<nsCaret> caret = presShell->GetOriginalCaret();
+  if (!caret) {
+    return;
+  }
+
+  // Tell the caret to use our selection
+  caret->SetSelection(ourSel);
+
+  // mutual-exclusion: the selection is either controlled by the
+  // document or by the text input/area. Clear any selection in the
+  // document since the focus is now on our independent selection.
+
+  RefPtr<Selection> docSel =
+      presShell->GetSelection(nsISelectionController::SELECTION_NORMAL);
+  if (!docSel) {
+    return;
+  }
+
+  if (!docSel->IsCollapsed()) {
+    docSel->RemoveAllRanges(IgnoreErrors());
+  }
+  if (presShell->IsDestroying()) {
+    return;
+  }
+
+  // If the focus moved to a text control during text selection by pointer
+  // device, stop extending the selection.
+  if (RefPtr<nsFrameSelection> frameSelection = presShell->FrameSelection()) {
+    frameSelection->SetDragState(false);
+  }
+}
+
+void nsTextControlFrame::ScrollSelectionIntoViewAsync(
+    ScrollAncestors aScrollAncestors) {
+  nsCOMPtr<nsISelectionController> selCon = GetSelectionController();
+  if (!selCon) {
+    return;
+  }
+
+  // Scroll the selection into view (see bug 231389).
+  const auto flags = aScrollAncestors == ScrollAncestors::Yes
+                         ? ScrollFlags::None
+                         : ScrollFlags::ScrollFirstAncestorOnly;
+  selCon->ScrollSelectionIntoView(
+      SelectionType::eNormal, nsISelectionController::SELECTION_FOCUS_REGION,
+      AxisScrollParams(), AxisScrollParams(), flags);
+}
+
+nsresult nsTextControlFrame::EnsureEditorInitialized() {
+  AutoWeakFrame wf(this);
+  RefPtr el = ControlElement();
+  auto* state = el->GetTextControlState();
+  if (!state) {
+    return NS_ERROR_FAILURE;
+  }
+  state->EnsureEditorInitialized();
+  if (NS_WARN_IF(!wf.IsAlive())) {
+    return NS_ERROR_FAILURE;
+  }
+  return NS_OK;
+}
+
+nsresult nsTextControlFrame::OffsetToDOMPoint(uint32_t aOffset,
+                                              nsINode** aResult,
+                                              uint32_t* aPosition) {
+  NS_ENSURE_ARG_POINTER(aResult && aPosition);
+
+  *aResult = nullptr;
+  *aPosition = 0;
+
+  nsresult rv = EnsureEditorInitialized();
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  RefPtr<Element> rootNode = GetRootNode();
+  NS_ENSURE_TRUE(rootNode, NS_ERROR_FAILURE);
+
+  RefPtr<dom::NodeList> nodeList = rootNode->ChildNodes();
+  uint32_t length = nodeList->Length();
+
+  NS_ASSERTION(length <= 2,
+               "We should have one text node and one mozBR at most");
+
+  nsCOMPtr<nsINode> firstNode = nodeList->Item(0);
+  Text* textNode = firstNode ? firstNode->GetAsText() : nullptr;
+
+  if (length == 0) {
+    rootNode.forget(aResult);
+    *aPosition = 0;
+  } else if (textNode) {
+    uint32_t textLength = textNode->Length();
+    firstNode.forget(aResult);
+    *aPosition = std::min(aOffset, textLength);
+  } else {
+    rootNode.forget(aResult);
+    *aPosition = 0;
+  }
+
+  return NS_OK;
+}
+
+/////END INTERFACE IMPLEMENTATIONS
+
+////NSIFRAME
+nsresult nsTextControlFrame::AttributeChanged(int32_t aNameSpaceID,
+                                              nsAtom* aAttribute,
+                                              AttrModType aModType) {
+  if (aAttribute == nsGkAtoms::maxlength) {
+    auto* ce = ControlElement();
+    if (RefPtr textEditor = ce->GetExtantTextEditor()) {
+      textEditor->SetMaxTextLength(ce->UsedMaxLength());
+      return NS_OK;
+    }
+  }
+  return nsContainerFrame::AttributeChanged(aNameSpaceID, aAttribute, aModType);
+}
+
 void nsTextControlFrame::HandleReadonlyOrDisabledChange() {
   RefPtr<TextControlElement> el = ControlElement();
   const RefPtr<TextEditor> editor = el->GetExtantTextEditor();
@@ -392,6 +555,10 @@ void nsTextControlFrame::ElementStateChanged(dom::ElementState aStates) {
   if (aStates.HasAtLeastOneOfStates(dom::ElementState::READONLY |
                                     dom::ElementState::DISABLED)) {
     HandleReadonlyOrDisabledChange();
+  }
+  if (aStates.HasState(dom::ElementState::FOCUS) &&
+      mContent->AsElement()->State().HasState(dom::ElementState::FOCUS)) {
+    OnFocus();
   }
   return nsContainerFrame::ElementStateChanged(aStates);
 }
@@ -494,6 +661,32 @@ void nsTextControlFrame::BuildDisplayList(nsDisplayListBuilder* aBuilder,
   for (auto* kid : mFrames) {
     BuildDisplayListForChild(aBuilder, kid, set);
   }
+}
+
+NS_IMETHODIMP
+nsTextControlFrame::EditorInitializer::Run() {
+  if (!mFrame) {
+    return NS_OK;
+  }
+
+  // Need to block script to avoid bug 669767.
+  nsAutoScriptBlocker scriptBlocker;
+
+  RefPtr<mozilla::PresShell> presShell = mFrame->PresShell();
+  bool observes = presShell->ObservesNativeAnonMutationsForPrint();
+  presShell->ObserveNativeAnonMutationsForPrint(true);
+  // This can cause the frame to be destroyed (and call Revoke()).
+  mFrame->EnsureEditorInitialized();
+  presShell->ObserveNativeAnonMutationsForPrint(observes);
+
+  // The frame can *still* be destroyed even though we have a scriptblocker,
+  // bug 682684.
+  if (!mFrame) {
+    return NS_ERROR_FAILURE;
+  }
+
+  mFrame->FinishedInitializer();
+  return NS_OK;
 }
 
 Maybe<nscoord> nsTextControlFrame::GetNaturalBaselineBOffset(

@@ -5,7 +5,6 @@
 #ifndef mozilla_TextControlElement_h
 #define mozilla_TextControlElement_h
 
-#include "mozilla/Attributes.h"
 #include "mozilla/dom/FromParser.h"
 #include "mozilla/dom/NodeInfo.h"
 #include "nsGenericHTMLElement.h"

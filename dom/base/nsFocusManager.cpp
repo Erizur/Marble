@@ -3148,8 +3148,9 @@ void nsFocusManager::ScrollIntoView(PresShell* aPresShell, nsIContent* aContent,
   if (aFlags & FLAG_BYMOUSE) {
     return;
   }
-  if (auto* tc = TextControlElement::FromNode(aContent)) {
-    tc->ScrollSelectionIntoViewAsync(TextControlElement::ScrollAncestors::Yes);
+  // ScrollContentIntoView flushes layout, so no need to flush again here.
+  if (nsTextControlFrame* tf = do_QueryFrame(aContent->GetPrimaryFrame())) {
+    tf->ScrollSelectionIntoViewAsync(nsTextControlFrame::ScrollAncestors::Yes);
   }
 }
 

@@ -1006,6 +1006,13 @@ class PresShell final : public nsStubDocumentObserver,
    */
   nscolor ComputeBackstopColor(nsIFrame* aDisplayRoot);
 
+  void ObserveNativeAnonMutationsForPrint(bool aObserve) {
+    mObservesMutationsForPrint = aObserve;
+  }
+  bool ObservesNativeAnonMutationsForPrint() {
+    return mObservesMutationsForPrint;
+  }
+
   void ActivenessMaybeChanged();
   bool IsActive() const { return mIsActive; }
 
@@ -3463,6 +3470,7 @@ class PresShell final : public nsStubDocumentObserver,
   bool mIsActive : 1;
   bool mFrozen : 1;
   bool mIsFirstPaint : 1;
+  bool mObservesMutationsForPrint : 1;
 
   // Whether the most recent interruptible reflow was actually interrupted:
   bool mWasLastReflowInterrupted : 1;

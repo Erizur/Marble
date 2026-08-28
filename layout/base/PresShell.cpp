@@ -706,6 +706,7 @@ PresShell::PresShell(Document* aDocument)
       mIsActive(true),
       mFrozen(false),
       mIsFirstPaint(true),
+      mObservesMutationsForPrint(false),
       mWasLastReflowInterrupted(false),
       mResizeEventPending(false),
       mVisualViewportResizeEventPending(false),

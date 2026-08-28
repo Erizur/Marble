@@ -13,9 +13,15 @@
 #include "nsIContent.h"
 #include "nsIStatefulFrame.h"
 
+class nsISelectionController;
+class EditorInitializerEntryTracker;
 namespace mozilla {
+class AutoTextControlHandlingState;
 class ScrollContainerFrame;
+class TextEditor;
+class TextControlState;
 enum class PseudoStyleType : uint8_t;
+enum class SelectionDirection : uint8_t;
 namespace dom {
 class Element;
 }  // namespace dom
@@ -99,6 +105,15 @@ class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
     return ControlElement()->GetIndependentFrameSelection();
   }
 
+  /**
+   * Ensure mEditor is initialized with the proper flags and the default value.
+   * @throws NS_ERROR_NOT_INITIALIZED if mEditor has not been created
+   * @throws various and sundry other things
+   */
+  MOZ_CAN_RUN_SCRIPT_BOUNDARY nsresult EnsureEditorInitialized();
+
+  //==== END NSITEXTCONTROLFRAME
+
   //==== NSISTATEFULFRAME
 
   mozilla::UniquePtr<mozilla::PresState> SaveState() override;
@@ -108,13 +123,22 @@ class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
 
   //==== OVERLOAD of nsIFrame
 
+  /** handler for attribute changes to mContent */
+  MOZ_CAN_RUN_SCRIPT_BOUNDARY nsresult AttributeChanged(
+      int32_t aNameSpaceID, nsAtom* aAttribute, AttrModType aModType) override;
   void ElementStateChanged(mozilla::dom::ElementState aStates) override;
 
   nsresult PeekOffset(mozilla::PeekOffsetStruct* aPos) override;
 
   NS_DECL_QUERYFRAME
 
+  // Whether we should scroll only the current selection into view in the inner
+  // scroller, or also ancestors as needed.
+  enum class ScrollAncestors { No, Yes };
+  void ScrollSelectionIntoViewAsync(ScrollAncestors = ScrollAncestors::No);
+
  protected:
+  MOZ_CAN_RUN_SCRIPT_BOUNDARY void OnFocus();
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void HandleReadonlyOrDisabledChange();
 
   /**
@@ -170,6 +194,54 @@ class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
 #undef DEFINE_TEXTCTRL_CONST_FORWARDER
 
  protected:
+  class EditorInitializer;
+  friend class EditorInitializer;
+
+  // needed for access to CacheValue and co.
+  friend class mozilla::AutoTextControlHandlingState;
+  friend class mozilla::TextControlState;
+
+  // Temp reference to scriptrunner
+  NS_DECLARE_FRAME_PROPERTY_WITH_DTOR(TextControlInitializer, EditorInitializer,
+                                      nsTextControlFrame::RevokeInitializer)
+
+  static void RevokeInitializer(EditorInitializer* aInitializer) {
+    aInitializer->Revoke();
+  };
+
+  class EditorInitializer : public mozilla::Runnable {
+   public:
+    explicit EditorInitializer(nsTextControlFrame* aFrame)
+        : mozilla::Runnable("nsTextControlFrame::EditorInitializer"),
+          mFrame(aFrame) {}
+
+    NS_IMETHOD Run() override;
+
+    // avoids use of AutoWeakFrame
+    void Revoke() { mFrame = nullptr; }
+
+   private:
+    nsTextControlFrame* mFrame;
+  };
+
+  nsresult OffsetToDOMPoint(uint32_t aOffset, nsINode** aResult,
+                            uint32_t* aPosition);
+
+  /**
+   * Find out whether an attribute exists on the content or not.
+   * @param aAtt the attribute to determine the existence of
+   * @returns false if it does not exist
+   */
+  bool AttributeExists(nsAtom* aAtt) const {
+    return mContent && mContent->AsElement()->HasAttr(aAtt);
+  }
+
+  /**
+   * We call this when we are being destroyed or removed from the PFM.
+   * @param aPresContext the current pres context
+   */
+  void PreDestroy();
+
   // Compute our intrinsic size.  This does not include any borders, paddings,
   // etc.  Just the size of our actual area for the text (and the scrollbars,
   // for <textarea>).
@@ -179,6 +251,13 @@ class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
   void Init(nsIContent* aContent, nsContainerFrame* aParent,
             nsIFrame* aPrevInFlow) override;
 
+ private:
+  void FinishedInitializer() { RemoveProperty(TextControlInitializer()); }
+
+ protected:
+  bool ShouldInitializeEagerly() const;
+  void InitializeEagerlyIfNeeded();
+
   // Our first baseline, or NS_INTRINSIC_ISIZE_UNKNOWN if we have a pending
   // Reflow (or if we're contain:layout, which means we have no baseline).
   nscoord mFirstBaseline = NS_INTRINSIC_ISIZE_UNKNOWN;
@@ -186,6 +265,11 @@ class nsTextControlFrame : public nsContainerFrame, public nsIStatefulFrame {
   // these packed bools could instead use the high order bits on mState, saving
   // 4 bytes
   bool mIsProcessing = false;
+
+#ifdef DEBUG
+  bool mInEditorInitialization = false;
+  friend class EditorInitializerEntryTracker;
+#endif
 };
 
 #endif
