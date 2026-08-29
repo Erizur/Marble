@@ -12,6 +12,73 @@
 
 namespace mozilla {
 
+inline bool IsWindowsVersionOrLater(uint32_t aVersion) {
+  static Atomic<uint32_t> minVersion(0);
+  static Atomic<uint32_t> maxVersion(UINT32_MAX);
+
+  if (minVersion >= aVersion) {
+    return true;
+  }
+
+  if (aVersion >= maxVersion) {
+    return false;
+  }
+
+  OSVERSIONINFOEXW info;
+  ZeroMemory(&info, sizeof(OSVERSIONINFOEXW));
+  info.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
+  info.dwMajorVersion = aVersion >> 24;
+  info.dwMinorVersion = (aVersion >> 16) & 0xFF;
+  info.wServicePackMajor = (aVersion >> 8) & 0xFF;
+  info.wServicePackMinor = aVersion & 0xFF;
+
+  DWORDLONG conditionMask = 0;
+  VER_SET_CONDITION(conditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+  VER_SET_CONDITION(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+  VER_SET_CONDITION(conditionMask, VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
+  VER_SET_CONDITION(conditionMask, VER_SERVICEPACKMINOR, VER_GREATER_EQUAL);
+
+  if (VerifyVersionInfoW(&info,
+                         VER_MAJORVERSION | VER_MINORVERSION |
+                             VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
+                         conditionMask)) {
+    minVersion = aVersion;
+    return true;
+  }
+
+  maxVersion = aVersion;
+  return false;
+}
+
+inline bool IsWindowsBuildOrLater(uint32_t aBuild) {
+  static Atomic<uint32_t> minBuild(0);
+  static Atomic<uint32_t> maxBuild(UINT32_MAX);
+
+  if (minBuild >= aBuild) {
+    return true;
+  }
+
+  if (aBuild >= maxBuild) {
+    return false;
+  }
+
+  OSVERSIONINFOEXW info;
+  ZeroMemory(&info, sizeof(OSVERSIONINFOEXW));
+  info.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
+  info.dwBuildNumber = aBuild;
+
+  DWORDLONG conditionMask = 0;
+  VER_SET_CONDITION(conditionMask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+
+  if (VerifyVersionInfoW(&info, VER_BUILDNUMBER, conditionMask)) {
+    minBuild = aBuild;
+    return true;
+  }
+
+  maxBuild = aBuild;
+  return false;
+}
+
 inline bool IsWindows10BuildOrLater(uint32_t aBuild) {
   static Atomic<uint32_t> minBuild(0);
   static Atomic<uint32_t> maxBuild(UINT32_MAX);
@@ -49,6 +116,26 @@ inline bool IsWindows10BuildOrLater(uint32_t aBuild) {
   return false;
 }
 
+MOZ_ALWAYS_INLINE bool IsWin7SP1OrLater() {
+  return IsWindowsVersionOrLater(0x06010100ul);
+}
+
+MOZ_ALWAYS_INLINE bool IsWin8OrLater() {
+  return IsWindowsVersionOrLater(0x06020000ul);
+}
+
+MOZ_ALWAYS_INLINE bool IsWin8Point1OrLater() {
+  return IsWindowsVersionOrLater(0x06030000ul);
+}
+
+MOZ_ALWAYS_INLINE bool IsWin10OrLater() {
+  return IsWindowsVersionOrLater(0x0a000000ul);
+}
+
+MOZ_ALWAYS_INLINE bool IsWin10November2015UpdateOrLater() {
+  return IsWindows10BuildOrLater(10586);
+}
+
 MOZ_ALWAYS_INLINE bool IsWin10AnniversaryUpdateOrLater() {
   return IsWindows10BuildOrLater(14393);
 }
@@ -61,8 +148,16 @@ MOZ_ALWAYS_INLINE bool IsWin10FallCreatorsUpdateOrLater() {
   return IsWindows10BuildOrLater(16299);
 }
 
+MOZ_ALWAYS_INLINE bool IsWin10April2018UpdateOrLater() {
+  return IsWindows10BuildOrLater(17134);
+}
+
 MOZ_ALWAYS_INLINE bool IsWin10Sep2018UpdateOrLater() {
   return IsWindows10BuildOrLater(17763);
+}
+
+MOZ_ALWAYS_INLINE bool IsWin10May2019UpdateOrLater() {
+  return IsWindows10BuildOrLater(18362);
 }
 
 MOZ_ALWAYS_INLINE bool IsWin11OrLater() {
