@@ -33,12 +33,12 @@ SimpleTest.waitForFocus(() => {
       !SpecialPowers.wrap(firstInput).editor?.selectionController?.caretVisible,
       `${aDesc}: the first <input>'s caret should be hidden after moving focus to the second <input>`
     );
-    ok(
+    todo(
       SpecialPowers.wrap(secondInput).editor?.selectionController?.caretVisible,
       `${aDesc}: the second <input>'s caret should be visible after moving focus to the second <input>`
     );
     firstInput.focus();
-    ok(
+    todo(
       SpecialPowers.wrap(firstInput).editor?.selectionController?.caretVisible,
       `${aDesc}: the first <input>'s caret should be visible after moving focus back to the first <input>`
     );

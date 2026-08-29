@@ -59,6 +59,7 @@
 #include "mozilla/ExtensionPolicyService.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/FlushType.h"
+#include "mozilla/HTMLEditor.h"
 #include "mozilla/Likely.h"
 #include "mozilla/Logging.h"
 #include "mozilla/LookAndFeel.h"
@@ -83,6 +84,7 @@
 #include "mozilla/StorageAccess.h"
 #include "mozilla/StoragePrincipalHelper.h"
 #include "mozilla/TelemetryHistogramEnums.h"
+#include "mozilla/TextControlElement.h"
 #include "mozilla/ThrottledEventQueue.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/UniquePtr.h"
@@ -224,6 +226,7 @@
 #include "nsDocShell.h"
 #include "nsFocusManager.h"
 #include "nsFrameMessageManager.h"
+#include "nsFrameSelection.h"
 #include "nsGkAtoms.h"
 #include "nsGlobalWindowOuter.h"
 #include "nsHashKeys.h"
@@ -2188,6 +2191,19 @@ void nsGlobalWindowInner::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
         }
       }
       break;
+    case eFocus:
+    case eBlur:
+      // We need to handle eFocus and eBlur to set up selection. However, that
+      // needs to be done before dispatching the event to the DOM:
+      // https://w3c.github.io/uievents/#event-type-focus
+      // > The focus MUST be given to the element before the dispatch of this
+      // > event type.
+      // https://w3c.github.io/uievents/#event-type-blur
+      // > The focus MUST be taken from the element before the dispatch of this
+      // > event type.
+      // Therefore, we want the pre handler.
+      aVisitor.mWantsPreHandleEvent = aVisitor.mEvent->IsTrusted();
+      break;
     default:
       break;
   }
@@ -2417,6 +2433,59 @@ void nsGlobalWindowInner::FireFrameLoadEvent() {
     (void)browserChild->SendMaybeFireEmbedderLoadEvents(
         EmbedderElementEventType::LoadEvent);
   }
+}
+
+nsresult nsGlobalWindowInner::PreHandleEvent(EventChainVisitor& aVisitor) {
+  MOZ_ASSERT(aVisitor.mEvent->mMessage == eFocus ||
+             aVisitor.mEvent->mMessage == eBlur);
+  MOZ_ASSERT(aVisitor.mEvent->IsTrusted());
+
+  if (!mDoc) [[unlikely]] {
+    return NS_OK;
+  }
+  const RefPtr<PresShell> presShell = mDoc->GetPresShell();
+  if (!presShell) [[unlikely]] {
+    return NS_OK;
+  }
+  // Maintain selection state before HTMLEditor and/or TextEditor handles
+  // focus/blur below.
+  const nsCOMPtr<nsINode> targetNode = nsINode::FromEventTargetOrNull(
+      aVisitor.mEvent->GetOriginalDOMEventTarget());
+  if (Document* const targetDocument = Document::FromNodeOrNull(targetNode)) {
+    if (aVisitor.mEvent->mMessage == eFocus) {
+      nsFrameSelection::WillFocusDocument(*presShell, *targetDocument);
+    } else {
+      nsFrameSelection::WillBlurDocument(*presShell, *targetDocument);
+    }
+  }
+  // If new focused element is a text control element in an editing host,
+  // both HTMLEditor and TextEditor need to handle the focus event for the
+  // backward compatibility. Then, we need to make HTMLEditor handle it
+  // first, then TextEditor will handle it below via
+  // TextControlElement::WillFocus().
+  if (aVisitor.mEvent->mMessage == eFocus) {
+    HTMLEditor::WillFocusNode(*presShell, targetNode);
+  }
+  // To keep the traditional behavior at blur, we should call
+  // HTMLEditor::OnBlur() before TextEditor::OnBlur() which is now called by
+  // TextControlElement::WillBlur() called below.
+  else {
+    HTMLEditor::WillBlurNode(*presShell, targetNode);
+  }
+
+  // Finally, set up selection of `TextEditor` if and only if the event target
+  // is a text control.
+  if (auto* const targetTextControlElement =
+          TextControlElement::FromNodeOrNull(targetNode)) {
+    if (targetTextControlElement->IsSingleLineTextControlOrTextArea()) {
+      if (aVisitor.mEvent->mMessage == eFocus) {
+        MOZ_KnownLive(targetTextControlElement)->WillFocus(*aVisitor.mEvent);
+      } else {
+        MOZ_KnownLive(targetTextControlElement)->WillBlur(*aVisitor.mEvent);
+      }
+    }
+  }
+  return NS_OK;
 }
 
 nsresult nsGlobalWindowInner::PostHandleEvent(EventChainPostVisitor& aVisitor) {
