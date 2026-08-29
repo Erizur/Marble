@@ -1072,7 +1072,7 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
     if (!mTextControlStateDestroyed && mPrepareEditorLater) {
       MOZ_ASSERT(nsContentUtils::IsSafeToRunScript());
       MOZ_ASSERT(Is(TextControlAction::SetValue));
-      mTextControlState.PrepareEditor();
+      mTextControlState.PrepareEditor(&mSettingValue);
     }
   }
 
@@ -1244,6 +1244,7 @@ TextControlState::TextControlState(TextControlElement* aOwningElement)
     : mTextCtrlElement(aOwningElement),
       mEverInited(false),
       mEditorInitialized(false),
+      mValueTransferInProgress(false),
       mSelectionCached(true)
 // When adding more member variable initializations here, add the same
 // also to ::Construct.
@@ -1382,22 +1383,41 @@ nsISelectionController* TextControlState::GetSelectionController() const {
 }
 
 // Helper class, used below in BindToFrame().
-class PrepareEditorEvent final : public Runnable {
+class PrepareEditorEvent : public Runnable {
  public:
-  explicit PrepareEditorEvent(TextControlState& aState)
-      : Runnable("PrepareEditorEvent"), mState(&aState) {}
+  PrepareEditorEvent(TextControlState& aState, nsIContent* aOwnerContent,
+                     const nsAString& aCurrentValue)
+      : Runnable("PrepareEditorEvent"),
+        mState(&aState),
+        mOwnerContent(aOwnerContent),
+        mCurrentValue(aCurrentValue) {
+    aState.mValueTransferInProgress = true;
+  }
 
   MOZ_CAN_RUN_SCRIPT_BOUNDARY NS_IMETHOD Run() override {
     if (NS_WARN_IF(!mState)) {
       return NS_ERROR_NULL_POINTER;
     }
 
-    mState->PrepareEditor();
+    // Transfer the saved value to the editor if we have one
+    const nsAString* value = nullptr;
+    if (!mCurrentValue.IsEmpty()) {
+      value = &mCurrentValue;
+    }
+
+    nsAutoScriptBlocker scriptBlocker;
+
+    mState->PrepareEditor(value);
+
+    mState->mValueTransferInProgress = false;
+
     return NS_OK;
   }
 
  private:
   WeakPtr<TextControlState> mState;
+  nsCOMPtr<nsIContent> mOwnerContent;  // strong reference
+  nsAutoString mCurrentValue;
 };
 
 nsresult TextControlState::InitializeSelection(PresShell* aPresShell) {
@@ -1410,6 +1430,13 @@ nsresult TextControlState::InitializeSelection(PresShell* aPresShell) {
   auto* editorRoot = GetRootNode();
   if (NS_WARN_IF(!editorRoot)) {
     return NS_ERROR_FAILURE;
+  }
+
+  // If we'll need to transfer our current value to the editor, save it before
+  // calling PrepareEditor. TODO(emilio): is this needed anymore?
+  nsAutoString currentValue;
+  if (mTextEditor) {
+    GetValue(currentValue, /* aForDisplay = */ false);
   }
 
   // Create a SelectionController
@@ -1436,7 +1463,23 @@ nsresult TextControlState::InitializeSelection(PresShell* aPresShell) {
 
   // If an editor exists from before, prepare it for usage
   if (mTextEditor) {
-    nsContentUtils::AddScriptRunner(MakeAndAddRef<PrepareEditorEvent>(*this));
+    if (NS_WARN_IF(!mTextCtrlElement)) {
+      return NS_ERROR_FAILURE;
+    }
+
+    // Set the correct direction on the newly created root node
+    // FIXME: This looks sketchy, probably should notify or be removed or
+    // something.
+    if (mTextEditor->IsRightToLeft()) {
+      editorRoot->SetAttr(kNameSpaceID_None, nsGkAtoms::dir, u"rtl"_ns, false);
+    } else if (mTextEditor->IsLeftToRight()) {
+      editorRoot->SetAttr(kNameSpaceID_None, nsGkAtoms::dir, u"ltr"_ns, false);
+    } else {
+      // otherwise, inherit the content node's direction
+    }
+
+    nsContentUtils::AddScriptRunner(MakeAndAddRef<PrepareEditorEvent>(
+        *this, mTextCtrlElement, currentValue));
   }
 
   return NS_OK;
@@ -1464,7 +1507,7 @@ bool TextControlState::IsPreparingEditor() const {
          mHandlingState->IsHandling(TextControlAction::PrepareEditor);
 }
 
-nsresult TextControlState::PrepareEditor() {
+nsresult TextControlState::PrepareEditor(const nsAString* aValue) {
   if (mEditorInitialized) {
     // Do not initialize the editor multiple times.
     return NS_OK;
@@ -1528,7 +1571,11 @@ nsresult TextControlState::PrepareEditor() {
   // Note that if we've created a new editor, mTextEditor is null at this stage,
   // so we will get the real value from the content.
   nsAutoString defaultValue;
-  GetValue(defaultValue, /* aForDisplay = */ true);
+  if (aValue) {
+    defaultValue = *aValue;
+  } else {
+    GetValue(defaultValue, /* aForDisplay = */ true);
+  }
 
   if (!mEditorInitialized) {
     // Now initialize the editor.
@@ -2128,17 +2175,16 @@ void TextControlState::DeinitSelection() {
     mSelCon->SelectionWillLoseFocus();
   }
 
-  // Save our current value in mValue if our editor is initialized, before we
-  // lose it. Similarly, cache our selection state (if needed).
+  // We need to start storing the value outside of the editor if we're not
+  // going to use it anymore, so retrieve it for now.
+  nsAutoString value;
+  GetValue(value, /* aForDisplay = */ false);
+
+  // Save our selection state if needed.
   // Note that GetSelectionRange will attempt to work with our selection
   // controller, so we should make sure we do it before we start doing things
   // like destroying our editor (if we have one), tearing down the selection
-  // controller, and so forth. Similarly, GetValue will pull from our editor, so
-  // do that before tearing it down below.
-  if (mEditorInitialized) {
-    GetValue(mValue, /* aForDisplay = */ true);
-  }
-
+  // controller, and so forth.
   if (!IsSelectionCached()) {
     // Go ahead and cache it now.
     uint32_t start = 0, end = 0;
@@ -2147,11 +2193,10 @@ void TextControlState::DeinitSelection() {
     SelectionDirection direction = GetSelectionDirection(IgnoreErrors());
 
     SelectionProperties& props = GetSelectionProperties();
-    props.SetMaxLength(mValue.Length());
+    props.SetMaxLength(value.Length());
     props.SetStart(start);
     props.SetEnd(end);
     props.SetDirection(direction);
-    props.SetIsDirty();
     mSelectionCached = true;
   }
 
@@ -2213,6 +2258,20 @@ void TextControlState::DeinitSelection() {
     }
 
     mTextListener = nullptr;
+  }
+
+  // Now that we don't have a selection any more, store the value in mValue.
+  // The only case where we don't do this is if a value transfer is in progress.
+  if (!mValueTransferInProgress) {
+    DebugOnly<bool> ok = SetValue(value, ValueSetterOption::ByInternalAPI);
+    // TODO Find something better to do if this fails...
+    NS_WARNING_ASSERTION(ok, "SetValue() couldn't allocate memory");
+    // And mark the selection as dirty to make sure the selection will be
+    // restored properly in RestoreSelectionState. See bug 1993351.
+    if (IsSelectionCached()) {
+      SelectionProperties& props = GetSelectionProperties();
+      props.SetIsDirty();
+    }
   }
 }
 
@@ -2566,141 +2625,144 @@ bool TextControlState::SetValueWithoutTextEditor(
     mValue.SetIsVoid(false);
   }
 
-  if (mValue.Equals(aHandlingSetValue.GetSettingValue())) {
-    // Even if our value is not actually changing, apparently we need to mark
-    // our SelectionProperties dirty to make accessibility tests happy.
-    // Probably because they depend on the SetSelectionRange() call we make on
-    // our frame in RestoreSelectionState, but I have no idea why they do.
-    // FIXME(emilio): Unclear if this is still true.
-    if (IsSelectionCached()) {
-      GetSelectionProperties().SetIsDirty();
-    }
-    return true;
-  }
-  bool handleSettingValue = true;
-  // If `SetValue()` call is nested, `GetSettingValue()` result will be
-  // modified.  So, we need to store input event data value before
-  // dispatching beforeinput event.
-  nsString inputEventData(aHandlingSetValue.GetSettingValue());
-  if (aHandlingSetValue.ValueSetterOptionsRef().contains(
-          ValueSetterOption::BySetUserInputAPI) &&
-      !aHandlingSetValue.HasBeforeInputEventDispatched()) {
-    // This probably occurs when session restorer sets the old value with
-    // `setUserInput`.  If so, we need to dispatch "beforeinput" event of
-    // "insertReplacementText" for conforming to the spec.  However, the
-    // spec does NOT treat the session restoring case.  Therefore, if this
-    // breaks session restorere in a lot of web apps, we should probably
-    // stop dispatching it or make it non-cancelable.
-    MOZ_ASSERT(aHandlingSetValue.GetTextControlElement());
-    MOZ_ASSERT(!aHandlingSetValue.GetSettingValue().IsVoid());
-    aHandlingSetValue.WillDispatchBeforeInputEvent();
-    nsEventStatus status = nsEventStatus_eIgnore;
-    DebugOnly<nsresult> rvIgnored = nsContentUtils::DispatchInputEvent(
-        MOZ_KnownLive(aHandlingSetValue.GetTextControlElement()),
-        eEditorBeforeInput, EditorInputType::eInsertReplacementText, nullptr,
-        InputEventOptions(
-            inputEventData,
-            StaticPrefs::dom_input_event_allow_to_cancel_set_user_input()
-                ? InputEventOptions::NeverCancelable::No
-                : InputEventOptions::NeverCancelable::Yes),
-        &status);
-    NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored),
-                         "Failed to dispatch beforeinput event");
-    if (status == nsEventStatus_eConsumeNoDefault) {
-      return true;  // "beforeinput" event was canceled.
-    }
-    // If we were destroyed by "beforeinput" event listeners, probably, we
-    // don't need to keep handling it.
-    if (aHandlingSetValue.IsTextControlStateDestroyed()) {
-      return true;
-    }
-    // Even if "beforeinput" event was not canceled, its listeners may do
-    // something.  If it causes creating `TextEditor` and bind this to a
-    // frame, we need to use the path, but `TextEditor` shouldn't fire
-    // "beforeinput" event again.  Therefore, we need to prevent editor
-    // to dispatch it.
-    if (mEditorInitialized) {
-      AutoInputEventSuppresser suppressInputEvent(mTextEditor);
-      if (!SetValueWithTextEditor(aHandlingSetValue)) {
-        return false;
+  // We can't just early-return here, because OnValueChanged below still need to
+  // be called.
+  if (!mValue.Equals(aHandlingSetValue.GetSettingValue())) {
+    bool handleSettingValue = true;
+    // If `SetValue()` call is nested, `GetSettingValue()` result will be
+    // modified.  So, we need to store input event data value before
+    // dispatching beforeinput event.
+    nsString inputEventData(aHandlingSetValue.GetSettingValue());
+    if (aHandlingSetValue.ValueSetterOptionsRef().contains(
+            ValueSetterOption::BySetUserInputAPI) &&
+        !aHandlingSetValue.HasBeforeInputEventDispatched()) {
+      // This probably occurs when session restorer sets the old value with
+      // `setUserInput`.  If so, we need to dispatch "beforeinput" event of
+      // "insertReplacementText" for conforming to the spec.  However, the
+      // spec does NOT treat the session restoring case.  Therefore, if this
+      // breaks session restorere in a lot of web apps, we should probably
+      // stop dispatching it or make it non-cancelable.
+      MOZ_ASSERT(aHandlingSetValue.GetTextControlElement());
+      MOZ_ASSERT(!aHandlingSetValue.GetSettingValue().IsVoid());
+      aHandlingSetValue.WillDispatchBeforeInputEvent();
+      nsEventStatus status = nsEventStatus_eIgnore;
+      DebugOnly<nsresult> rvIgnored = nsContentUtils::DispatchInputEvent(
+          MOZ_KnownLive(aHandlingSetValue.GetTextControlElement()),
+          eEditorBeforeInput, EditorInputType::eInsertReplacementText, nullptr,
+          InputEventOptions(
+              inputEventData,
+              StaticPrefs::dom_input_event_allow_to_cancel_set_user_input()
+                  ? InputEventOptions::NeverCancelable::No
+                  : InputEventOptions::NeverCancelable::Yes),
+          &status);
+      NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored),
+                           "Failed to dispatch beforeinput event");
+      if (status == nsEventStatus_eConsumeNoDefault) {
+        return true;  // "beforeinput" event was canceled.
       }
       // If we were destroyed by "beforeinput" event listeners, probably, we
       // don't need to keep handling it.
       if (aHandlingSetValue.IsTextControlStateDestroyed()) {
         return true;
       }
-      handleSettingValue = false;
-    }
-  }
-
-  if (handleSettingValue) {
-    if (!mValue.Assign(aHandlingSetValue.GetSettingValue(), fallible)) {
-      return false;
-    }
-
-    // Since we have no editor we presumably have cached selection state.
-    if (IsSelectionCached()) {
-      MOZ_ASSERT(AreFlagsNotDemandingContradictingMovements(
-          aHandlingSetValue.ValueSetterOptionsRef()));
-
-      SelectionProperties& props = GetSelectionProperties();
-      // Setting a max length and thus capping selection range early prevents
-      // selection change detection in setRangeText. Temporarily disable
-      // capping here with UINT32_MAX, and set it later in ::SetRangeText().
-      props.SetMaxLength(aHandlingSetValue.ValueSetterOptionsRef().contains(
-                             ValueSetterOption::BySetRangeTextAPI)
-                             ? UINT32_MAX
-                             : aHandlingSetValue.GetSettingValue().Length());
-      if (aHandlingSetValue.ValueSetterOptionsRef().contains(
-              ValueSetterOption::MoveCursorToEndIfValueChanged)) {
-        props.SetStart(aHandlingSetValue.GetSettingValue().Length());
-        props.SetEnd(aHandlingSetValue.GetSettingValue().Length());
-        props.SetDirection(SelectionDirection::Forward);
-      } else if (aHandlingSetValue.ValueSetterOptionsRef().contains(
-                     ValueSetterOption::
-                         MoveCursorToBeginSetSelectionDirectionForward)) {
-        props.SetStart(0);
-        props.SetEnd(0);
-        props.SetDirection(SelectionDirection::Forward);
+      // Even if "beforeinput" event was not canceled, its listeners may do
+      // something.  If it causes creating `TextEditor` and bind this to a
+      // frame, we need to use the path, but `TextEditor` shouldn't fire
+      // "beforeinput" event again.  Therefore, we need to prevent editor
+      // to dispatch it.
+      if (mEditorInitialized) {
+        AutoInputEventSuppresser suppressInputEvent(mTextEditor);
+        if (!SetValueWithTextEditor(aHandlingSetValue)) {
+          return false;
+        }
+        // If we were destroyed by "beforeinput" event listeners, probably, we
+        // don't need to keep handling it.
+        if (aHandlingSetValue.IsTextControlStateDestroyed()) {
+          return true;
+        }
+        handleSettingValue = false;
       }
     }
 
-    // Update the frame display if needed. No need to notify if we're
-    // mid-destroying the editor from frame destruction.
-    //
-    // TODO(emilio): Eventually we should probably keep the editor around!
-    const bool deinittingSelection =
-        mHandlingState &&
-        mHandlingState->IsHandling(TextControlAction::DeinitSelection);
-    mTextCtrlElement->UpdateValueDisplay(!deinittingSelection);
-  }
+    if (handleSettingValue) {
+      if (!mValue.Assign(aHandlingSetValue.GetSettingValue(), fallible)) {
+        return false;
+      }
 
-  // If this is called as part of user input, we need to dispatch "input"
-  // event with "insertReplacementText" since web apps may want to know
-  // the user operation which changes editor value with a built-in function
-  // like autocomplete, password manager, session restore, etc.
-  // XXX Should we stop dispatching `input` event if the text control
-  //     element has already removed from the DOM tree by a `beforeinput`
-  //     event listener?
-  if (aHandlingSetValue.ValueSetterOptionsRef().contains(
-          ValueSetterOption::BySetUserInputAPI)) {
-    MOZ_ASSERT(aHandlingSetValue.GetTextControlElement());
+      // Since we have no editor we presumably have cached selection state.
+      if (IsSelectionCached()) {
+        MOZ_ASSERT(AreFlagsNotDemandingContradictingMovements(
+            aHandlingSetValue.ValueSetterOptionsRef()));
 
-    // Update validity state before dispatching "input" event for its
-    // listeners like `EditorBase::NotifyEditorObservers()`.
-    aHandlingSetValue.GetTextControlElement()->OnValueChanged(
-        ValueChangeKind::UserInteraction, aHandlingSetValue.GetSettingValue());
+        SelectionProperties& props = GetSelectionProperties();
+        // Setting a max length and thus capping selection range early prevents
+        // selection change detection in setRangeText. Temporarily disable
+        // capping here with UINT32_MAX, and set it later in ::SetRangeText().
+        props.SetMaxLength(aHandlingSetValue.ValueSetterOptionsRef().contains(
+                               ValueSetterOption::BySetRangeTextAPI)
+                               ? UINT32_MAX
+                               : aHandlingSetValue.GetSettingValue().Length());
+        if (aHandlingSetValue.ValueSetterOptionsRef().contains(
+                ValueSetterOption::MoveCursorToEndIfValueChanged)) {
+          props.SetStart(aHandlingSetValue.GetSettingValue().Length());
+          props.SetEnd(aHandlingSetValue.GetSettingValue().Length());
+          props.SetDirection(SelectionDirection::Forward);
+        } else if (aHandlingSetValue.ValueSetterOptionsRef().contains(
+                       ValueSetterOption::
+                           MoveCursorToBeginSetSelectionDirectionForward)) {
+          props.SetStart(0);
+          props.SetEnd(0);
+          props.SetDirection(SelectionDirection::Forward);
+        }
+      }
 
-    ClearLastInteractiveValue();
+      // Update the frame display if needed. No need to notify if we're
+      // mid-destroying the editor from frame destruction.
+      //
+      // TODO(emilio): Eventually we should probably keep the editor around!
+      const bool deinittingSelection =
+          mHandlingState &&
+          mHandlingState->IsHandling(TextControlAction::DeinitSelection);
+      mTextCtrlElement->UpdateValueDisplay(!deinittingSelection);
+    }
 
-    MOZ_ASSERT(!aHandlingSetValue.GetSettingValue().IsVoid());
-    DebugOnly<nsresult> rvIgnored = nsContentUtils::DispatchInputEvent(
-        MOZ_KnownLive(aHandlingSetValue.GetTextControlElement()), eEditorInput,
-        EditorInputType::eInsertReplacementText, nullptr,
-        InputEventOptions(inputEventData,
-                          InputEventOptions::NeverCancelable::No));
-    NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored),
-                         "Failed to dispatch input event");
+    // If this is called as part of user input, we need to dispatch "input"
+    // event with "insertReplacementText" since web apps may want to know
+    // the user operation which changes editor value with a built-in function
+    // like autocomplete, password manager, session restore, etc.
+    // XXX Should we stop dispatching `input` event if the text control
+    //     element has already removed from the DOM tree by a `beforeinput`
+    //     event listener?
+    if (aHandlingSetValue.ValueSetterOptionsRef().contains(
+            ValueSetterOption::BySetUserInputAPI)) {
+      MOZ_ASSERT(aHandlingSetValue.GetTextControlElement());
+
+      // Update validity state before dispatching "input" event for its
+      // listeners like `EditorBase::NotifyEditorObservers()`.
+      aHandlingSetValue.GetTextControlElement()->OnValueChanged(
+          ValueChangeKind::UserInteraction,
+          aHandlingSetValue.GetSettingValue());
+
+      ClearLastInteractiveValue();
+
+      MOZ_ASSERT(!aHandlingSetValue.GetSettingValue().IsVoid());
+      DebugOnly<nsresult> rvIgnored = nsContentUtils::DispatchInputEvent(
+          MOZ_KnownLive(aHandlingSetValue.GetTextControlElement()),
+          eEditorInput, EditorInputType::eInsertReplacementText, nullptr,
+          InputEventOptions(inputEventData,
+                            InputEventOptions::NeverCancelable::No));
+      NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored),
+                           "Failed to dispatch input event");
+    }
+  } else {
+    // Even if our value is not actually changing, apparently we need to mark
+    // our SelectionProperties dirty to make accessibility tests happy.
+    // Probably because they depend on the SetSelectionRange() call we make on
+    // our frame in RestoreSelectionState, but I have no idea why they do.
+    if (IsSelectionCached()) {
+      SelectionProperties& props = GetSelectionProperties();
+      props.SetIsDirty();
+    }
   }
 
   return true;
