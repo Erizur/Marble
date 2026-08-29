@@ -175,6 +175,9 @@ nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aColorScheme,
     case ColorID::MozColheaderhovertext:
       aResult = mColorDarkText;
       break;
+    case ColorID::MozDragtargetzone:
+      aResult = NS_RGB(0xaa, 0xaa, 0xaa);
+      break;
     case ColorID::MozMacFocusring:
       aResult = NS_RGB(0x3F, 0x98, 0xDD);
       break;
