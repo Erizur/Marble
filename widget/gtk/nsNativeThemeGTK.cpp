@@ -360,6 +360,8 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
         *aWidgetFlags =
             IsFrameContentNodeInNamespace(aFrame, kNameSpaceID_XHTML);
       break;
+    case StyleAppearance::MenulistText:
+      return false;  // nothing to do, but prevents the bg from being drawn
     case StyleAppearance::ToolbarbuttonDropdown:
     case StyleAppearance::ButtonArrowDown:
     case StyleAppearance::ButtonArrowUp:
@@ -1256,6 +1258,7 @@ nsNativeThemeGTK::ThemeSupportsWidget(nsPresContext* aPresContext,
     // Combobox dropdowns don't support native theming in vertical mode.
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:
+    case StyleAppearance::MenulistText:
       if (aFrame && aFrame->GetWritingMode().IsVertical()) {
         return false;
       }
