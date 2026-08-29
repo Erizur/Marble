@@ -289,6 +289,13 @@ nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
     case IntID::TreeScrollLinesMax:
       aResult = 3;
       break;
+    case IntID::WindowsDefaultTheme:
+      aResult = 0;
+      res = NS_ERROR_NOT_IMPLEMENTED;
+      break;
+    case IntID::MacGraphiteTheme:
+      aResult = 0;
+      break;
     case IntID::ScrollToClick:
       aResult = 0;
       break;
