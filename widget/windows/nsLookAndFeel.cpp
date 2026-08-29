@@ -14,6 +14,7 @@
 #include "WinUtils.h"
 #include "WindowsUIUtils.h"
 #include "mozilla/FontPropertyTypes.h"
+#include "mozilla/WindowsVersion.h"
 #include "mozilla/glean/WidgetWindowsMetrics.h"
 #include "mozilla/widget/WinRegistry.h"
 
@@ -54,6 +55,10 @@ static bool SystemWantsDarkTheme() {
     return LookAndFeel::IsDarkColor(
         LookAndFeel::Color(StyleSystemColor::Window, ColorScheme::Light,
                            LookAndFeel::UseStandins::No));
+  }
+
+  if (!IsWin10OrLater()) {
+    return false;
   }
 
   WinRegistry::Key key(

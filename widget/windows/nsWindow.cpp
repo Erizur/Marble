@@ -346,7 +346,8 @@ static SystemTimeConverter<DWORD>& TimeConverter() {
 // Global event hook for window cloaking. Never deregistered.
 //  - `Nothing` if not yet set.
 //  - `Some(nullptr)` if no attempt should be made to set it.
-static mozilla::Maybe<HWINEVENTHOOK> sWinCloakEventHook = Nothing();
+static mozilla::Maybe<HWINEVENTHOOK> sWinCloakEventHook =
+    IsWin8OrLater() ? Nothing() : Some(HWINEVENTHOOK(nullptr));
 static mozilla::LazyLogModule sCloakingLog("DWMCloaking");
 
 namespace mozilla {
@@ -764,6 +765,10 @@ class InitializeVirtualDesktopManagerTask : public Task {
 #endif
 
   virtual TaskResult Run() override {
+    if (!IsWin10OrLater()) {
+      return TaskResult::Complete;
+    }
+
     RefPtr<IVirtualDesktopManager> desktopManager;
     HRESULT hr = ::CoCreateInstance(
         CLSID_VirtualDesktopManager, NULL, CLSCTX_INPROC_SERVER,
@@ -960,6 +965,13 @@ void nsWindow::RecreateDirectManipulationIfNeeded() {
     return;
   }
 
+  if (!IsWin10OrLater()) {
+    // Chrome source said the Windows Direct Manipulation implementation had
+    // important bugs until Windows 10 (although IE on Windows 8.1 seems to use
+    // Direct Manipulation).
+    return;
+  }
+
   mDmOwner = MakeUnique<DirectManipulationOwner>(this);
 
   LayoutDeviceIntRect bounds = mBounds;
@@ -1013,6 +1025,12 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
 
   DWORD style = WindowStyle();
   DWORD extendedStyle = WindowExStyle();
+
+  if (mWindowType == WindowType::Popup && !IsWin8OrLater() &&
+      HasBogusPopupsDropShadowOnMultiMonitor() &&
+      ShouldUseOffMainThreadCompositing()) {
+    extendedStyle |= WS_EX_COMPOSITED;
+  }
 
   if (mWindowType != WindowType::Popup) {
     // See if the caller wants to explicitly set clip children and clip siblings
@@ -2621,6 +2639,9 @@ void nsWindow::UpdateGetWindowInfoCaptionStatus(bool aActiveCaption) {
 }
 
 void nsWindow::SetColorScheme(const Maybe<ColorScheme>& aScheme) {
+  if (!IsWin10OrLater()) {
+    return;
+  }
   BOOL dark =
       aScheme.valueOrFrom(LookAndFeel::SystemColorScheme) == ColorScheme::Dark;
   DwmSetWindowAttribute(mWnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &dark,
@@ -2802,12 +2823,14 @@ bool nsWindow::UpdateNonClientMargins(bool aReflowWindow) {
           metrics.mOffset.bottom -= kHiddenTaskbarSize;
         }
 
-        // When we are drawing the non-client region, we need
+        // On Windows 10+, when we are drawing the non-client region, we need
         // to clear the portion of the NC region that is exposed by the
         // hidden taskbar.  As above, we clear the bottom of the NC region
         // when the taskbar is at the top of the screen.
-        UINT clearEdge = (edge == ABE_TOP) ? ABE_BOTTOM : edge;
-        mClearNCEdge = Some(clearEdge);
+        if (IsWin10OrLater()) {
+          UINT clearEdge = (edge == ABE_TOP) ? ABE_BOTTOM : edge;
+          mClearNCEdge = Some(clearEdge);
+        }
       }
     }
   } else {
@@ -7380,6 +7403,7 @@ void nsWindow::OnDPIChanged(int32_t x, int32_t y, int32_t width,
 /* static */
 void nsWindow::OnCloakEvent(HWND aWnd, bool aCloaked) {
   MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(IsWin8OrLater());
 
   const char* const kEventName = aCloaked ? "CLOAKED" : "UNCLOAKED";
   nsWindow* pWin = WinUtils::GetNSWindowPtr(aWnd);
@@ -9160,6 +9184,25 @@ nsresult nsWindow::RestoreHiDPIMode() { return WinUtils::RestoreHiDPIMode(); }
 
 mozilla::Maybe<UINT> nsWindow::GetHiddenTaskbarEdge() {
   HMONITOR windowMonitor = ::MonitorFromWindow(mWnd, MONITOR_DEFAULTTONEAREST);
+
+  if (!IsWin8OrLater()) {
+    // Per-monitor taskbar information is not available.
+    APPBARDATA appBarData;
+    appBarData.cbSize = sizeof(appBarData);
+    UINT taskbarState = SHAppBarMessage(ABM_GETSTATE, &appBarData);
+    if (ABS_AUTOHIDE & taskbarState) {
+      appBarData.hWnd = FindWindow(L"Shell_TrayWnd", nullptr);
+      if (appBarData.hWnd) {
+        HMONITOR taskbarMonitor =
+            ::MonitorFromWindow(appBarData.hWnd, MONITOR_DEFAULTTOPRIMARY);
+        if (taskbarMonitor == windowMonitor) {
+          SHAppBarMessage(ABM_GETTASKBARPOS, &appBarData);
+          return Some(appBarData.uEdge);
+        }
+      }
+    }
+    return Nothing();
+  }
 
   // Check all four sides of our monitor for an appbar.  Skip any that aren't
   // the system taskbar.

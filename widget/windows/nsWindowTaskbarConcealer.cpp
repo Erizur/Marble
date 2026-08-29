@@ -10,6 +10,7 @@
 
 #include "mozilla/Logging.h"
 #include "mozilla/StaticPrefs_widget.h"
+#include "mozilla/WindowsVersion.h"
 #include "WinUtils.h"
 
 using namespace mozilla;
