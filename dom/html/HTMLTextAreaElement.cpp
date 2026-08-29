@@ -464,7 +464,6 @@ nsresult HTMLTextAreaElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
   }
   if (aVisitor.mEvent->mMessage == eFocus) {
     GetValueInternal(mFocusedValue);
-    TextControlElement::OnFocus(*aVisitor.mEvent);
   }
   return NS_OK;
 }

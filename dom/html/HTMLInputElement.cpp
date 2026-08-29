@@ -3984,8 +3984,33 @@ nsresult HTMLInputElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
 
       switch (aVisitor.mEvent->mMessage) {
         case eFocus: {
-          if (IsSingleLineTextControl(false)) {
-            TextControlElement::OnFocus(*aVisitor.mEvent);
+          // see if we should select the contents of the textbox. This happens
+          // for text and password fields when the field was focused by the
+          // keyboard or a navigation, the platform allows it, and it wasn't
+          // just because we raised a window.
+          //
+          // While it'd usually make sense, we don't do this for JS callers
+          // because it causes some compat issues, see bug 1712724 for example.
+          nsFocusManager* fm = nsFocusManager::GetFocusManager();
+          if (fm && IsSingleLineTextControl(false) &&
+              !aVisitor.mEvent->AsFocusEvent()->mFromRaise &&
+              SelectTextFieldOnFocus()) {
+            if (Document* document = GetComposedDoc()) {
+              uint32_t lastFocusMethod =
+                  fm->GetLastFocusMethod(document->GetWindow());
+              const bool shouldSelectAllOnFocus = [&] {
+                if (lastFocusMethod & nsIFocusManager::FLAG_BYMOVEFOCUS) {
+                  return true;
+                }
+                if (lastFocusMethod & nsIFocusManager::FLAG_BYJS) {
+                  return false;
+                }
+                return bool(lastFocusMethod & nsIFocusManager::FLAG_BYKEY);
+              }();
+              if (shouldSelectAllOnFocus) {
+                SelectAll();
+              }
+            }
           }
           break;
         }

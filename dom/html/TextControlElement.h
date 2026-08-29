@@ -246,15 +246,7 @@ class TextControlElement : public nsGenericHTMLFormControlElementWithState {
   // Updates the text node when not managed by editor.
   void UpdateValueDisplay(bool aNotify);
 
-  enum class ScrollAncestors : bool { No, Yes };
-  void ScrollSelectionIntoViewAsync(ScrollAncestors = ScrollAncestors::No);
-
  protected:
-  MOZ_CAN_RUN_SCRIPT void OnFocus(const WidgetEvent&);
-  MOZ_CAN_RUN_SCRIPT void SelectAll();
-  MOZ_CAN_RUN_SCRIPT void ShowSelection();
-  bool NeedToInitializeEditorForEvent(EventChainPreVisitor&) const;
-
   void SetupShadowTree(dom::ShadowRoot&, bool aNotify);
   Element* FindShadowPseudo(PseudoStyleType) const;
   void UpdatePlaceholder(const nsAttrValue* aOldValue,
