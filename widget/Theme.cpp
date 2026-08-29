@@ -1139,6 +1139,14 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
 
   const DocumentState docState = pc->Document()->State();
   ElementState elementState = GetContentState(aFrame, aAppearance);
+  if (aAppearance == StyleAppearance::MozMenulistArrowButton) {
+    // HTML select and XUL menulist dropdown buttons get state from the
+    // parent.
+    nsIFrame* parentFrame = aFrame->GetParent();
+    aFrame = parentFrame;
+    elementState = GetContentState(parentFrame, aAppearance);
+  }
+
   // Paint the outline iff we're asked to draw overflow and we have
   // outline-style: auto.
   if (aDrawOverflow == DrawOverflow::Yes &&
@@ -1191,7 +1199,6 @@ bool Theme::DoDrawWidgetBackground(PaintBackendData& aPaintData,
     case StyleAppearance::Menulist:
       PaintMenulist(aPaintData, devPxRect, elementState, colors, dpiRatio);
       break;
-    case StyleAppearance::Menuarrow:
     case StyleAppearance::MozMenulistArrowButton:
       if constexpr (std::is_same_v<PaintBackendData, WebRenderBackendData>) {
         // TODO: Need to figure out how to best draw this using WR.
@@ -1672,7 +1679,6 @@ bool Theme::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* aFrame,
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
     case StyleAppearance::MozMenulistArrowButton:
-    case StyleAppearance::Menuarrow:
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton:
     case StyleAppearance::Menuitem:
