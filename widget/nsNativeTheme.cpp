@@ -61,20 +61,24 @@ static HTMLInputElement* GetContainingNumberInput(nsIContent* aContent) {
 
   const bool isXULElement = frameContent->IsXULElement();
   if (isXULElement) {
-    if (aAppearance == StyleAppearance::Checkbox ||
-        aAppearance == StyleAppearance::Radio ||
-        aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
-        aAppearance == StyleAppearance::Treeheadersortarrow ||
-        aAppearance == StyleAppearance::ButtonArrowPrevious ||
-        aAppearance == StyleAppearance::ButtonArrowNext ||
-        aAppearance == StyleAppearance::ButtonArrowUp ||
+    if (aAppearance == StyleAppearance::CheckboxLabel ||
+        aAppearance == StyleAppearance::RadioLabel) {
+      aFrame = aFrame->GetParent()->GetParent();
+      frameContent = aFrame->GetContent();
+    } else if (aAppearance == StyleAppearance::Checkbox ||
+               aAppearance == StyleAppearance::Radio ||
+               aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
+               aAppearance == StyleAppearance::Treeheadersortarrow ||
+               aAppearance == StyleAppearance::ButtonArrowPrevious ||
+               aAppearance == StyleAppearance::ButtonArrowNext ||
+               aAppearance == StyleAppearance::ButtonArrowUp ||
 #ifdef MOZ_WIDGET_GTK
-        aAppearance == StyleAppearance::MozWindowButtonClose ||
-        aAppearance == StyleAppearance::MozWindowButtonMinimize ||
-        aAppearance == StyleAppearance::MozWindowButtonRestore ||
-        aAppearance == StyleAppearance::MozWindowButtonMaximize ||
+               aAppearance == StyleAppearance::MozWindowButtonClose ||
+               aAppearance == StyleAppearance::MozWindowButtonMinimize ||
+               aAppearance == StyleAppearance::MozWindowButtonRestore ||
+               aAppearance == StyleAppearance::MozWindowButtonMaximize ||
 #endif
-        aAppearance == StyleAppearance::ButtonArrowDown) {
+               aAppearance == StyleAppearance::ButtonArrowDown) {
       aFrame = aFrame->GetParent();
       frameContent = aFrame->GetContent();
     }
@@ -100,6 +104,7 @@ static HTMLInputElement* GetContainingNumberInput(nsIContent* aContent) {
   }
 
   switch (aAppearance) {
+    case StyleAppearance::RadioLabel:
     case StyleAppearance::Radio: {
       if (CheckBooleanAttr(aFrame, nsGkAtoms::focused)) {
         flags |= ElementState::FOCUS;
@@ -115,6 +120,7 @@ static HTMLInputElement* GetContainingNumberInput(nsIContent* aContent) {
       }
       break;
     }
+    case StyleAppearance::CheckboxLabel:
     case StyleAppearance::Checkbox: {
       if (CheckBooleanAttr(aFrame, nsGkAtoms::checked)) {
         flags |= ElementState::CHECKED;
