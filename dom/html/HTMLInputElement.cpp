@@ -1212,6 +1212,8 @@ void HTMLInputElement::FreeData() {
     free(mInputData.mValue);
     mInputData.mValue = nullptr;
   } else if (mInputData.mState) {
+    // XXX Passing nullptr to UnbindFromFrame doesn't do anything!
+    UnbindFromFrame(nullptr);
     mInputData.mState->Destroy();
     mInputData.mState = nullptr;
   }
@@ -2628,6 +2630,30 @@ nsFrameSelection* HTMLInputElement::GetIndependentFrameSelection() const {
   return nullptr;
 }
 
+nsresult HTMLInputElement::BindToFrame(nsTextControlFrame* aFrame) {
+  MOZ_ASSERT(!nsContentUtils::IsSafeToRunScript());
+  TextControlState* state = GetEditorState();
+  if (state) {
+    return state->BindToFrame(aFrame);
+  }
+  return NS_ERROR_FAILURE;
+}
+
+void HTMLInputElement::UnbindFromFrame(nsTextControlFrame* aFrame) {
+  TextControlState* state = GetEditorState();
+  if (state && aFrame) {
+    state->UnbindFromFrame(aFrame);
+  }
+}
+
+nsresult HTMLInputElement::CreateEditor() {
+  TextControlState* state = GetEditorState();
+  if (state) {
+    return state->PrepareEditor();
+  }
+  return NS_ERROR_FAILURE;
+}
+
 void HTMLInputElement::GetDisplayFileName(nsAString& aValue) const {
   MOZ_ASSERT(mFileData);
 
@@ -3261,9 +3287,10 @@ void HTMLInputElement::Select() {
     return;
   }
 
+  TextControlState* state = GetEditorState();
+  MOZ_ASSERT(state, "Single line text controls are expected to have a state");
+
   if (FocusState() != FocusTristate::eUnfocusable) {
-    TextControlState* state = GetEditorState();
-    MOZ_ASSERT(state, "Single line text controls are expected to have a state");
     RefPtr<nsFrameSelection> fs = state->GetIndependentFrameSelection();
     if (fs && fs->MouseDownRecorded()) {
       // This means that we're being called while the frame selection has a
@@ -3276,19 +3303,27 @@ void HTMLInputElement::Select() {
 
     if (RefPtr<nsFocusManager> fm = nsFocusManager::GetFocusManager()) {
       fm->SetFocus(this, nsIFocusManager::FLAG_NOSCROLL);
+
+      // A focus event handler may change the type attribute, which will destroy
+      // the previous state object.
+      state = GetEditorState();
+      if (!state) {
+        return;
+      }
     }
   }
 
-  SelectAll();
+  // Directly call TextControlState::SetSelectionRange because
+  // HTMLInputElement::SetSelectionRange only applies to fewer types
+  state->SetSelectionRange(0, UINT32_MAX, Optional<nsAString>(), IgnoreErrors(),
+                           TextControlState::ScrollAfterSelection::No);
 }
 
 void HTMLInputElement::SelectAll() {
-  if (TextControlState* state = GetEditorState()) {
-    // Directly call TextControlState::SetSelectionRange because
-    // HTMLInputElement::SetSelectionRange only applies to fewer types
-    state->SetSelectionRange(0, UINT32_MAX, Optional<nsAString>(),
-                             IgnoreErrors(),
-                             TextControlState::ScrollAfterSelection::No);
+  // FIXME(emilio): Should we try to call Select(), which will avoid flushing?
+  if (nsTextControlFrame* tf =
+          do_QueryFrame(GetPrimaryFrame(FlushType::Frames))) {
+    tf->SelectAll();
   }
 }
 
@@ -4764,7 +4799,7 @@ void HTMLInputElement::HandleTypeChange(FormControlType aNewType,
   TextControlState::SelectionProperties sp;
 
   if (IsSingleLineTextControl(false) && mInputData.mState) {
-    mInputData.mState->DeinitSelection();
+    mInputData.mState->SyncUpSelectionPropertiesBeforeDestruction();
     sp = mInputData.mState->GetSelectionProperties();
   }
 
@@ -7216,6 +7251,13 @@ bool HTMLInputElement::ValueChanged() const { return mValueChanged; }
 void HTMLInputElement::GetTextEditorValue(nsAString& aValue) const {
   if (TextControlState* state = GetEditorState()) {
     state->GetValue(aValue, /* aForDisplay = */ true);
+  }
+}
+
+void HTMLInputElement::InitializeKeyboardEventListeners() {
+  TextControlState* state = GetEditorState();
+  if (state) {
+    state->InitializeKeyboardEventListeners();
   }
 }
 

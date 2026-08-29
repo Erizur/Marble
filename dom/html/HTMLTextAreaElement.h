@@ -84,12 +84,16 @@ class HTMLTextAreaElement final : public TextControlElement,
   nsISelectionController* GetSelectionController() override;
   nsFrameSelection* GetIndependentFrameSelection() const override;
   TextControlState* GetTextControlState() const override { return mState; }
+  nsresult BindToFrame(nsTextControlFrame* aFrame) override;
+  MOZ_CAN_RUN_SCRIPT void UnbindFromFrame(nsTextControlFrame* aFrame) override;
+  MOZ_CAN_RUN_SCRIPT nsresult CreateEditor() override;
   void SetAutofillState(const nsAString& aState) override {
     SetFormAutofillState(aState);
   }
   void GetAutofillState(nsAString& aState) override {
     GetFormAutofillState(aState);
   }
+  void InitializeKeyboardEventListeners() override;
   void UpdatePlaceholderShownState();
   void OnValueChanged(ValueChangeKind, bool aNewValueEmpty,
                       const nsAString* aKnownNewValue) override;

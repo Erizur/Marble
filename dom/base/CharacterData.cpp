@@ -126,7 +126,10 @@ void CharacterData::GetData(nsAString& aData) const {
   } else {
     // Must use Substring() since nsDependentCString() requires null
     // terminated strings.
-    if (const char* data = mBuffer.Get1b()) {
+
+    const char* data = mBuffer.Get1b();
+
+    if (data) {
       CopyASCIItoUTF16(Substring(data, data + mBuffer.GetLength()), aData);
     } else {
       aData.Truncate();

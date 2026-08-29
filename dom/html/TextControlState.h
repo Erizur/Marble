@@ -117,6 +117,11 @@ struct PasswordMaskData final {
  * only used when there is no frame for the control, or when the editor object
  * has not been initialized yet.
  *
+ *  * The control's associated frame.  This value is stored in the mBoundFrame
+ * member. A text control might never have an associated frame during its life
+ * cycle, or might have several different ones, but at any given moment in time
+ * there is a maximum of 1 bound frame to each text control.
+ *
  *  * The control's associated editor.  This value is stored in the mTextEditor
  * member. An editor is initialized for the control only when necessary (that
  * is, when either the user is about to interact with the text control, or when
@@ -147,10 +152,17 @@ struct PasswordMaskData final {
  * accordingly. It is created when an a frame is first bound to the control, and
  * will be destroyed when the frame is unbound from the text control element.
  *
+ *  * The editor's cached value.  This value is stored in the mCachedValue
+ * member. It is used to improve the performance of append operations to the
+ * text control.  A mutation observer stored in the mMutationObserver has the
+ * job of invalidating this cache when the anonymous contect containing the
+ * value is changed.
+ *
  *  * The editor's cached selection properties.  These vales are stored in the
  *    mSelectionProperties member, and include the selection's start, end and
  *    direction. They are only used when there is no frame available for the
  *    text field.
+ *
  *
  * As a general rule, TextControlState objects own the value of the text
  * control, and any attempt to retrieve or set the value must be made through
@@ -209,8 +221,11 @@ class TextControlState final : public SupportsWeakPtr {
   TextEditor* GetExtantTextEditor() const;
   nsISelectionController* GetSelectionController() const;
   nsFrameSelection* GetIndependentFrameSelection() const;
-  nsresult InitializeSelection(PresShell*);
-  MOZ_CAN_RUN_SCRIPT void DeinitSelection();
+  nsresult BindToFrame(nsTextControlFrame* aFrame);
+  MOZ_CAN_RUN_SCRIPT void UnbindFromFrame(nsTextControlFrame* aFrame);
+  [[nodiscard]] nsTextControlFrame* GetBoundFrame() const {
+    return mBoundFrame;
+  }
   MOZ_CAN_RUN_SCRIPT nsresult PrepareEditor(const nsAString* aValue = nullptr);
   void InitializeKeyboardEventListeners();
   [[nodiscard]] bool IsPreparingEditor() const;
@@ -358,7 +373,6 @@ class TextControlState final : public SupportsWeakPtr {
       SetEnd(GetEnd());
     }
     bool HasMaxLength() { return mMaxLength.isSome(); }
-    const Maybe<uint32_t>& GetMaxLength() { return mMaxLength; }
 
     // return true only if mStart, mEnd, or mDirection have been modified,
     // or if SetIsDirty() was explicitly called.
@@ -391,6 +405,10 @@ class TextControlState final : public SupportsWeakPtr {
   SelectionProperties& GetSelectionProperties() { return mSelectionProperties; }
   MOZ_CAN_RUN_SCRIPT void SetSelectionProperties(SelectionProperties& aProps);
   bool HasNeverInitializedBefore() const { return !mEverInited; }
+  // Sync up our selection properties with our editor prior to being destroyed.
+  // This will invoke UnbindFromFrame() to ensure that we grab whatever
+  // selection state may be at the moment.
+  MOZ_CAN_RUN_SCRIPT void SyncUpSelectionPropertiesBeforeDestruction();
 
   // Get the selection range start and end points in our text.
   void GetSelectionRange(uint32_t* aSelectionStart, uint32_t* aSelectionEnd,
@@ -458,8 +476,6 @@ class TextControlState final : public SupportsWeakPtr {
       const Maybe<uint32_t>& aSelectionStart = Nothing(),
       const Maybe<uint32_t>& aSelectionEnd = Nothing());
 
-  MOZ_CAN_RUN_SCRIPT void EnsureEditorInitialized();
-
  private:
   explicit TextControlState(TextControlElement* aOwningElement);
   MOZ_CAN_RUN_SCRIPT ~TextControlState();
@@ -482,8 +498,9 @@ class TextControlState final : public SupportsWeakPtr {
 
   /**
    * SetValueWithTextEditor() modifies the editor value with mTextEditor.
-   * This may cause destroying mTextEditor, the TextControlState
-   * itself.  Must be called when both mTextEditor is not nullptr.
+   * This may cause destroying mTextEditor, mBoundFrame, the TextControlState
+   * itself.  Must be called when both mTextEditor and mBoundFrame are not
+   * nullptr.
    *
    * @param aHandlingSetValue   Must be inner-most handling state for SetValue.
    * @return                    false if fallible allocation failed.  Otherwise,
@@ -494,8 +511,8 @@ class TextControlState final : public SupportsWeakPtr {
 
   /**
    * SetValueWithoutTextEditor() modifies the value without editor.  I.e.,
-   * modifying the value in this instance. Must be called when
-   * mEditorInitialized is false.
+   * modifying the value in this instance and mBoundFrame.  Must be called
+   * when at least mTextEditor or mBoundFrame is nullptr.
    *
    * @param aHandlingSetValue   Must be inner-most handling state for SetValue.
    * @return                    false if fallible allocation failed.  Otherwise,
@@ -514,7 +531,9 @@ class TextControlState final : public SupportsWeakPtr {
   // does something with this.
   TextControlElement* MOZ_NON_OWNING_REF mTextCtrlElement;
   RefPtr<TextInputSelectionController> mSelCon;
+  RefPtr<RestoreSelectionState> mRestoringSelection;
   RefPtr<TextEditor> mTextEditor;
+  nsTextControlFrame* mBoundFrame = nullptr;
   RefPtr<TextInputListener> mTextListener;
   UniquePtr<PasswordMaskData> mPasswordMaskData;
 

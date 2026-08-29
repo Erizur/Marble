@@ -152,6 +152,27 @@ class TextControlElement : public nsGenericHTMLFormControlElementWithState {
   virtual TextControlState* GetTextControlState() const = 0;
 
   /**
+   * Binds a frame to the text control.  This is performed when a frame
+   * is created for the content node.
+   * Be aware, this must be called with script blocker.
+   */
+  virtual nsresult BindToFrame(nsTextControlFrame* aFrame) = 0;
+
+  /**
+   * Unbinds a frame from the text control.  This is performed when a frame
+   * belonging to a content node is destroyed.
+   */
+  MOZ_CAN_RUN_SCRIPT virtual void UnbindFromFrame(
+      nsTextControlFrame* aFrame) = 0;
+
+  /**
+   * Creates an editor for the text control.  This should happen when
+   * a frame has been created for the text control element, but the created
+   * editor may outlive the frame itself.
+   */
+  MOZ_CAN_RUN_SCRIPT virtual nsresult CreateEditor() = 0;
+
+  /**
    * Update preview value for the text control.
    */
   void SetPreviewValue(const nsAString& aValue);
@@ -170,6 +191,11 @@ class TextControlElement : public nsGenericHTMLFormControlElementWithState {
    * Get the current preview or autofilled state for the text control.
    */
   virtual void GetAutofillState(nsAString& aState) = 0;
+
+  /**
+   * Initialize the keyboard event listeners.
+   */
+  virtual void InitializeKeyboardEventListeners() = 0;
 
   enum class ValueChangeKind {
     Internal,

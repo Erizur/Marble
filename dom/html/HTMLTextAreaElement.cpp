@@ -114,15 +114,15 @@ void HTMLTextAreaElement::Select() {
     }
   }
 
-  // FIXME: The <input> equivalent has ScrollAfterSelection::No
   SetSelectionRange(0, UINT32_MAX, Optional<nsAString>(), IgnoreErrors());
 }
 
 void HTMLTextAreaElement::SelectAll() {
-  MOZ_ASSERT(mState);
-  mState->SetSelectionRange(0, UINT32_MAX, Optional<nsAString>(),
-                            IgnoreErrors(),
-                            TextControlState::ScrollAfterSelection::No);
+  // FIXME(emilio): Should we try to call Select(), which will avoid flushing?
+  if (nsTextControlFrame* tf =
+          do_QueryFrame(GetPrimaryFrame(FlushType::Frames))) {
+    tf->SelectAll();
+  }
 }
 
 enum class Wrap {
@@ -199,6 +199,24 @@ nsISelectionController* HTMLTextAreaElement::GetSelectionController() {
 nsFrameSelection* HTMLTextAreaElement::GetIndependentFrameSelection() const {
   MOZ_ASSERT(mState);
   return mState->GetIndependentFrameSelection();
+}
+
+nsresult HTMLTextAreaElement::BindToFrame(nsTextControlFrame* aFrame) {
+  MOZ_ASSERT(!nsContentUtils::IsSafeToRunScript());
+  MOZ_ASSERT(mState);
+  return mState->BindToFrame(aFrame);
+}
+
+void HTMLTextAreaElement::UnbindFromFrame(nsTextControlFrame* aFrame) {
+  MOZ_ASSERT(mState);
+  if (aFrame) {
+    mState->UnbindFromFrame(aFrame);
+  }
+}
+
+nsresult HTMLTextAreaElement::CreateEditor() {
+  MOZ_ASSERT(mState);
+  return mState->PrepareEditor();
 }
 
 nsresult HTMLTextAreaElement::SetValueInternal(
@@ -1041,6 +1059,11 @@ bool HTMLTextAreaElement::ValueChanged() const { return mValueChanged; }
 void HTMLTextAreaElement::GetTextEditorValue(nsAString& aValue) const {
   MOZ_ASSERT(mState);
   mState->GetValue(aValue, /* aForDisplay = */ true);
+}
+
+void HTMLTextAreaElement::InitializeKeyboardEventListeners() {
+  MOZ_ASSERT(mState);
+  mState->InitializeKeyboardEventListeners();
 }
 
 void HTMLTextAreaElement::UpdatePlaceholderShownState() {
