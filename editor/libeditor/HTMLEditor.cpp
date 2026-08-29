@@ -706,24 +706,17 @@ void HTMLEditor::UpdateRootElement() {
   }
 }
 
-static bool ShouldHandleFocusOn(const nsINode* aNode) {
+// static
+void HTMLEditor::WillFocusNode(PresShell& aPresShell, nsINode* aNode) {
   if (!aNode) {
-    // Don't handle the window level focus event.
-    return false;
+    // Don't notify HTMLEditor of focus event of the window level.
+    return;
   }
   if (aNode->IsDocument()) {
     if (!aNode->IsInDesignMode()) {
-      return false;
+      return;
     }
   } else if (!aNode->IsContent()) {
-    return false;
-  }
-  return true;
-}
-
-// static
-void HTMLEditor::WillFocusNode(PresShell& aPresShell, nsINode* aNode) {
-  if (!ShouldHandleFocusOn(aNode)) {
     return;
   }
   const RefPtr<HTMLEditor> htmlEditor =
@@ -832,7 +825,7 @@ nsresult HTMLEditor::FocusedElementOrDocumentBecomesEditable(
 
 nsresult HTMLEditor::OnFocus(const nsINode& aOriginalEventTargetNode) {
   MOZ_LOG(gHTMLEditorFocusLog, LogLevel::Info,
-          ("%s(aOriginalEventTargetNode=%s): mIsInDesignMode=%s, "
+          ("%s(aOriginalEventTarget=%s): mIsInDesignMode=%s, "
            "aOriginalEventTargetNode.IsInDesignMode()=%s",
            __FUNCTION__, ToString(RefPtr{&aOriginalEventTargetNode}).c_str(),
            mIsInDesignMode ? "true" : "false",
@@ -863,33 +856,6 @@ nsresult HTMLEditor::OnFocus(const nsINode& aOriginalEventTargetNode) {
   }
 
   return NS_OK;
-}
-
-void HTMLEditor::PostHandleFocusEvent(const nsINode& aFocusEventTargetNode) {
-  if (!ShouldHandleFocusOn(&aFocusEventTargetNode)) {
-    return;
-  }
-
-  MOZ_LOG(
-      gHTMLEditorFocusLog, LogLevel::Info,
-      ("%s(aFocusEvent={ GetOriginalDOMEventTarget()=%s }): "
-       "mIsInDesignMode=%s, "
-       "aOriginalEventTargetNode.IsInDesignMode()=%s, mHasFocus=%s, "
-       "GetFocusedElement()=%s",
-       __FUNCTION__, ToString(RefPtr{&aFocusEventTargetNode}).c_str(),
-       mIsInDesignMode ? "true" : "false",
-       aFocusEventTargetNode.IsInDesignMode() ? "true" : "false",
-       TrueOrFalse(mHasFocus), ToString(RefPtr{GetFocusedElement()}).c_str()));
-
-  if (!CanKeepHandlingFocusEvent(aFocusEventTargetNode)) {
-    return;
-  }
-
-  AutoEditActionDataSetter editActionData(*this, EditAction::eNotEditing);
-  if (NS_WARN_IF(!editActionData.CanHandle())) [[unlikely]] {
-    return;
-  }
-  return EditorBase::PostHandleFocusEvent(aFocusEventTargetNode);
 }
 
 nsresult HTMLEditor::FocusedElementOrDocumentBecomesNotEditable(
