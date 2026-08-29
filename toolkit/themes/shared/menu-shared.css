@@ -8,21 +8,11 @@
 
 menupopup,
 panel {
-  --menu-icon-opacity: 1;
-  --menu-arrow-width: 1em;
   --menuitem-border-radius: var(--border-radius-xsmall);
   --menuitem-max-width: 42em;
 
   @media (-moz-platform: macos) and (-moz-mac-tahoe-theme) {
     --menuitem-border-radius: var(--border-radius-medium);
-  }
-
-  @media (-moz-platform: windows) {
-    --menu-arrow-width: max(1em, var(--size-item-small));
-
-    @media (prefers-color-scheme: light) {
-      --menu-icon-opacity: var(--opacity-deemphasized);
-    }
   }
 }
 
@@ -164,36 +154,6 @@ menuitem {
 menuitem:is([default="true"], .spell-suggestion),
 menucaption {
   font-weight: var(--font-weight-bold);
-}
-
-/* ..... menu arrow box ..... */
-
-.menu-right {
-  list-style-image: url("chrome://global/skin/icons/arrow-right.svg");
-  -moz-context-properties: fill, fill-opacity;
-  fill: currentColor;
-  fill-opacity: var(--menu-icon-opacity);
-
-  &:-moz-locale-dir(rtl) {
-    list-style-image: url("chrome://global/skin/icons/arrow-left.svg");
-  }
-
-  > image {
-    width: var(--menu-arrow-width);
-  }
-
-  @media (-moz-platform: linux) {
-    margin-block: 0;
-    margin-inline: 6px 0;
-  }
-
-  @media (-moz-platform: macos) {
-    margin-inline: var(--space-xlarge) calc(-1 * var(--space-xxsmall));
-  }
-
-  @media (-moz-platform: windows) {
-    margin-inline-end: 1em;
-  }
 }
 
 @media (-moz-platform: macos) {
