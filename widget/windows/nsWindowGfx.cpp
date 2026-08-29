@@ -144,7 +144,7 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY static void WillPaintWindow(
   }
 }
 
-bool nsWindow::OnPaint(uint32_t aNestingLevel) {
+bool nsWindow::OnPaint(HDC aDC, uint32_t aNestingLevel) {
   gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
   if (gfxWindowsPlatform::GetPlatform()->DidRenderingDeviceReset(
           &resetReason)) {
@@ -217,16 +217,13 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
   }
   mLastPaintBounds = mBounds;
 
-  // For layered translucent popups all drawing should go to memory DC and no
-  // WM_PAINT messages are normally generated. To support asynchronous painting
-  // we force generation of WM_PAINT messages by invalidating window areas with
-  // RedrawWindow, InvalidateRect or InvalidateRgn function calls.
-  const bool usingMemoryDC =
-      IsPopup() && renderer->GetBackendType() == LayersBackend::LAYERS_NONE &&
-      mTransparencyMode == TransparencyMode::Transparent;
-
-  HDC hDC = nullptr;
-  if (usingMemoryDC) {
+  if (!aDC && IsPopup() &&
+      renderer->GetBackendType() == LayersBackend::LAYERS_NONE &&
+      mTransparencyMode == TransparencyMode::Transparent) {
+    // For layered translucent popups all drawing should go to memory DC and no
+    // WM_PAINT messages are normally generated. To support asynchronous
+    // painting we force generation of WM_PAINT messages by invalidating window
+    // areas with RedrawWindow, InvalidateRect or InvalidateRgn function calls.
     // BeginPaint/EndPaint must be called to make Windows think that invalid
     // area is painted. Otherwise it will continue sending the same message
     // endlessly.
@@ -235,12 +232,14 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
 
     // We're guaranteed to have a widget proxy since we called
     // GetLayerManager().
-    hDC = mBasicLayersSurface->GetTransparentDC();
-  } else {
-    hDC = ::BeginPaint(mWnd, &ps);
+    aDC = mBasicLayersSurface->GetTransparentDC();
   }
 
-  const bool forceRepaint = mTransparencyMode == TransparencyMode::Transparent;
+  HDC hDC = aDC ? aDC : ::BeginPaint(mWnd, &ps);
+  const bool usingMemoryDC = aDC != nullptr;
+
+  const bool forceRepaint =
+      aDC || mTransparencyMode == TransparencyMode::Transparent;
   const LayoutDeviceIntRegion region = GetRegionToPaint(forceRepaint, ps, hDC);
 
   RefPtr<nsWindow> strongThis(this);
@@ -254,7 +253,7 @@ bool nsWindow::OnPaint(uint32_t aNestingLevel) {
     if (didPaint) {
       mLastPaintEndTime = TimeStamp::Now();
       if (aNestingLevel == 0 && ::GetUpdateRect(mWnd, nullptr, false)) {
-        OnPaint(1);
+        OnPaint(aDC, 1);
       }
     }
   });
