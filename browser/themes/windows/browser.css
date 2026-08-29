@@ -67,6 +67,29 @@
   -moz-default-appearance: -moz-window-titlebar-maximized;
 }
 
+@media (-moz-windows-compositor: 0) {
+  /**
+   * Anytime we're not using the compositor on Windows, the -moz-window-titlebar
+   * and -moz-window-titlebar-maximized values for -moz-appearance override
+   * backgrounds supplied by lwthemes. We make the #titlebar itself hidden, but
+   * it's children visible in order to hide the background but keep the margin and
+   * padding that comes from those -moz-window-titlebar rules.
+   */
+  :root[lwtheme]:not([inFullscreen]) #titlebar {
+    visibility: hidden;
+  }
+  :root[lwtheme]:not([inFullscreen], [chromehidden~="menubar"]) #toolbar-menubar,
+  :root[lwtheme]:not([inFullscreen], [chromehidden~="toolbar"]) #TabsToolbar {
+    visibility: visible;
+  }
+}
+
+@media (-moz-windows-classic) {
+  :root[tabsintitlebar][sizemode="normal"] #toolbar-menubar {
+    margin-top: 4px;
+  }
+}
+
 .titlebar-buttonbox {
   /* For all Windows configurations except for Windows Aero and Windows Aero Basic,
    * the default -moz-default-appearance of -moz-window-button-box and
@@ -84,6 +107,14 @@
 
 .titlebar-buttonbox-container {
   align-items: stretch;
+}
+
+@media (-moz-platform: windows-win7),
+       (-moz-platform: windows-win8) {
+  /* Preserve window control buttons position at the top of the button box. */
+  .titlebar-buttonbox-container {
+    align-items: flex-start;
+  }
 }
 
 /* Window control buttons */
@@ -108,7 +139,6 @@
 .titlebar-min {
   appearance: auto;
   -moz-default-appearance: -moz-window-button-minimize;
-  margin-inline-end: 2px;
 }
 
 .titlebar-max {
@@ -124,6 +154,12 @@
 .titlebar-close {
   appearance: auto;
   -moz-default-appearance: -moz-window-button-close;
+}
+
+@media (-moz-windows-classic: 0) {
+  .titlebar-min {
+    margin-inline-end: 2px;
+  }
 }
 
 /* Bookmark menus */
