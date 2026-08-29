@@ -11,6 +11,12 @@ toolbarbutton {
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 3px;
 
+  @media not (prefers-contrast) {
+    :root[lwtheme-image] & {
+      text-shadow: none;
+    }
+  }
+
   @media (-moz-platform: windows) {
     &:focus-visible {
       outline: var(--default-focusring);
