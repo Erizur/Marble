@@ -759,9 +759,6 @@ Maybe<nscolor> nsXPLookAndFeel::GenericDarkColor(ColorID aID) {
     case ColorID::MozButtonactivetext:
     case ColorID::MozHeaderbartext:
     case ColorID::MozHeaderbarinactivetext:
-    case ColorID::Captiontext:
-    case ColorID::Inactivecaptiontext:  // TODO(emilio): Maybe make
-                                        // Inactivecaptiontext Graytext?
       color = kWindowText;
       break;
     case ColorID::Buttonshadow:
