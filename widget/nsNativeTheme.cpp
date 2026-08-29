@@ -64,6 +64,7 @@ static HTMLInputElement* GetContainingNumberInput(nsIContent* aContent) {
     if (aAppearance == StyleAppearance::Checkbox ||
         aAppearance == StyleAppearance::Radio ||
         aAppearance == StyleAppearance::ToolbarbuttonDropdown ||
+        aAppearance == StyleAppearance::Treeheadersortarrow ||
         aAppearance == StyleAppearance::ButtonArrowPrevious ||
         aAppearance == StyleAppearance::ButtonArrowNext ||
         aAppearance == StyleAppearance::ButtonArrowUp ||

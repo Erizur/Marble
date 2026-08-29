@@ -14,8 +14,8 @@ toolbox {
 }
 
 toolbar {
-  background-color: -moz-headerbar;
-  color: -moz-headerbartext;
+  appearance: auto;
+  -moz-default-appearance: toolbar;
   min-width: 1px;
   /* In theory, if toolbars have no contents, we want a min-height so things can be dragged into them. */
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
@@ -23,40 +23,22 @@ toolbar {
   /* Prefer pixels over rem spacing in chrome */
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 2px 0;
+}
 
-  &:where(:-moz-window-inactive) {
-    background-color: -moz-headerbarinactive;
-    color: -moz-headerbarinactivetext;
-  }
+toolbar[type="menubar"] {
+  appearance: none;
+  padding: 1px 0;
+}
 
-  &[type="menubar"] {
-    background-color: transparent;
-    padding: 1px 0;
-  }
+:root[lwtheme] toolbar {
+  appearance: none;
 }
 
 toolbarseparator {
-  color: var(--toolbarseparator-color);
-  /* NOTE: we use padding + a pseudo-element, rather than margin, so that
-   * separators are draggable. This is useful for the personal bookmarks
-   * toolbar */
-  /* Prefer pixels over rem spacing in chrome */
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  padding: 2px;
-
-  &::before {
-    content: "";
-    flex: 1;
-    display: block;
-    border-inline-start: 0.01px solid;
-  }
-
-  panel &::before {
-    /* TODO(emilio): This is a bit sketchy, maybe <panel> should use <html:hr>
-     * or something along those lines instead? */
-    border-inline-start: none;
-    border-block-start: 0.01px solid;
-  }
+  appearance: auto;
+  -moz-default-appearance: separator;
+  margin: 0;
+  min-width: 2px;
 }
 
 toolbarspacer {
