@@ -24,7 +24,6 @@
   skin/classic/global/appPicker.css                        (../../shared/appPicker.css)
   skin/classic/global/arrowscrollbox.css                   (../../shared/arrowscrollbox.css)
   skin/classic/global/checkbox.css                         (../../shared/checkbox.css)
-  skin/classic/global/radio.css                            (../../shared/radio.css)
   skin/classic/global/close-icon.css                       (../../shared/close-icon.css)
   skin/classic/global/colorpicker-common.css               (../../shared/colorpicker-common.css)
   skin/classic/global/colorpicker.css                      (../../shared/colorpicker.css)
