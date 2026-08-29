@@ -418,12 +418,11 @@ void HTMLTextAreaElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
       return;
     }
     mHandlingSelect = true;
-  } else if (aVisitor.mEvent->mMessage == eFocus ||
-             aVisitor.mEvent->mMessage == eBlur) {
-    // - eFocus: Set mWantsPreHandleEvent and set mFocusedValue in
-    // PreHandleEvent before TextEditor handles the focus.
-    // - eBlur: Set mWantsPreHandleEvent and fire change event in PreHandleEvent
-    // to prevent it breaks event target chain creation.
+  }
+
+  if (aVisitor.mEvent->mMessage == eBlur) {
+    // Set mWantsPreHandleEvent and fire change event in PreHandleEvent to
+    // prevent it breaks event target chain creation.
     aVisitor.mWantsPreHandleEvent = true;
   }
 
@@ -431,10 +430,7 @@ void HTMLTextAreaElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
 }
 
 nsresult HTMLTextAreaElement::PreHandleEvent(EventChainVisitor& aVisitor) {
-  if (aVisitor.mEvent->mMessage == eFocus) {
-    // XXX Should we restrict this only when the event is trusted?
-    GetValueInternal(mFocusedValue);
-  } else if (aVisitor.mEvent->mMessage == eBlur) {
+  if (aVisitor.mEvent->mMessage == eBlur) {
     // Fire onchange (if necessary), before we do the blur, bug 370521.
     FireChangeEventIfNeeded();
   }
@@ -465,6 +461,10 @@ void HTMLTextAreaElement::FireChangeEventIfNeeded() {
 nsresult HTMLTextAreaElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
   if (aVisitor.mEvent->mMessage == eFormSelect) {
     mHandlingSelect = false;
+  }
+  if (aVisitor.mEvent->mMessage == eFocus) {
+    GetValueInternal(mFocusedValue);
+    TextControlElement::OnFocus(*aVisitor.mEvent);
   }
   return NS_OK;
 }

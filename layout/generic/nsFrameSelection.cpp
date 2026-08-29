@@ -481,51 +481,6 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(nsFrameSelection)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 // static
-void nsFrameSelection::WillFocusDocument(PresShell& aPresShell,
-                                         Document& aDocument) {
-  const RefPtr<nsFrameSelection> selection =
-      aPresShell.GetLastFocusedFrameSelection();
-  if (!selection) [[unlikely]] {
-    return;
-  }
-  const int16_t selectionStatus = selection->GetDisplaySelection();
-  // If selection was disabled, re-enable it.
-  if (selectionStatus == nsISelectionController::SELECTION_DISABLED ||
-      selectionStatus == nsISelectionController::SELECTION_HIDDEN) {
-    selection->SetDisplaySelection(nsISelectionController::SELECTION_ON);
-    selection->RepaintSelection(SelectionType::eNormal);
-  }
-  // See EditorBase::FinalizeSelection. This fixes up the case where focus
-  // left the editor's selection but returned to something else.
-  if (selection != aPresShell.ConstFrameSelection()) {
-    const bool selectionMatchesFocus =
-        selection->IsIndependentSelection() &&
-        selection->GetIndependentSelectionRootParentElement() ==
-            aDocument.GetUnretargetedFocusedContent();
-    if (NS_WARN_IF(!selectionMatchesFocus)) {
-      aPresShell.FrameSelectionWillLoseFocus(*selection);
-      aPresShell.SelectionWillTakeFocus();
-    }
-  }
-}
-
-// static
-void nsFrameSelection::WillBlurDocument(PresShell& aPresShell,
-                                        Document& aDocument) {
-  nsFrameSelection* const selection = aPresShell.GetLastFocusedFrameSelection();
-  if (!selection) [[unlikely]] {
-    return;
-  }
-  const int16_t selectionStatus = selection->GetDisplaySelection();
-  // If selection was on, disable it.
-  if (selectionStatus == nsISelectionController::SELECTION_ON ||
-      selectionStatus == nsISelectionController::SELECTION_ATTENTION) {
-    selection->SetDisplaySelection(nsISelectionController::SELECTION_DISABLED);
-    selection->RepaintSelection(SelectionType::eNormal);
-  }
-}
-
-// static
 bool nsFrameSelection::Caret::IsVisualMovement(
     ExtendSelection aExtendSelection, CaretMovementStyle aMovementStyle) {
   int32_t movementFlag = StaticPrefs::bidi_edit_caret_movement_style();

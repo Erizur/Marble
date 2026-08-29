@@ -712,8 +712,6 @@ class Document : public nsINode,
   virtual void SetSuppressParserErrorConsoleMessages(bool aSuppress) {}
   virtual bool SuppressParserErrorConsoleMessages() { return false; }
 
-  NS_IMPL_FROMNODE_HELPER(Document, IsDocument())
-
   // nsINode
   void InsertChildBefore(
       nsIContent* aKid, nsIContent* aBeforeThis, bool aNotify, ErrorResult& aRv,

@@ -32,14 +32,13 @@
 #include "mozilla/dom/Selection.h"
 
 #include "nsAString.h"
-#include "nsCaret.h"              // for nsCaret
-#include "nsDebug.h"              // for NS_WARNING, etc.
-#include "nsFocusManager.h"       // for nsFocusManager
-#include "nsGkAtoms.h"            // for nsGkAtoms, nsGkAtoms::input
-#include "nsGlobalWindowOuter.h"  // for nsGlobalWindowOuter
-#include "nsIContent.h"           // for nsIContent
-#include "nsIContentInlines.h"    // for nsINode::IsInDesignMode()
-#include "nsIController.h"        // for nsIController
+#include "nsCaret.h"            // for nsCaret
+#include "nsDebug.h"            // for NS_WARNING, etc.
+#include "nsFocusManager.h"     // for nsFocusManager
+#include "nsGkAtoms.h"          // for nsGkAtoms, nsGkAtoms::input
+#include "nsIContent.h"         // for nsIContent
+#include "nsIContentInlines.h"  // for nsINode::IsInDesignMode()
+#include "nsIController.h"      // for nsIController
 #include "nsID.h"
 #include "nsIFormControl.h"   // for nsIFormControl, etc.
 #include "nsINode.h"          // for nsINode, etc.
@@ -143,13 +142,13 @@ nsresult EditorEventListener::Connect(EditorBase* aEditorBase) {
 nsresult EditorEventListener::InstallToEditor() {
   MOZ_ASSERT(mEditorBase, "The caller must set mEditorBase");
 
-  EventTarget* const eventTarget = mEditorBase->GetDOMEventTarget();
+  EventTarget* eventTarget = mEditorBase->GetDOMEventTarget();
   if (NS_WARN_IF(!eventTarget)) {
     return NS_ERROR_FAILURE;
   }
 
   // register the event listeners with the listener manager
-  EventListenerManager* const eventListenerManager =
+  EventListenerManager* eventListenerManager =
       eventTarget->GetOrCreateListenerManager();
   if (NS_WARN_IF(!eventListenerManager)) {
     return NS_ERROR_FAILURE;
@@ -158,9 +157,9 @@ nsresult EditorEventListener::InstallToEditor() {
   // For non-html editor, ie.TextEditor, we want to preserve
   // the event handling order to ensure listeners that are
   // added to <input> and <texarea> still working as expected.
-  const EventListenerFlags flags = mEditorBase->IsHTMLEditor()
-                                       ? TrustedEventsAtSystemGroupCapture()
-                                       : TrustedEventsAtSystemGroupBubble();
+  EventListenerFlags flags = mEditorBase->IsHTMLEditor()
+                                 ? TrustedEventsAtSystemGroupCapture()
+                                 : TrustedEventsAtSystemGroupBubble();
 #ifdef HANDLE_NATIVE_TEXT_DIRECTION_SWITCH
   eventListenerManager->AddEventListenerByType(this, u"keydown"_ns, flags);
   eventListenerManager->AddEventListenerByType(this, u"keyup"_ns, flags);
@@ -183,6 +182,12 @@ nsresult EditorEventListener::InstallToEditor() {
                                                TrustedEventsAtCapture());
   eventListenerManager->AddEventListenerByType(
       this, u"auxclick"_ns, TrustedEventsAtSystemGroupCapture());
+  // Focus event doesn't bubble so adding the listener to capturing phase as
+  // system event group.
+  eventListenerManager->AddEventListenerByType(
+      this, u"blur"_ns, TrustedEventsAtSystemGroupCapture());
+  eventListenerManager->AddEventListenerByType(
+      this, u"focus"_ns, TrustedEventsAtSystemGroupCapture());
   eventListenerManager->AddEventListenerByType(
       this, u"text"_ns, TrustedEventsAtSystemGroupBubble());
   eventListenerManager->AddEventListenerByType(
@@ -247,6 +252,10 @@ void EditorEventListener::UninstallFromEditor() {
                                                   TrustedEventsAtCapture());
   eventListenerManager->RemoveEventListenerByType(
       this, u"auxclick"_ns, TrustedEventsAtSystemGroupCapture());
+  eventListenerManager->RemoveEventListenerByType(
+      this, u"blur"_ns, TrustedEventsAtSystemGroupCapture());
+  eventListenerManager->RemoveEventListenerByType(
+      this, u"focus"_ns, TrustedEventsAtSystemGroupCapture());
   eventListenerManager->RemoveEventListenerByType(
       this, u"text"_ns, TrustedEventsAtSystemGroupBubble());
   eventListenerManager->RemoveEventListenerByType(
@@ -427,6 +436,28 @@ NS_IMETHODIMP EditorEventListener::HandleEvent(Event* aEvent) {
       nsresult rv = PointerClick(widgetMouseEvent);
       NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
                            "EditorEventListener::PointerClick() failed");
+      return rv;
+    }
+    // focus
+    case eFocus: {
+      const InternalFocusEvent* focusEvent = internalEvent->AsFocusEvent();
+      if (NS_WARN_IF(!focusEvent)) {
+        return NS_ERROR_FAILURE;
+      }
+      nsresult rv = Focus(*focusEvent);
+      NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
+                           "EditorEventListener::Focus() failed");
+      return rv;
+    }
+    // blur
+    case eBlur: {
+      const InternalFocusEvent* blurEvent = internalEvent->AsFocusEvent();
+      if (NS_WARN_IF(!blurEvent)) {
+        return NS_ERROR_FAILURE;
+      }
+      nsresult rv = Blur(*blurEvent);
+      NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
+                           "EditorEventListener::Blur() failed");
       return rv;
     }
     // text
@@ -1108,6 +1139,48 @@ void EditorEventListener::HandleEndComposition(
              "eCompositionEnd shouldn't be cancelable");
 
   editorBase->OnCompositionEnd(*aCompositionEndEvent);
+}
+
+nsresult EditorEventListener::Focus(const InternalFocusEvent& aFocusEvent) {
+  if (DetachedFromEditor()) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsINode> originalEventTargetNode =
+      nsINode::FromEventTargetOrNull(aFocusEvent.GetOriginalDOMEventTarget());
+  if (NS_WARN_IF(!originalEventTargetNode)) {
+    return NS_ERROR_UNEXPECTED;
+  }
+
+  // If the target is a document node but it's not editable, we should
+  // ignore it because actual focused element's event is going to come.
+  if (originalEventTargetNode->IsDocument()) {
+    if (!originalEventTargetNode->IsInDesignMode()) {
+      return NS_OK;
+    }
+  }
+  // We should not receive focus events whose target is not a content node
+  // unless the node is a document node.
+  else if (NS_WARN_IF(!originalEventTargetNode->IsContent())) {
+    return NS_OK;
+  }
+
+  const OwningNonNull<EditorBase> editorBase(*mEditorBase);
+  DebugOnly<nsresult> rvIgnored = editorBase->OnFocus(*originalEventTargetNode);
+  NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored), "EditorBase::OnFocus() failed");
+  return NS_OK;  // Don't return error code to the event listener manager.
+}
+
+nsresult EditorEventListener::Blur(const InternalFocusEvent& aBlurEvent) {
+  if (DetachedFromEditor()) {
+    return NS_OK;
+  }
+
+  const OwningNonNull<EditorBase> editorBase(*mEditorBase);
+  nsCOMPtr target = aBlurEvent.mTarget;
+  DebugOnly<nsresult> rvIgnored = editorBase->OnBlur(target);
+  NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored), "EditorBase::OnBlur() failed");
+  return NS_OK;  // Don't return error code to the event listener manager.
 }
 
 bool EditorEventListener::IsFileControlTextBox() {

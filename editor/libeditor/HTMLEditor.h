@@ -212,26 +212,6 @@ class HTMLEditor final : public EditorBase,
   OnBlur(const dom::EventTarget* aEventTarget) final;
 
   /**
-   * Called when eFocus event of aNode will be dispatched to the DOM.
-   * Note that aNode is the original target of eFocus (i.e., may be the target
-   * in a shadow). However, aNode may not be editable. E.g., <a href> element
-   * outside contenteditable. Therefore, even when this method is called,
-   * HTMLEditor won't get focus.
-   */
-  MOZ_CAN_RUN_SCRIPT static void WillFocusNode(PresShell& aPresShell,
-                                               nsINode* aNode);
-
-  /**
-   * Called when eFocus event of aNode will be dispatched to the DOM.
-   * Note that aNode is the original target of eBlur (i.e., may be the target
-   * in a shadow). However, aNode may not be editable. E.g., <a href> element
-   * outside contenteditable. Therefore, even when this method is called,
-   * HTMLEditor may not have focus.
-   */
-  MOZ_CAN_RUN_SCRIPT static void WillBlurNode(PresShell& aPresShell,
-                                              nsINode* aNode);
-
-  /**
    * Called when aDocument or aElement becomes editable without focus change.
    * E.g., when the design mode is enabled or the contenteditable attribute
    * is set to the focused element.

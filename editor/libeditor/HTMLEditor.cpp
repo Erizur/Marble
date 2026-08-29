@@ -706,41 +706,6 @@ void HTMLEditor::UpdateRootElement() {
   }
 }
 
-// static
-void HTMLEditor::WillFocusNode(PresShell& aPresShell, nsINode* aNode) {
-  if (!aNode) {
-    // Don't notify HTMLEditor of focus event of the window level.
-    return;
-  }
-  if (aNode->IsDocument()) {
-    if (!aNode->IsInDesignMode()) {
-      return;
-    }
-  } else if (!aNode->IsContent()) {
-    return;
-  }
-  const RefPtr<HTMLEditor> htmlEditor =
-      nsContentUtils::GetHTMLEditor(aPresShell.GetPresContext());
-  if (!htmlEditor) {
-    return;
-  }
-  DebugOnly<nsresult> rv = htmlEditor->OnFocus(*aNode);
-  NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
-                       "HTMLEditor::OnFocus() failed, but ignore");
-}
-
-// static
-void HTMLEditor::WillBlurNode(PresShell& aPresShell, nsINode* aNode) {
-  const RefPtr<HTMLEditor> htmlEditor =
-      nsContentUtils::GetHTMLEditor(aPresShell.GetPresContext());
-  if (!htmlEditor) {
-    return;
-  }
-  DebugOnly<nsresult> rv = htmlEditor->OnBlur(aNode);
-  NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
-                       "HTMLEditor::OnBlur() failed, but ignore");
-}
-
 nsresult HTMLEditor::FocusedElementOrDocumentBecomesEditable(
     Document& aDocument, Element* aElement) {
   MOZ_LOG(gHTMLEditorFocusLog, LogLevel::Info,

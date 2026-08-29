@@ -63,18 +63,6 @@ class TextControlElement : public nsGenericHTMLFormControlElementWithState {
   virtual void SetValueChanged(bool) = 0;
 
   /**
-   * Called when this is a single line text control or a <textarea> and will get
-   * focus (before dispatching eFocus to the DOM).
-   */
-  MOZ_CAN_RUN_SCRIPT void WillFocus(const WidgetEvent&);
-
-  /**
-   * Called when this is a single line text control or a <textarea> and will
-   * blur (before dispatching eBlur to the DOM).
-   */
-  MOZ_CAN_RUN_SCRIPT void WillBlur(const WidgetEvent&);
-
-  /**
    * Find out whether this control is a textarea.
    * @return whether this is a textarea text control
    */
@@ -262,6 +250,7 @@ class TextControlElement : public nsGenericHTMLFormControlElementWithState {
   void ScrollSelectionIntoViewAsync(ScrollAncestors = ScrollAncestors::No);
 
  protected:
+  MOZ_CAN_RUN_SCRIPT void OnFocus(const WidgetEvent&);
   MOZ_CAN_RUN_SCRIPT void SelectAll();
   MOZ_CAN_RUN_SCRIPT void ShowSelection();
   bool NeedToInitializeEditorForEvent(EventChainPreVisitor&) const;

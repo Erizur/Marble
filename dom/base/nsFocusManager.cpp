@@ -2639,9 +2639,12 @@ bool nsFocusManager::BlurImpl(BrowsingContext* aBrowsingContextToClear,
       SendFocusOrBlurEvent(eBlur, presShell, doc, doc, false);
     }
     if (!GetFocusedBrowsingContext()) {
-      RefPtr innerWindow =
-          nsGlobalWindowInner::Cast(window->GetCurrentInnerWindow());
-      SendFocusOrBlurEvent(eBlur, presShell, doc, innerWindow, false);
+      nsCOMPtr<nsPIDOMWindowInner> innerWindow =
+          window->GetCurrentInnerWindow();
+      // MOZ_KnownLive due to bug 1506441
+      SendFocusOrBlurEvent(
+          eBlur, presShell, doc,
+          MOZ_KnownLive(nsGlobalWindowInner::Cast(innerWindow)), false);
     }
 
     // check if a different window was focused
@@ -2836,9 +2839,12 @@ void nsFocusManager::Focus(
     }
     if (GetFocusedBrowsingContext() == aWindow->GetBrowsingContext() &&
         !mFocusedElement && !focusInOtherContentProcess) {
-      RefPtr innerWindow =
-          nsGlobalWindowInner::Cast(aWindow->GetCurrentInnerWindow());
-      SendFocusOrBlurEvent(eFocus, presShell, doc, innerWindow, aWindowRaised);
+      nsCOMPtr<nsPIDOMWindowInner> innerWindow =
+          aWindow->GetCurrentInnerWindow();
+      // MOZ_KnownLive due to bug 1506441
+      SendFocusOrBlurEvent(
+          eFocus, presShell, doc,
+          MOZ_KnownLive(nsGlobalWindowInner::Cast(innerWindow)), aWindowRaised);
     }
   }
 
@@ -3053,8 +3059,8 @@ void nsFocusManager::SendFocusOrBlurEvent(EventMessage aEventMessage,
                                           EventTarget* aTarget,
                                           bool aWindowRaised, bool aIsRefocus,
                                           EventTarget* aRelatedTarget) {
-  MOZ_ASSERT(aEventMessage == eFocus || aEventMessage == eBlur,
-             "Wrong event type for SendFocusOrBlurEvent");
+  NS_ASSERTION(aEventMessage == eFocus || aEventMessage == eBlur,
+               "Wrong event type for SendFocusOrBlurEvent");
 
   nsCOMPtr<Document> eventTargetDoc = GetDocumentHelper(aTarget);
   nsCOMPtr<Document> relatedTargetDoc = GetDocumentHelper(aRelatedTarget);
