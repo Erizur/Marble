@@ -129,6 +129,13 @@ class GDIFontEntry final : public gfxFontEntry {
             mFontType == GFX_FONT_TYPE_TT_OPENTYPE);
   }
 
+  bool HasCmapTable() {
+    if (!mCharacterMap && !mShmemCharacterMap) {
+      ReadCMAP();
+    }
+    return mHasCmapTable;
+  }
+
   bool SkipDuringSystemFallback() override {
     return !HasCmapTable();  // explicitly skip non-SFNT fonts
   }
@@ -155,6 +162,7 @@ class GDIFontEntry final : public gfxFontEntry {
 
   gfxWindowsFontType mFontType;
   bool mForceGDI;
+  mozilla::Atomic<bool> mHasCmapTable{false};
 
  protected:
   friend class gfxGDIFont;

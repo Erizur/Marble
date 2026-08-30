@@ -176,6 +176,7 @@ nsresult GDIFontEntry::ReadCMAP(FontInfoData* aFontInfoData) {
   } else {
     // if error occurred, initialize to null cmap
     charmap = new gfxCharacterMap(0);
+    mHasCmapTable = false;
     // For fonts where we failed to read the character map,
     // we can take a slow path to look up glyphs character by character
     charmap->mBuildOnTheFly = true;

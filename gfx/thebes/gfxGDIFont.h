@@ -37,7 +37,9 @@ class gfxGDIFont final : public gfxFont {
 
   // If the font has a cmap table, we handle it purely with harfbuzz;
   // but if not (e.g. .fon fonts), we'll use a GDI callback to get glyphs.
-  bool ProvidesGetGlyph() const override { return !mFontEntry->HasCmapTable(); }
+  bool ProvidesGetGlyph() const override {
+    return !static_cast<GDIFontEntry*>(mFontEntry.get())->HasCmapTable();
+  }
 
   uint32_t GetGlyph(uint32_t aUnicode, uint32_t aVarSelector) override;
 
