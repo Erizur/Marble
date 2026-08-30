@@ -7483,7 +7483,6 @@
   value: true
   mirror: always
 
-# I don't know if this does anything but i'll keep it here coz i removed it by accident
 - name: gfx.compositor.clearstate
   type: RelaxedAtomicBool
   value: false

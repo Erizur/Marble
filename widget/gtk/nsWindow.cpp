@@ -2450,8 +2450,6 @@ gboolean nsWindow::OnExposeEvent(cairo_t* cr) {
 
 #endif  // MOZ_X11
 
-  // esr153's nsIWidgetListener::PaintWindow returns void and takes no region,
-  // so there is no paint result to test; treat a completed call as painted.
   bool painted = false;
   if (renderer->GetBackendType() == LayersBackend::LAYERS_NONE) {
     if (GetTransparencyMode() == TransparencyMode::Transparent &&
@@ -2506,7 +2504,6 @@ void nsWindow::UpdateAlpha(SourceSurface* aSourceSurface,
                            nsIntRect aBoundsRect) {
   // We need to create our own buffer to force the stride to match the
   // expected stride.
-  // GetAlignedStride returns Maybe<int32_t> on this branch.
   Maybe<int32_t> maybeStride =
       GetAlignedStride<4>(aBoundsRect.width, BytesPerPixel(SurfaceFormat::A8));
   if (maybeStride.isNothing() || *maybeStride == 0) {
@@ -4436,8 +4433,6 @@ void nsWindow::ResumeCompositorImpl() {
 void nsWindow::WaylandStartVsync() {
 #ifdef MOZ_WAYLAND
   LOG_VSYNC("nsWindow::WaylandStartVsync");
-  // esr153 moved the vsync source into the nsWindowWayland subclass; go
-  // through the virtual hook rather than touching mWaylandVsyncSource here.
   EnableVSyncSource();
 #endif
 }
