@@ -187,7 +187,8 @@ nsresult GDIFontEntry::ReadCMAP(FontInfoData* aFontInfoData) {
 
   LOG_FONTLIST(("(fontlist-cmap) name: %s, size: %zd hash: %8.8x%s\n",
                 mName.get(), charmap->SizeOfIncludingThis(moz_malloc_size_of),
-                charmap->mHash, mCharacterMap == charmap ? " new" : ""));
+                charmap->mHash,
+                GetCharacterMapRaw() == charmap ? " new" : ""));
   if (LOG_CMAPDATA_ENABLED()) {
     char prefix[256];
     SprintfLiteral(prefix, "(cmapdata) name: %.220s", mName.get());
@@ -285,12 +286,17 @@ void GDIFontEntry::FillLogFont(LOGFONTW* aLogFont, LONG aWeight,
         // on WinXP with .fon fonts, but not Type1 (.pfb)
 
 bool GDIFontEntry::TestCharacterMap(uint32_t aCh) {
-  if (!mCharacterMap) {
+  if (!GetCharacterMapRaw()) {
     ReadCMAP();
-    NS_ASSERTION(mCharacterMap, "failed to initialize a character map");
+    NS_ASSERTION(GetCharacterMapRaw(), "failed to initialize a character map");
   }
 
-  if (GetCharacterMap()->mBuildOnTheFly) {
+  RefPtr<gfxCharacterMap> charmap = GetCharacterMapAddRefed();
+  if (!charmap) {
+    return false;
+  }
+
+  if (charmap->mBuildOnTheFly) {
     if (aCh > 0xFFFF) return false;
 
     // previous code was using the group style
@@ -338,12 +344,12 @@ bool GDIFontEntry::TestCharacterMap(uint32_t aCh) {
     ReleaseDC(nullptr, dc);
 
     if (hasGlyph) {
-      GetCharacterMap()->set(aCh);
+      charmap->set(aCh);
       return true;
     }
   } else {
     // font had a cmap so simply check that
-    return GetCharacterMap()->test(aCh);
+    return charmap->test(aCh);
   }
 
   return false;
