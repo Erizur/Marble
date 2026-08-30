@@ -193,6 +193,7 @@ class TextControlState final : public SupportsWeakPtr {
  public:
   using Element = dom::Element;
   using HTMLInputElement = dom::HTMLInputElement;
+  using SelectionDirection = mozilla::SelectionDirection;
 
   static TextControlState* Construct(TextControlElement* aOwningElement);
 
@@ -434,7 +435,7 @@ class TextControlState final : public SupportsWeakPtr {
       ScrollAfterSelection aScroll = ScrollAfterSelection::Yes);
 
   // Set the selection range, but with an optional string for the direction.
-  // This will convert aDirection to an nsITextControlFrame::SelectionDirection
+  // This will convert aDirection to a SelectionDirection
   // and then call our other SetSelectionRange overload.
   MOZ_CAN_RUN_SCRIPT void SetSelectionRange(
       uint32_t aSelectionStart, uint32_t aSelectionEnd,

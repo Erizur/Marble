@@ -9,6 +9,7 @@
 #include "mozilla/dom/HTMLOptionElement.h"
 #include "mozilla/dom/HTMLSelectElement.h"
 #include "nsGkAtoms.h"
+#include "nsIFormControlFrame.h"
 #include "nsIFrame.h"
 
 NS_IMPL_NS_NEW_HTML_ELEMENT(OptGroup)

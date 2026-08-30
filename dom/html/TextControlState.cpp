@@ -45,6 +45,7 @@
 #include "nsIControllers.h"
 #include "nsIDOMEventListener.h"
 #include "nsIDocumentEncoder.h"
+#include "nsITextControlFrame.h"
 #include "nsIWidget.h"
 #include "nsPIDOMWindow.h"
 #include "nsServiceManagerUtils.h"
@@ -1227,9 +1228,10 @@ class MOZ_STACK_CLASS AutoTextControlHandlingState {
     }
     // The new value never includes line breaks caused by hard-wrap.
     // So, mCachedValue can always cache the new value.
-    nsTextControlFrame* textControlFrame =
+    nsITextControlFrame* textControlFrame =
         do_QueryFrame(mTextControlFrame.GetFrame());
-    return textControlFrame->CacheValue(mSettingValue, fallible)
+    return static_cast<nsTextControlFrame*>(textControlFrame)
+                   ->CacheValue(mSettingValue, fallible)
                ? NS_OK
                : NS_ERROR_OUT_OF_MEMORY;
   }

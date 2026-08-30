@@ -14,6 +14,7 @@
 #include "nsContainerFrame.h"
 #include "nsDisplayList.h"
 #include "nsGkAtoms.h"
+#include "nsIFormControlFrame.h"
 #include "nsIFrameInlines.h"
 #include "nsLayoutUtils.h"
 #include "nsPresContext.h"
@@ -54,6 +55,7 @@ void nsHTMLButtonControlFrame::DidSetComputedStyle(
 
 NS_QUERYFRAME_HEAD(nsHTMLButtonControlFrame)
   NS_QUERYFRAME_ENTRY(nsHTMLButtonControlFrame)
+  NS_QUERYFRAME_ENTRY(nsIFormControlFrame)
 NS_QUERYFRAME_TAIL_INHERITING(nsContainerFrame)
 
 #ifdef ACCESSIBILITY
@@ -61,6 +63,17 @@ a11y::AccType nsHTMLButtonControlFrame::AccessibleType() {
   return a11y::eHTMLButtonType;
 }
 #endif
+
+void nsHTMLButtonControlFrame::SetFocus(bool aOn, bool aRepaint) {}
+
+nsresult nsHTMLButtonControlFrame::SetFormProperty(nsAtom* aName,
+                                                   const nsAString& aValue) {
+  if (nsGkAtoms::value == aName) {
+    return mContent->AsElement()->SetAttr(kNameSpaceID_None, nsGkAtoms::value,
+                                          aValue, true);
+  }
+  return NS_OK;
+}
 
 nsresult nsHTMLButtonControlFrame::HandleEvent(nsPresContext* aPresContext,
                                                WidgetGUIEvent* aEvent,

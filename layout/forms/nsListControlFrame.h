@@ -8,6 +8,7 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/ScrollContainerFrame.h"
+#include "nsIFormControlFrame.h"
 
 class nsComboboxControlFrame;
 class nsPresContext;
@@ -28,7 +29,8 @@ class HTMLOptionsCollection;
  * Frame-based listbox.
  */
 
-class nsListControlFrame final : public mozilla::ScrollContainerFrame {
+class nsListControlFrame final : public mozilla::ScrollContainerFrame,
+                                 public nsIFormControlFrame {
  public:
   using HTMLOptionElement = mozilla::dom::HTMLOptionElement;
 
@@ -67,7 +69,10 @@ class nsListControlFrame final : public mozilla::ScrollContainerFrame {
   nsresult GetFrameName(nsAString& aResult) const final;
 #endif
 
-  void ElementStateChanged(mozilla::dom::ElementState aStates) final;
+  // nsIFormControlFrame
+  nsresult SetFormProperty(nsAtom* aName, const nsAString& aValue) final;
+  MOZ_CAN_RUN_SCRIPT_BOUNDARY
+  void SetFocus(bool aOn = true, bool aRepaint = false) final;
 
   // for accessibility purposes
 #ifdef ACCESSIBILITY
@@ -131,7 +136,7 @@ class nsListControlFrame final : public mozilla::ScrollContainerFrame {
   HTMLOptionElement* GetOption(uint32_t aIndex) const;
 
   // Helper
-  bool IsFocused() const;
+  bool IsFocused() { return this == mFocused; }
 
   /**
    * Function to paint the focus rect when our nsSelectsAreaFrame is painting.
@@ -267,6 +272,8 @@ class nsListControlFrame final : public mozilla::ScrollContainerFrame {
   uint32_t GetNumberOfRows();
 
   // Data Members
+  static nsListControlFrame* mFocused;
+
   int32_t mStartSelectionIndex = 0;
   int32_t mEndSelectionIndex = 0;
 

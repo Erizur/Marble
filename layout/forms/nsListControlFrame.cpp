@@ -28,12 +28,16 @@
 #include "nsDisplayList.h"
 #include "nsFontMetrics.h"
 #include "nsGkAtoms.h"
+#include "nsIFormControlFrame.h"
 #include "nsLayoutUtils.h"
 #include "nsUnicharUtils.h"
 #include "nscore.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
+
+// Static members
+nsListControlFrame* nsListControlFrame::mFocused = nullptr;
 
 //---------------------------------------------------------
 nsListControlFrame* NS_NewListControlFrame(PresShell* aPresShell,
@@ -69,15 +73,27 @@ HTMLOptionElement* nsListControlFrame::GetCurrentOption() const {
   return Select().GetCurrentOption();
 }
 
-bool nsListControlFrame::IsFocused() const {
-  return Select().State().HasState(ElementState::FOCUS);
-}
-
 void nsListControlFrame::InvalidateFocus() { InvalidateFrame(); }
 
 NS_QUERYFRAME_HEAD(nsListControlFrame)
   NS_QUERYFRAME_ENTRY(nsListControlFrame)
+  NS_QUERYFRAME_ENTRY(nsIFormControlFrame)
 NS_QUERYFRAME_TAIL_INHERITING(ScrollContainerFrame)
+
+nsresult nsListControlFrame::SetFormProperty(nsAtom* aName,
+                                             const nsAString& aValue) {
+  if (nsGkAtoms::selected == aName) {
+    return NS_ERROR_INVALID_ARG;  // Selected is readonly according to spec.
+  } else if (nsGkAtoms::selectedindex == aName) {
+    // You shouldn't be calling me for this!!!
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  // We should be told about selectedIndex by the DOM element through
+  // OnOptionSelected
+
+  return NS_OK;
+}
 
 #ifdef ACCESSIBILITY
 a11y::AccType nsListControlFrame::AccessibleType() {
@@ -591,10 +607,16 @@ void nsListControlFrame::ResetList(bool aAllowScrolling) {
   // Combobox will redisplay itself with the OnOptionSelected event
 }
 
-void nsListControlFrame::ElementStateChanged(ElementState aStates) {
-  if (aStates.HasState(ElementState::FOCUS)) {
-    InvalidateFocus();
+void nsListControlFrame::SetFocus(bool aOn, bool aRepaint) {
+  InvalidateFocus();
+
+  if (aOn) {
+    mFocused = this;
+  } else {
+    mFocused = nullptr;
   }
+
+  InvalidateFocus();
 }
 
 void nsListControlFrame::GetOptionText(uint32_t aIndex, nsAString& aStr) {
@@ -815,7 +837,7 @@ nscoord nsListControlFrame::CalcIntrinsicBSize(nscoord aBSizeOfARow,
 
 #ifdef ACCESSIBILITY
 void nsListControlFrame::FireMenuItemActiveEvent(nsIContent* aPreviousOption) {
-  if (!IsFocused()) {
+  if (mFocused != this) {
     return;
   }
 

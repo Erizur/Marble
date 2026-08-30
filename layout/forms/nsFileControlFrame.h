@@ -11,6 +11,7 @@
 #include "nsBlockFrame.h"
 #include "nsIAnonymousContentCreator.h"
 #include "nsIDOMEventListener.h"
+#include "nsIFormControlFrame.h"
 
 namespace mozilla::dom {
 class FileList;
@@ -19,6 +20,7 @@ class DataTransfer;
 }  // namespace mozilla::dom
 
 class nsFileControlFrame final : public nsBlockFrame,
+                                 public nsIFormControlFrame,
                                  public nsIAnonymousContentCreator {
   using Element = mozilla::dom::Element;
 
@@ -36,7 +38,9 @@ class nsFileControlFrame final : public nsBlockFrame,
               const ReflowInput& aReflowInput,
               nsReflowStatus& aStatus) override;
 
-  void SelectedFilesUpdated();
+  // nsIFormControlFrame
+  nsresult SetFormProperty(nsAtom* aName, const nsAString& aValue) override;
+  void SetFocus(bool aOn, bool aRepaint) override;
 
   void Destroy(DestroyContext&) override;
 

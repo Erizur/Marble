@@ -17,6 +17,7 @@
 #include "mozilla/dom/Document.h"
 #include "nsCOMPtr.h"
 #include "nsContentCreatorFunctions.h"
+#include "nsIFormControlFrame.h"
 #include "nsNodeInfoManager.h"
 #include "nsTextNode.h"
 
