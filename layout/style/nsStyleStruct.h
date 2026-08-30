@@ -1655,6 +1655,8 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleDisplay {
   mozilla::StyleBreakBetween mBreakAfter;
   mozilla::StyleOverflow mOverflowX;
   mozilla::StyleOverflow mOverflowY;
+  mozilla::StyleOverflowClipBox mOverflowClipBoxBlock;
+  mozilla::StyleOverflowClipBox mOverflowClipBoxInline;
   mozilla::StyleScrollbarGutter mScrollbarGutter;
   mozilla::StyleResize mResize;
   mozilla::StyleOrient mOrient;

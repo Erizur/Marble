@@ -2282,6 +2282,8 @@ nsStyleDisplay::nsStyleDisplay()
       mBreakAfter(StyleBreakBetween::Auto),
       mOverflowX(StyleOverflow::Visible),
       mOverflowY(StyleOverflow::Visible),
+      mOverflowClipBoxBlock(StyleOverflowClipBox::PaddingBox),
+      mOverflowClipBoxInline(StyleOverflowClipBox::PaddingBox),
       mScrollbarGutter(StyleScrollbarGutter::AUTO),
       mResize(StyleResize::None),
       mOrient(StyleOrient::Inline),
@@ -2340,6 +2342,8 @@ nsStyleDisplay::nsStyleDisplay(const nsStyleDisplay& aSource)
       mBreakAfter(aSource.mBreakAfter),
       mOverflowX(aSource.mOverflowX),
       mOverflowY(aSource.mOverflowY),
+      mOverflowClipBoxBlock(aSource.mOverflowClipBoxBlock),
+      mOverflowClipBoxInline(aSource.mOverflowClipBoxInline),
       mScrollbarGutter(aSource.mScrollbarGutter),
       mResize(aSource.mResize),
       mOrient(aSource.mOrient),
@@ -2652,7 +2656,9 @@ nsChangeHint nsStyleDisplay::CalcDifference(
       mBreakAfter != aNewData.mBreakAfter ||
       mAppearance != aNewData.mAppearance ||
       mDefaultAppearance != aNewData.mDefaultAppearance ||
-      mOrient != aNewData.mOrient) {
+      mOrient != aNewData.mOrient ||
+      mOverflowClipBoxBlock != aNewData.mOverflowClipBoxBlock ||
+      mOverflowClipBoxInline != aNewData.mOverflowClipBoxInline) {
     hint |= nsChangeHint_AllReflowHints | nsChangeHint_RepaintFrame;
   }
 
