@@ -419,3 +419,6 @@ CLAUDE.local.md
 # Ignore .json.gz (typically profiles) in the root directory
 # lint-ignore-next-line: git-only
 /*.json.gz
+
+# mach state directory (MOZBUILD_STATE_PATH); toolchains and venvs, never source
+/mozbuild/
