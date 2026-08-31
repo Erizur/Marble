@@ -19,6 +19,7 @@
 #include "mozilla/RelativeLuminanceUtils.h"
 #include "mozilla/StaticPrefs_layout.h"
 #include "mozilla/StaticPrefs_widget.h"
+#include "ScrollbarDrawingWin.h"
 #include "mozilla/WindowsVersion.h"
 #include "mozilla/dom/XULButtonElement.h"
 #include "nsColor.h"
@@ -65,11 +66,30 @@ nsNativeThemeWin::nsNativeThemeWin()
 
 nsNativeThemeWin::~nsNativeThemeWin() { nsUXThemeData::Invalidate(); }
 
-auto nsNativeThemeWin::IsWidgetNonNative(
-    nsIFrame* aFrame, StyleAppearance aAppearance) -> NonNative {
-  if (IsWidgetScrollbarPart(aAppearance) ||
-      aAppearance == StyleAppearance::FocusOutline) {
-    return NonNative::Always;
+auto nsNativeThemeWin::IsWidgetNonNative(nsIFrame* aFrame,
+                                         StyleAppearance aAppearance)
+    -> NonNative {
+  if (IsWidgetScrollbarPart(aAppearance)) {
+    switch (StaticPrefs::widget_native_controls_scrollbar_style()) {
+      case 0:
+        return NonNative::No;
+      case 1:
+        return NonNative::Always;
+      default:
+        // Photon behaviour: native on light, non-native on dark or custom.
+        return GetCustomScrollbarStyle(aFrame) ? NonNative::Always
+                                               : NonNative::No;
+    }
+  }
+
+  if (aAppearance == StyleAppearance::Tooltip &&
+      StaticPrefs::widget_native_controls_tooltip_style() == 0) {
+    return NonNative::No;
+  }
+
+  if (aAppearance == StyleAppearance::FocusOutline &&
+      StaticPrefs::widget_native_controls_tooltip_style() == 0) {
+    return NonNative::No;
   }
 
   // We only know how to draw light widgets, so we defer to the non-native

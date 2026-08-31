@@ -43,6 +43,7 @@
 #include "mozilla/StaticPrefs_widget.h"
 #include "nsWindow.h"
 #include "nsLayoutUtils.h"
+#include "ScrollbarDrawingGTK.h"
 #include "Theme.h"
 
 #ifdef MOZ_X11
@@ -1029,17 +1030,44 @@ bool nsNativeThemeGTK::GetWidgetOverflow(nsDeviceContext* aContext,
   return true;
 }
 
-auto nsNativeThemeGTK::IsWidgetNonNative(
-    nsIFrame* aFrame, StyleAppearance aAppearance) -> NonNative {
-  if (IsWidgetScrollbarPart(aAppearance) ||
-      aAppearance == StyleAppearance::FocusOutline) {
+auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
+                                         StyleAppearance aAppearance)
+    -> NonNative {
+  if (aAppearance == StyleAppearance::FocusOutline) {
     return NonNative::Always;
+  }
+
+  if (IsWidgetScrollbarPart(aAppearance)) {
+    // GTK native scrollbar rendering cannot handle custom scrollbar colors
+    // (set via scrollbar-color CSS property) or thin scrollbar widths.
+    // In those cases, always use the non-native Theme drawing path.
+    const ComputedStyle* cs = nsLayoutUtils::StyleForScrollbar(aFrame);
+    if (cs->StyleUI()->HasCustomScrollbars() ||
+        ScrollbarDrawing::IsScrollbarWidthThin(aFrame)) {
+      return NonNative::Always;
+    }
+
+    switch (StaticPrefs::widget_native_controls_scrollbar_style()) {
+      case 0:
+        return NonNative::No;
+      case 1:
+        return NonNative::Always;
+      default:
+        // Photon behaviour: native on light, non-native on dark or custom.
+        return GetCustomScrollbarStyle(aFrame) ? NonNative::Always
+                                               : NonNative::No;
+    }
+  }
+
+  if (aAppearance == StyleAppearance::Tooltip &&
+      StaticPrefs::widget_native_controls_tooltip_style() == 0) {
+    return NonNative::No;
   }
 
   // If the current GTK theme color scheme matches our color-scheme, then we
   // can draw a native widget.
   if (LookAndFeel::ColorSchemeForFrame(aFrame) ==
-      PreferenceSheet::ColorSchemeForChrome()) {
+      LookAndFeel::SystemColorScheme()) {
     return NonNative::No;
   }
 

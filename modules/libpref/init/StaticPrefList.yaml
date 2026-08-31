@@ -20126,7 +20126,17 @@
 # entry in python/mozbuild/mozbuild/mozinfo.py and test_fission_autostart.py
 - name: widget.non-native-theme.enabled
   type: RelaxedAtomicBool
-  value: true
+  value: false
+  mirror: always
+
+- name: widget.native-controls.scrollbar-style
+  type: int32_t
+  value: 0
+  mirror: always
+
+- name: widget.native-controls.tooltip-style
+  type: int32_t
+  value: 0
   mirror: always
 
 # Whether the non-native theme should always use system colors. Useful mostly
