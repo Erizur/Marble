@@ -45,6 +45,11 @@ menulist > menupopup > :is(menuitem, menucaption, menu) {
 .menu-text,
 .menu-iconic-left,
 .menu-iconic-text,
+.menubar-left {
+  margin-block: 0;
+  margin-inline: 0 2px;
+}
+
 .menu-right {
   margin-top: 0;
   margin-bottom: 0;
@@ -56,11 +61,6 @@ menulist > menupopup > :is(menuitem, menucaption, menu) {
   list-style-image: none;
   appearance: auto;
   -moz-default-appearance: menuarrow;
-}
-
-.menubar-left {
-  margin-block: 0;
-  margin-inline: 0 2px;
 }
 
 .menu-text {
