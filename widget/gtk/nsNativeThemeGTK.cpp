@@ -1155,9 +1155,90 @@ bool nsNativeThemeGTK::GetWidgetOverflow(nsDeviceContext* aContext,
   return true;
 }
 
+// Whether GTK has a drawing path for aAppearance at all, regardless of the
+// frame it is used on.
+static bool GtkCanDrawWidget(StyleAppearance aAppearance) {
+  switch (aAppearance) {
+    case StyleAppearance::Menulist:
+    case StyleAppearance::MenulistButton:
+    case StyleAppearance::MenulistText:
+    case StyleAppearance::Button:
+    case StyleAppearance::Radio:
+    case StyleAppearance::Checkbox:
+    case StyleAppearance::Toolbox:
+    case StyleAppearance::Toolbar:
+    case StyleAppearance::Toolbarbutton:
+    case StyleAppearance::Dualbutton:
+    case StyleAppearance::ToolbarbuttonDropdown:
+    case StyleAppearance::ButtonArrowUp:
+    case StyleAppearance::ButtonArrowDown:
+    case StyleAppearance::ButtonArrowNext:
+    case StyleAppearance::ButtonArrowPrevious:
+    case StyleAppearance::Separator:
+    case StyleAppearance::Toolbargripper:
+    case StyleAppearance::Listbox:
+    case StyleAppearance::Treeview:
+    case StyleAppearance::Treetwisty:
+    case StyleAppearance::Treeheadercell:
+    case StyleAppearance::Treeheadersortarrow:
+    case StyleAppearance::Treetwistyopen:
+    case StyleAppearance::ProgressBar:
+    case StyleAppearance::Progresschunk:
+    case StyleAppearance::Tab:
+    case StyleAppearance::Tabpanels:
+    case StyleAppearance::TabScrollArrowBack:
+    case StyleAppearance::TabScrollArrowForward:
+    case StyleAppearance::Tooltip:
+    case StyleAppearance::Spinner:
+    case StyleAppearance::SpinnerUpbutton:
+    case StyleAppearance::SpinnerDownbutton:
+    case StyleAppearance::SpinnerTextfield:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbartrackHorizontal:
+    case StyleAppearance::ScrollbartrackVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::NumberInput:
+    case StyleAppearance::PasswordInput:
+    case StyleAppearance::Textfield:
+    case StyleAppearance::Textarea:
+    case StyleAppearance::Range:
+    case StyleAppearance::RangeThumb:
+    case StyleAppearance::Menuarrow:
+    case StyleAppearance::CheckboxContainer:
+    case StyleAppearance::RadioContainer:
+    case StyleAppearance::CheckboxLabel:
+    case StyleAppearance::RadioLabel:
+    case StyleAppearance::Radiomenuitem:
+    case StyleAppearance::Splitter:
+    case StyleAppearance::MozWindowButtonClose:
+    case StyleAppearance::MozWindowButtonMinimize:
+    case StyleAppearance::MozWindowButtonMaximize:
+    case StyleAppearance::MozWindowButtonRestore:
+    case StyleAppearance::MozWindowTitlebar:
+    case StyleAppearance::MozWindowTitlebarMaximized:
+    case StyleAppearance::MozWindowDecorations:
+    case StyleAppearance::MozMenulistArrowButton:
+      return true;
+    default:
+      return false;
+  }
+}
+
 auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
                                          StyleAppearance aAppearance)
     -> NonNative {
+  // Anything GTK has no drawing path for must go to the non-native theme;
+  // otherwise the widget reserves space and then paints nothing at all.
+  if (!GtkCanDrawWidget(aAppearance)) {
+    return NonNative::Always;
+  }
+
   if (!aFrame->PresContext()->Document()->IsInChromeDocShell()) {
     switch (StaticPrefs::widget_native_controls_content_style()) {
       case 0:
