@@ -1158,6 +1158,17 @@ bool nsNativeThemeGTK::GetWidgetOverflow(nsDeviceContext* aContext,
 auto nsNativeThemeGTK::IsWidgetNonNative(nsIFrame* aFrame,
                                          StyleAppearance aAppearance)
     -> NonNative {
+  if (!aFrame->PresContext()->Document()->IsInChromeDocShell()) {
+    switch (StaticPrefs::widget_native_controls_content_style()) {
+      case 0:
+        return NonNative::Always;
+      case 2:
+        return NonNative::No;
+      default:
+        break;
+    }
+  }
+
   if (IsWidgetScrollbarPart(aAppearance)) {
     // GTK native scrollbar rendering cannot handle custom scrollbar colors
     // (set via scrollbar-color CSS property) or thin scrollbar widths.
