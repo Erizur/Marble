@@ -38,10 +38,11 @@ RemoteLookAndFeel::RemoteLookAndFeel(FullLookAndFeel&& aData)
 
 #ifdef MOZ_WIDGET_GTK
   if (!StaticPrefs::widget_non_native_theme_enabled()) {
-    // Configure the theme in this content process with the Gtk theme that was
-    // chosen by WithThemeConfiguredForContent in the parent process.
+    // Configure the theme in this content process with the Gtk theme that the
+    // parent chose for content.
     nsLookAndFeel::ConfigureTheme(aData.theme());
   }
+  mContentThemeIsDark = aData.theme().preferDarkTheme();
 #endif
 }
 
@@ -55,10 +56,11 @@ void RemoteLookAndFeel::SetDataImpl(FullLookAndFeel&& aData) {
 
 #ifdef MOZ_WIDGET_GTK
   if (!StaticPrefs::widget_non_native_theme_enabled()) {
-    // Configure the theme in this content process with the Gtk theme that was
-    // chosen by WithThemeConfiguredForContent in the parent process.
+    // Configure the theme in this content process with the Gtk theme that the
+    // parent chose for content.
     nsLookAndFeel::ConfigureTheme(aData.theme());
   }
+  mContentThemeIsDark = aData.theme().preferDarkTheme();
 #endif
 }
 
@@ -130,6 +132,14 @@ nsresult RemoteLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
 }
 
 nsresult RemoteLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
+#ifdef MOZ_WIDGET_GTK
+  // The parent computes this from the chrome theme, but content is painted with
+  // the theme it was handed, so report that one instead.
+  if (aID == IntID::SystemUsesDarkTheme) {
+    aResult = mContentThemeIsDark;
+    return NS_OK;
+  }
+#endif
   MOZ_DIAGNOSTIC_ASSERT(
       IsNeededInChildProcess(aID),
       "Querying value that we didn't bother getting from the parent process!");
