@@ -20129,6 +20129,9 @@
   value: false
   mirror: always
 
+# 0 = native, 1 = non-native, >=2 = native on light / non-native on dark.
+# Defaults to 1 while the native GTK scrollbar port is incomplete: metrics work
+# (space is reserved correctly) but the parts do not paint yet.
 - name: widget.native-controls.scrollbar-style
   type: int32_t
   value: 0
@@ -20137,6 +20140,11 @@
 - name: widget.native-controls.tooltip-style
   type: int32_t
   value: 0
+  mirror: always
+
+- name: widget.native-controls.ignore-color-scheme-mismatch
+  type: RelaxedAtomicBool
+  value: false
   mirror: always
 
 # Whether the non-native theme should always use system colors. Useful mostly
