@@ -560,7 +560,7 @@ static Maybe<nscolor> GetBorderColor(GtkStyleContext* aContext) {
   gtk_style_context_get(aContext, state, GTK_STYLE_PROPERTY_BORDER_STYLE,
                         &borderStyle, nullptr);
   if (borderStyle == GTK_BORDER_STYLE_NONE ||
-                 borderStyle == GTK_BORDER_STYLE_HIDDEN) {
+      borderStyle == GTK_BORDER_STYLE_HIDDEN) {
     return {};
   }
   // GTK has an initial value of zero for border-widths, and so themes
@@ -948,6 +948,13 @@ static int32_t ConvertGTKStepperStyleToMozillaScrollArrowStyle(
                           mozilla::LookAndFeel::eScrollArrow_StartForward);
 }
 
+static bool GetGtkOverlayScrolling() {
+  GtkSettings* settings = gtk_settings_get_default();
+  gboolean overlayScrolling = TRUE;
+  g_object_get(settings, "gtk-overlay-scrolling", &overlayScrolling, nullptr);
+  return overlayScrolling == TRUE;
+}
+
 nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
   nsresult res = NS_OK;
 
@@ -1176,7 +1183,8 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
       }();
       break;
     case IntID::UseOverlayScrollbars: {
-      aResult = StaticPrefs::widget_gtk_overlay_scrollbars_enabled();
+      aResult = StaticPrefs::widget_gtk_overlay_scrollbars_enabled() &&
+                GetGtkOverlayScrolling();
       break;
     }
     case IntID::HideCursorWhileTyping: {
@@ -1561,9 +1569,8 @@ void nsLookAndFeel::MaybeApplyColorOverrides() {
       // because it creates much better contrast. GTK headerbar colors are
       // white, and meant to "blend" with the contents otherwise. #2f2f2f is
       // rgba(0,0,0,.8) over #ebebeb.
-      light.ApplyColorOverride(
-          &light.mSidebar,
-          {NS_RGB(0xeb, 0xeb, 0xeb), NS_RGB(0x2f, 0x2f, 0x2f)});
+      light.ApplyColorOverride(&light.mSidebar, {NS_RGB(0xeb, 0xeb, 0xeb),
+                                                 NS_RGB(0x2f, 0x2f, 0x2f)});
       light.ApplyColorOverride(&light.mHeaderBar, light.mSidebar);
       light.ApplyColorOverride(&light.mTitlebar, light.mSidebar);
       light.ApplyColorOverride(
@@ -1964,8 +1971,9 @@ static bool GtkThemeExists(const nsACString& aName) {
   }
 
   if (const char* dataDirs = PR_GetEnv("XDG_DATA_DIRS")) {
-    for (const nsACString& dir : nsCCharSeparatedTokenizer(
-             nsDependentCString(dataDirs), ':').ToRange()) {
+    for (const nsACString& dir :
+         nsCCharSeparatedTokenizer(nsDependentCString(dataDirs), ':')
+             .ToRange()) {
       if (hasTheme(PromiseFlatCString(dir).get())) {
         return true;
       }
