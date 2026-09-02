@@ -930,6 +930,13 @@ static int32_t ConvertGTKStepperStyleToMozillaScrollArrowStyle(
                           mozilla::LookAndFeel::eScrollArrow_StartForward);
 }
 
+static bool GetGtkOverlayScrolling() {
+  GtkSettings* settings = gtk_settings_get_default();
+  gboolean overlayScrolling = TRUE;
+  g_object_get(settings, "gtk-overlay-scrolling", &overlayScrolling, nullptr);
+  return overlayScrolling == TRUE;
+}
+
 nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
   nsresult res = NS_OK;
 
@@ -1158,7 +1165,8 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
       }();
       break;
     case IntID::UseOverlayScrollbars: {
-      aResult = StaticPrefs::widget_gtk_overlay_scrollbars_enabled();
+      aResult = StaticPrefs::widget_gtk_overlay_scrollbars_enabled() &&
+                GetGtkOverlayScrolling();
       break;
     }
     case IntID::HideCursorWhileTyping: {

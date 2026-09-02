@@ -156,6 +156,24 @@ gint nsNativeThemeGTK::GetTabMarginPixels(nsIFrame* aFrame) {
       std::max(0, aFrame->PresContext()->AppUnitsToDevPixels(-margin)));
 }
 
+static ScrollbarOverlayState GetScrollbarOverlayState(nsIFrame* aFrame) {
+  if (!aFrame->PresContext()->UseOverlayScrollbars()) {
+    return ScrollbarOverlayState::None;
+  }
+  nsIFrame* scrollbar = ScrollbarDrawing::GetParentScrollbarFrame(aFrame);
+  if (!scrollbar) {
+    return ScrollbarOverlayState::Indicator;
+  }
+  auto state = scrollbar->GetContent()->AsElement()->State();
+  if (state.HasState(mozilla::dom::ElementState::ACTIVE)) {
+    return ScrollbarOverlayState::Dragging;
+  }
+  if (state.HasState(mozilla::dom::ElementState::HOVER)) {
+    return ScrollbarOverlayState::Hovering;
+  }
+  return ScrollbarOverlayState::Indicator;
+}
+
 static bool ShouldScrollbarButtonBeDisabled(int32_t aCurpos, int32_t aMaxpos,
                                             StyleAppearance aAppearance) {
   return (aCurpos == 0 &&
@@ -227,6 +245,10 @@ bool nsNativeThemeGTK::GetGtkWidgetAndState(StyleAppearance aAppearance,
         // In XUL, checkboxes and radios shouldn't have focus rings, their
         // labels do
         aState->focused = FALSE;
+      }
+
+      if (IsWidgetScrollbarPart(aAppearance)) {
+        aState->overlayState = GetScrollbarOverlayState(aFrame);
       }
 
       if (aAppearance == StyleAppearance::ScrollbarthumbVertical ||
