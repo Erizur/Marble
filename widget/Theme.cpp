@@ -175,7 +175,6 @@ void Theme::Shutdown() {
   for (const auto& pref : kPrefs) {
     Preferences::UnregisterCallback(PrefChangedCallback, pref);
   }
-  LookAndFeelChanged();
 }
 
 /* static */
