@@ -519,20 +519,6 @@ impl Renderer {
             self.gpu_profiler.finish_sampler(opaque_sampler);
         }
 
-        if !layer.clear_tiles.is_empty() {
-            let transparent_sampler = self.gpu_profiler.start_sampler(GPU_SAMPLER_TAG_TRANSPARENT);
-            self.set_blend(true, FramebufferKind::Main);
-            self.device.set_blend_mode_premultiplied_dest_out();
-            self.draw_tile_list(
-                layer.clear_tiles.iter(),
-                &composite_state,
-                &composite_state.external_surfaces,
-                projection,
-                &mut results.stats,
-            );
-            self.gpu_profiler.finish_sampler(transparent_sampler);
-        }
-
         // Draw alpha tiles
         let alpha_items = layer.occlusion.alpha_items();
         if !alpha_items.is_empty() {
@@ -541,6 +527,21 @@ impl Renderer {
             self.set_blend_mode_premultiplied_alpha(FramebufferKind::Main);
             self.draw_tile_list(
                 alpha_items.iter().rev(),
+                &composite_state,
+                &composite_state.external_surfaces,
+                projection,
+                &mut results.stats,
+            );
+            self.gpu_profiler.finish_sampler(transparent_sampler);
+        }
+
+        // Draw clear tiles
+        if !layer.clear_tiles.is_empty() {
+            let transparent_sampler = self.gpu_profiler.start_sampler(GPU_SAMPLER_TAG_TRANSPARENT);
+            self.set_blend(true, FramebufferKind::Main);
+            self.device.set_blend_mode_premultiplied_dest_out();
+            self.draw_tile_list(
+                layer.clear_tiles.iter(),
                 &composite_state,
                 &composite_state.external_surfaces,
                 projection,
@@ -770,7 +771,7 @@ impl Renderer {
                         );
 
                         let clip_rect = tile.device_clip_rect.to_i32();
-                        let is_opaque = tile.kind != TileKind::Alpha;
+                        let is_opaque = tile.kind == TileKind::Opaque;
 
                         if self.debug_flags.contains(DebugFlags::EXTERNAL_COMPOSITE_BORDERS) {
                             self.external_composite_debug_items.push(DebugItem::Rect {
@@ -854,6 +855,11 @@ impl Renderer {
                     });
                 }
                 None => {
+                    full_render_occlusion.add(&rect, is_opaque, OcclusionItemKey {
+                        tile_index: idx,
+                        needs_mask: false,
+                    });
+
                     if tile.kind == TileKind::Clear {
                         swapchain_layers
                             .last_mut()
@@ -863,11 +869,6 @@ impl Renderer {
                                 rectangle: rect,
                                 key: OcclusionItemKey { tile_index: idx, needs_mask: false },
                             });
-                    } else {
-                        full_render_occlusion.add(&rect, is_opaque, OcclusionItemKey {
-                            tile_index: idx,
-                            needs_mask: false,
-                        });
                     }
                 }
             }
