@@ -23,7 +23,7 @@ jobs:
     env:
       GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
       GITEA_URL: ${{ secrets.GITEA_URL }}
-      GITEA_REPO: ${{ vars.GITEA_REPO || github.repository }}
+      GITEA_REPO: ${{ secrets.GITEA_REPO || vars.GITEA_REPO || github.repository }}
       PR_NUM: ${{ github.event.pull_request.number }}
     steps:
       - name: Checkout PR head
