@@ -44,13 +44,22 @@ jobs:
             exit 0
           fi
 
-          # ls-remote instead of `git fetch gitea`: fetching would pull Gitea's
-          # entire copy of the history back down just to read one hash.
           remote_sha="$(git ls-remote "$remote" "${REF}" | cut -f1)"
           if [ "${remote_sha}" = "${GITHUB_SHA}" ]; then
             echo "Gitea already at ${GITHUB_SHA} for ${REF}. Skipping."
             exit 0
           fi
+
+          # Give the push a common base to compute against. A rewritten ref
+          # points at commits GitHub no longer has, so without this git cannot
+          # tell what Gitea already holds and packs the whole ~3.4 GB history,
+          # which the proxy in front of Gitea rejects with a 413. This costs
+          # almost nothing: the checkout above already has the full history, so
+          # the only objects transferred are the ones GitHub does not have.
+          git fetch --no-tags --prune "$remote" \
+            "+refs/heads/*:refs/remotes/gitea/heads/*" \
+            "+refs/tags/*:refs/remotes/gitea/tags/*" || \
+            echo "Nothing to fetch from Gitea; pushing without a common base."
 
           case "${REF}" in
             refs/tags/*)
