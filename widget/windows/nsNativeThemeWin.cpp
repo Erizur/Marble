@@ -776,6 +776,7 @@ mozilla::Maybe<nsUXThemeClass> nsNativeThemeWin::GetThemeClass(
     case StyleAppearance::MozWindowButtonRestore:
     case StyleAppearance::MozWindowButtonBox:
     case StyleAppearance::MozWindowButtonBoxMaximized:
+    case StyleAppearance::MozWinGlass:
     case StyleAppearance::MozWinBorderlessGlass:
       return Some(eUXWindowFrame);
     default:
@@ -1330,6 +1331,7 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
       return NS_OK;
     case StyleAppearance::MozWindowButtonBox:
     case StyleAppearance::MozWindowButtonBoxMaximized:
+    case StyleAppearance::MozWinGlass:
     case StyleAppearance::MozWinBorderlessGlass:
       aPart = -1;
       aState = 0;
@@ -1402,6 +1404,7 @@ nsNativeThemeWin::DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
         // through here and call the theme library we'll get aero
         // basic bitmaps.
         return NS_OK;
+      case StyleAppearance::MozWinGlass:
       case StyleAppearance::MozWinBorderlessGlass:
         // Nothing to draw, this is the glass background.
         return NS_OK;
@@ -1788,6 +1791,7 @@ LayoutDeviceIntMargin nsNativeThemeWin::GetWidgetBorder(
       aAppearance == StyleAppearance::Separator ||
       aAppearance == StyleAppearance::MozWindowTitlebar ||
       aAppearance == StyleAppearance::MozWindowTitlebarMaximized ||
+      aAppearance == StyleAppearance::MozWinGlass ||
       aAppearance == StyleAppearance::MozWinBorderlessGlass)
     return result;  // Don't worry about it.
 
@@ -2061,6 +2065,7 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
     case StyleAppearance::Listbox:
     case StyleAppearance::Treeview:
     case StyleAppearance::Menuitemtext:
+    case StyleAppearance::MozWinGlass:
     case StyleAppearance::MozWinBorderlessGlass:
       return {};  // Don't worry about it.
     default:
@@ -2227,6 +2232,7 @@ bool nsNativeThemeWin::WidgetAttributeChangeRequiresRepaint(
       aAppearance == StyleAppearance::Tabpanels ||
       aAppearance == StyleAppearance::Tabpanel ||
       aAppearance == StyleAppearance::Separator ||
+      aAppearance == StyleAppearance::MozWinGlass ||
       aAppearance == StyleAppearance::MozWinBorderlessGlass) {
     return false;
   }
@@ -2339,6 +2345,7 @@ nsITheme::Transparency nsNativeThemeWin::GetWidgetTransparency(
   }
 
   switch (aAppearance) {
+    case StyleAppearance::MozWinGlass:
     case StyleAppearance::MozWinBorderlessGlass:
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Progresschunk:
