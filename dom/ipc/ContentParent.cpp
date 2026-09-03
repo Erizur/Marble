@@ -7358,6 +7358,61 @@ mozilla::ipc::IPCResult ContentParent::RecvWindowPostMessage(
     return IPC_OK();
   }
 
+  bool clearSource = false;
+  if (!aData.source().IsNull()) {
+    // If we have a source BrowsingContext, we must also have a valid source
+    // innerWindowId. If this is gone, we need to clear out our source, similar
+    // to what will be done in PostMessageEvent::Run.
+    RefPtr<WindowGlobalParent> wgp =
+        WindowGlobalParent::GetByInnerWindowId(aData.innerWindowId());
+    if (!wgp || wgp->IsDiscarded() || !wgp->IsCurrent()) {
+      clearSource = true;
+    }
+
+    // Do some validation on the provided innerWindowId, if we have it around.
+    if (wgp) {
+      RefPtr<CanonicalBrowsingContext> bc = aData.source().get_canonical();
+      if (wgp->GetBrowsingContext() != bc) {
+        return IPC_FAIL(this, "RecvWindowPostMessage: invalid innerWindowId");
+      }
+      if (wgp->GetContentParent() != this) {
+        return IPC_FAIL(this,
+                        "RecvWindowPostMessage: source is not this process");
+      }
+      if (!wgp->DocumentPrincipal()->Equals(aData.callerPrincipal())) {
+        return IPC_FAIL(
+            this,
+            "RecvWindowPostMessage: callerPrincipal doesn't match source");
+      }
+    }
+  }
+
+  if (!ValidatePrincipal(aData.callerPrincipal(),
+                         {ValidatePrincipalOptions::AllowSystem,
+                          ValidatePrincipalOptions::AllowExpanded})) {
+    return PrincipalValidationIpcFail(aData.callerPrincipal(), this, __func__);
+  }
+
+  if (!ValidatePrincipal(aData.subjectPrincipal(),
+                         {ValidatePrincipalOptions::AllowSystem,
+                          ValidatePrincipalOptions::AllowExpanded})) {
+    return PrincipalValidationIpcFail(aData.subjectPrincipal(), this, __func__);
+  }
+
+  if (aData.callerPrincipal()->IsSystemPrincipal()) {
+    // In practice all SystemPrincipals in a content process should result in an
+    // empty origin.
+    if (!aData.origin().IsEmpty()) {
+      return IPC_FAIL(this, "RecvWindowPostMessage: system origin mismatch");
+    }
+  } else {
+    nsAutoCString callerOrigin;
+    aData.callerPrincipal()->GetWebExposedOriginSerialization(callerOrigin);
+    if (aData.origin() != NS_ConvertUTF8toUTF16(callerOrigin)) {
+      return IPC_FAIL(this, "RecvWindowPostMessage: origin mismatch");
+    }
+  }
+
   RefPtr<ContentParent> cp = context->GetContentParent();
   if (!cp) {
     MOZ_LOG(BrowsingContext::GetLog(), LogLevel::Debug,
@@ -7365,7 +7420,11 @@ mozilla::ipc::IPCResult ContentParent::RecvWindowPostMessage(
     return IPC_OK();
   }
 
-  (void)cp->SendWindowPostMessage(context, aMessage, aData);
+  PostMessageData data(aData);
+  if (clearSource) {
+    data.source() = nullptr;
+  }
+  (void)cp->SendWindowPostMessage(context, aMessage, data);
   return IPC_OK();
 }
 
