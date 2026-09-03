@@ -193,6 +193,9 @@ addon-category-dictionary-title =
 addon-category-locale = Languages
 addon-category-locale-title =
     .title = Languages
+addon-category-brightwork = Brightwork
+addon-category-brightwork-title =
+    .title = Brightwork
 addon-category-available-updates = Available Updates
 addon-category-available-updates-title =
     .title = Available Updates
@@ -267,6 +270,56 @@ addon-install-from-file-dialog-title = Select add-on to install
 addon-install-from-file-filter-name = Add-ons
 addon-open-about-debugging = Debug Add-ons
     .accesskey = b
+
+# Bwork: install a custom UI package from a built folder or a .zip of one.
+addon-install-brightwork-from-folder = Install Brightwork Package From Folder…
+    .accesskey = F
+addon-install-brightwork-from-file = Install Brightwork Package From File…
+    .accesskey = P
+addon-install-brightwork-folder-dialog-title = Select the Brightwork package folder
+addon-install-brightwork-file-dialog-title = Select a Brightwork package (.zip or .bwpkg)
+addon-install-brightwork-filter-name = Brightwork packages
+
+# Shown after installing, since omni.ja only loads at startup
+addon-brightwork-restart-needed = Restart to apply Brightwork changes
+
+# Confirm dialog offering a restart after a bw package is enabled, disabled, swapped or uninstalled.
+brightwork-restart-prompt-title = Restart to apply
+brightwork-restart-prompt-message = Brightwork changes take effect after { -brand-short-name } restarts. Would you like to restart now?
+brightwork-restart-prompt-restart-button = Restart
+brightwork-restart-prompt-later-button = Later
+
+# Shown on a package's card when its ABI does not match the running build.
+brightwork-incompatible-description = Version incompatible.
+
+# Shown on a package's card when it does not ship jars for the running platform.
+brightwork-platform-incompatible-description = Not available for your platform.
+
+# Shown when installing a package that has no build for this system.
+brightwork-install-error-platform = This Brightwork package does not support your platform ({ $platform }). It ships builds for: { $supported }.
+
+# Errors shown when installing a folder/zip that is not a valid package.
+# $file is the metadata (brightwork.json).
+brightwork-install-error-has-omni-no-metadata = This folder has omni.ja but no { $file }.
+brightwork-install-error-no-metadata = Not a Brightwork package: no { $file } found. Select the build output folder (the one containing omni.ja and { $file }), or a .zip or .bwpkg of it.
+brightwork-install-error-no-omni = Not a Brightwork package: { $file } is present but omni.ja is missing.
+
+# Title of the alert shown when a brightwork install fails.
+brightwork-install-failed-title = Installing Brightwork package failed
+
+# Trust prompt shown when a website offers a brightwork package for download. The modal fallback
+# substitutes it inline. brightwork-web-install-title is only used by the modal.
+brightwork-web-install-title = Install Brightwork package
+brightwork-web-install-message = <> would like to install a Brightwork package. Brightwork packages can replace large parts of { -brand-short-name }’s interface and run with full privileges. Only install ones from sources you trust!
+brightwork-web-install-button = Install
+    .accesskey = I
+brightwork-web-install-cancel-button = Cancel
+    .accesskey = C
+
+# Shown after a successful web install. Brightwork packages are never applied
+# automatically; the user activates them from the Add-ons Manager.
+brightwork-web-installed-title = Brightwork package installed
+brightwork-web-installed-message = In order to apply the Brightwork addon, you must go to the Add-ons Manager to activate it.
 
 ## Extension shortcut management
 
@@ -405,6 +458,8 @@ theme-disabled-heading2 = Saved Themes
 
 plugin-enabled-heading = Enabled
 plugin-disabled-heading = Disabled
+brightwork-enabled-heading = Enabled
+brightwork-disabled-heading = Disabled
 
 dictionary-enabled-heading = Enabled
 dictionary-disabled-heading = Disabled
@@ -544,6 +599,7 @@ recommended-theme-1 = Feeling creative? <a data-l10n-name="link">Build your own 
 extension-heading = Manage Your Extensions
 theme-heading = Manage Your Themes
 plugin-heading = Manage Your Plugins
+brightwork-heading = Manage Your Brightwork Add-ons
 dictionary-heading = Manage Your Dictionaries
 locale-heading = Manage Your Languages
 updates-heading = Manage Your Updates

@@ -17,6 +17,7 @@ EXTRA_JS_MODULES.addons += [
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] != "android":
     EXTRA_JS_MODULES.addons += [
+        "BrightworkProvider.sys.mjs",
         "GMPProvider.sys.mjs",
         "ModelHubProvider.sys.mjs",
         ## TODO consider extending it to mobile builds too (See Bug 1790084).
