@@ -8335,6 +8335,15 @@
   type: bool
   value: false
   mirror: once
+
+# My experimental feature: Disabling DWM can bring back vsync.
+# This isn't really useful when we are just spoofing it to be disabled,
+# so this becomes optional and may not cause breakage if used properly.
+# uhhhhhhhh
+- name: gfx.compositor.force-dwmless-vsync
+  type: bool
+  value: false
+  mirror: once
 #endif
 
 - name: gfx.webrender.dcomp-texture-overlay-win

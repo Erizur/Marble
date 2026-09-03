@@ -1567,7 +1567,10 @@ class D3DVsyncSource final : public VsyncSource {
   }
 
   void SetVsyncRate() {
-    if (!gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled()) {
+    bool isVsyncDwm =
+        Preferences::GetBool("gfx.compositor.force-dwmless-vsync", false);
+    if (!gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled() ||
+        isVsyncDwm) {
       mVsyncRate = TimeDuration::FromMilliseconds(1000.0 / 60.0);
       return;
     }
