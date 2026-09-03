@@ -7,6 +7,8 @@ import {
   AddonManagerListenerHandler,
   checkForUpdates,
   installAddonsFromFilePicker,
+  installBrightworkFromFile,
+  installBrightworkFromFolder,
 } from "../aboutaddons-utils.mjs";
 import { gViewController } from "../view-controller.mjs";
 
@@ -49,6 +51,16 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
           <panel-item
             action="install-from-file"
             data-l10n-id="addon-install-from-file"
+            data-l10n-attrs="accesskey"
+          ></panel-item>
+          <panel-item
+            action="install-brightwork-from-folder"
+            data-l10n-id="addon-install-brightwork-from-folder"
+            data-l10n-attrs="accesskey"
+          ></panel-item>
+          <panel-item
+            action="install-brightwork-from-file"
+            data-l10n-id="addon-install-brightwork-from-file"
             data-l10n-attrs="accesskey"
           ></panel-item>
           <panel-item
@@ -150,6 +162,12 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
         if (lazy.XPINSTALL_ENABLED) {
           installAddonsFromFilePicker();
         }
+        break;
+      case "install-brightwork-from-folder":
+        await installBrightworkFromFolder();
+        break;
+      case "install-brightwork-from-file":
+        await installBrightworkFromFile();
         break;
       case "debug-addons":
         this.openAboutDebugging();

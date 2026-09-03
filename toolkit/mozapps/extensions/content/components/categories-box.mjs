@@ -68,6 +68,14 @@ const CATEGORIES = [
     defaultHidden: false,
   },
   {
+    name: "brightwork",
+    viewId: "addons://list/brightwork",
+    iconSrc: "chrome://mozapps/skin/extensions/category-brightwork.svg",
+    l10nId: "addon-category-brightwork",
+    titleL10nId: "addon-category-brightwork-title",
+    defaultHidden: false,
+  },
+  {
     name: "dictionary",
     viewId: "addons://list/dictionary",
     iconSrc: "chrome://mozapps/skin/extensions/category-dictionaries.svg",
