@@ -4191,3 +4191,126 @@ def repackage_flatpak(
         template_dir,
         langpack_pattern,
     )
+
+
+# init Brightwork:
+def _brightwork_manifests(command_context):
+    """
+    Locate the FasterMake install manifests describing the chrome resources.
+
+    unified_install_dist_bin is the aggregate of every install_dist_bin* tier
+    (GRE + browser + the src/localization components), so it alone captures
+    all resources. Returns [] if the tree hasn't been staged yet.
+    """
+    faster_dir = os.path.join(command_context.topobjdir, "faster")
+    unified = os.path.join(faster_dir, "unified_install_dist_bin")
+    if os.path.exists(unified):
+        return [unified]
+    if os.path.isdir(faster_dir):
+        return sorted(
+            os.path.join(faster_dir, n)
+            for n in os.listdir(faster_dir)
+            if n.startswith("install_dist_bin") and not n.endswith(".track")
+        )
+    return []
+
+
+@Command(
+    "brightwork-extract",
+    category="post-build",
+    description="Assemble a self-contained standalone packager (source + ADK + tools) that rebuilds known omni.ja",
+)
+@CommandArgument(
+    "--output",
+    "-o",
+    default=None,
+    help="Directory to write the standalone repo into. ",
+)
+def brightwork_extract(command_context, output=None):
+    from mozpack.brightwork.extract import extract_standalone
+
+    config = command_context.config_environment
+    output = output or os.path.join(command_context.distdir, "bw-pkg")
+
+    manifests = _brightwork_manifests(command_context)
+    if not manifests:
+        print(
+            "No FasterMake install manifests found under %s/faster. Run "
+            "./mach build first."
+            % command_context.topobjdir
+        )
+        return 1
+
+    summary = extract_standalone(config, manifests, output)
+    print(
+        "Captured the %s ADK (adk-%s) into %s\n"
+        "  source files: %d (%.1f MiB)\n"
+        "  platforms now in this SDK: %s\n"
+        "  Multi-target: re-run this on the other platform's build (same"
+        " --output) to add its ADK; src/ is shared.\n"
+        "  To build, run python build.py in the root folder (packs all"
+        " available platforms; --platform to pick one)."
+        % (
+            summary["platform"],
+            summary["platform"],
+            output,
+            summary["source_files"],
+            summary["source_bytes"] / (1024 * 1024),
+            ", ".join(summary["platforms"]),
+        )
+    )
+    return 0
+
+
+@Command(
+    "brightwork-append",
+    category="post-build",
+    description="Build an append (delta) package of the files that changed "
+    "between two brightwork SDKs/packages, for incremental upgrades.",
+)
+@CommandArgument(
+    "--old", required=True, help="Previous release (a directory or a .zip)."
+)
+@CommandArgument(
+    "--new", required=True, help="New release to diff against --old (dir or .zip)."
+)
+@CommandArgument(
+    "--output",
+    "-o",
+    default=None,
+    help="Directory to write the changed files + manifest into "
+    "(default: <distdir>/bw-append).",
+)
+@CommandArgument(
+    "--zip",
+    dest="zip_path",
+    default=None,
+    help="Also write the append package as a .zip here.",
+)
+def brightwork_append(command_context, old, new, output=None, zip_path=None):
+    from mozpack.brightwork.append import build_append_package
+
+    output = output or os.path.join(command_context.distdir, "bw-append")
+    summary = build_append_package(old, new, output, zip_path)
+
+    def mib(n):
+        return n / (1024 * 1024)
+
+    print(
+        "Wrote append package to %s\n"
+        "  added:   %d\n"
+        "  changed: %d\n"
+        "  removed: %d (not copied)\n"
+        "  payload: %.1f MiB%s"
+        % (
+            summary["output_dir"],
+            len(summary["added"]),
+            len(summary["changed"]),
+            len(summary["removed"]),
+            mib(summary["bytes"]),
+            ("\n  zip:     " + summary["zip"]) if summary["zip"] else "",
+        )
+    )
+    if not summary["added"] and not summary["changed"] and not summary["removed"]:
+        print("  (the two trees are identical)")
+    return 0
