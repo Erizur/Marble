@@ -1177,11 +1177,34 @@ nsresult nsWindow::Create(nsIWidget* aParent, const LayoutDeviceIntRect& aRect,
         PropVariantClear(&pv);
       }
     }
-    HICON icon = ::LoadIconW(
-        ::GetModuleHandleW(nullptr),
-        MAKEINTRESOURCEW(usePrivateAumid ? IDI_PBMODE : IDI_APPICON));
-    SetBigIcon(icon);
-    SetSmallIcon(icon);
+    bool loadSmallIconProperly =
+        Preferences::GetBool("browser.smallIcons.enabled", true);
+    bool useSeparateIcons =
+        Preferences::GetBool("browser.splitIcons.enabled", true);
+
+    WORD bigIconId = usePrivateAumid ? IDI_PBMODE : IDI_APPICON;
+    // This is commented/explained in the Nocturne source.
+    // Most of it doesn't apply to Marble (not my priority)
+    // but it's still good to look it up:
+    // https://github.com/raytek-cafe/Nocturne/commit/f881b8545c5347a009ed554d918fe9344906f962
+    // 32512 is the stock IDI_APPLICATION group, which splash.rc points at the
+    // same icon file. Private windows keep their own icon in both slots.
+    WORD smallIconId =
+        (useSeparateIcons && !usePrivateAumid) ? 32512 : bigIconId;
+
+    HICON smallIcon;
+    if (loadSmallIconProperly) {
+      smallIcon = (HICON)::LoadImageW(
+          ::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(smallIconId),
+          IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON),
+          ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+    } else {
+      smallIcon = ::LoadIconW(::GetModuleHandleW(nullptr),
+                              MAKEINTRESOURCEW(smallIconId));
+    }
+    SetSmallIcon(smallIcon);
+    SetBigIcon(::LoadIconW(::GetModuleHandleW(nullptr),
+                           MAKEINTRESOURCEW(bigIconId)));
   }
 
   // If mDefaultScale is set before mWnd has been set, it will have the scale of

@@ -1842,6 +1842,18 @@
   value: true
   mirror: always
 
+#ifdef XP_WIN
+- name: browser.splitIcons.enabled
+  type: bool
+  value: true
+  mirror: always
+
+- name: browser.smallIcons.enabled
+  type: bool
+  value: true
+  mirror: always
+#endif
+
 # Id of the active Brightwork UI package, or empty for none.
 # Set by the addons manager.
 - name: browser.brightwork.active
