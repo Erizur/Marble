@@ -1,0 +1,97 @@
+name: Mirror Issues to Gitea
+
+on:
+  issues:
+    types: [opened, closed, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitea-issue-${{ github.event.issue.number }}
+
+jobs:
+  sync-issue:
+    # Pull request conversations are issues as far as this event is concerned;
+    # they are handled by the pull request workflow instead.
+    if: github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync issue or comment
+        env:
+          GITEA_URL: ${{ secrets.GITEA_URL }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_REPO: ${{ vars.GITEA_REPO || github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+        run: |
+          set -euo pipefail
+
+          base="${GITEA_URL%/}/api/v1/repos/${GITEA_REPO}"
+          auth="Authorization: token ${GITEA_TOKEN}"
+          marker="[GH#${ISSUE_NUM}]"
+
+          # -G with --data-urlencode: the marker contains '[' and '#', and an
+          # unencoded '#' would truncate the URL at the fragment.
+          search="$(curl -sfG \
+            -H "$auth" -H "Accept: application/json" \
+            --data-urlencode "q=${marker}" \
+            --data-urlencode "state=all" \
+            "${base}/issues")"
+
+          # startswith on the exact marker, otherwise [GH#12] also matches
+          # [GH#123]. Gitea's q= is a substring search.
+          index="$(printf '%s' "$search" | jq -r --arg m "${marker} " \
+            'map(select(.title | startswith($m))) | .[0].number // empty')"
+
+          if [ "$EVENT_NAME" = "issues" ] && [ "$ACTION" = "opened" ]; then
+            if [ -n "$index" ]; then
+              echo "Gitea already has an issue for ${marker}. Skipping."
+              exit 0
+            fi
+            payload="$(jq -n \
+              --arg title "${marker} ${ISSUE_TITLE}" \
+              --arg head "> **@${ISSUE_AUTHOR}** opened on [GitHub](${ISSUE_URL}):" \
+              --arg body "${ISSUE_BODY}" \
+              '{title: $title, body: ($head + "\n\n" + $body)}')"
+            curl -sf -X POST "${base}/issues" \
+              -H "$auth" -H "Content-Type: application/json" \
+              -d "$payload" > /dev/null
+            echo "Created Gitea issue for ${marker}"
+
+          elif [ "$EVENT_NAME" = "issues" ]; then
+            if [ -z "$index" ]; then
+              echo "No Gitea issue found for ${marker}. Nothing to update."
+              exit 0
+            fi
+            state="open"
+            [ "$ACTION" = "closed" ] && state="closed"
+            curl -sf -X PATCH "${base}/issues/${index}" \
+              -H "$auth" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg s "$state" '{state: $s}')" > /dev/null
+            echo "Set Gitea issue #${index} to ${state}"
+
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            if [ -z "$index" ]; then
+              echo "No Gitea issue found for ${marker}. Nothing to comment on."
+              exit 0
+            fi
+            payload="$(jq -n \
+              --arg head "> **@${COMMENT_AUTHOR}** commented on [GitHub](${COMMENT_URL}):" \
+              --arg body "${COMMENT_BODY}" \
+              '{body: ($head + "\n\n" + $body)}')"
+            curl -sf -X POST "${base}/issues/${index}/comments" \
+              -H "$auth" -H "Content-Type: application/json" \
+              -d "$payload" > /dev/null
+            echo "Mirrored comment to Gitea issue #${index}"
+          fi

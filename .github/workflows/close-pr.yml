@@ -4,6 +4,9 @@ on:
     types: [opened, reopened]
 jobs:
   run:
+    # Upstream-only policy: this fork accepts pull requests, and mirrors them to
+    # Gitea instead of closing them.
+    if: github.repository == 'mozilla-firefox/firefox'
     runs-on: ubuntu-latest
     steps:
       - name: checkout

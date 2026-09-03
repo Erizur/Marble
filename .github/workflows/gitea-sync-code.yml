@@ -1,0 +1,65 @@
+name: Sync to Gitea
+
+on:
+  push:
+    branches: ['**']
+    tags: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitea-sync-${{ github.ref }}
+
+jobs:
+  mirror-to-gitea:
+    runs-on: ubuntu-latest
+    steps:
+      # The worktree is not needed, only the object database, so the checkout is
+      # sparse: this repository is a Firefox fork and a full worktree is ~6 GB on
+      # top of a ~3.4 GB history.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Push ref to Gitea
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_URL: ${{ secrets.GITEA_URL }}
+          GITEA_REPO: ${{ vars.GITEA_REPO || github.repository }}
+          REF: ${{ github.ref }}
+          DELETED: ${{ github.event.deleted }}
+        run: |
+          set -euo pipefail
+
+          host="${GITEA_URL#http://}"; host="${host#https://}"; host="${host%/}"
+          remote="https://oauth2:${GITEA_TOKEN}@${host}/${GITEA_REPO}.git"
+
+          if [ "${DELETED}" = "true" ]; then
+            echo "Deleting ${REF} on Gitea"
+            git push "$remote" --delete "${REF}"
+            exit 0
+          fi
+
+          # ls-remote instead of `git fetch gitea`: fetching would pull Gitea's
+          # entire copy of the history back down just to read one hash.
+          remote_sha="$(git ls-remote "$remote" "${REF}" | cut -f1)"
+          if [ "${remote_sha}" = "${GITHUB_SHA}" ]; then
+            echo "Gitea already at ${GITHUB_SHA} for ${REF}. Skipping."
+            exit 0
+          fi
+
+          case "${REF}" in
+            refs/tags/*)
+              # Push the tag object itself so annotated tags keep their message.
+              git push --force "$remote" "${REF}:${REF}"
+              ;;
+            *)
+              # --force so a rebase or history edit on GitHub is reproduced
+              # rather than rejected as a non-fast-forward.
+              git push --force "$remote" "${GITHUB_SHA}:${REF}"
+              ;;
+          esac

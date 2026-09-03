@@ -1,0 +1,96 @@
+name: Mirror PRs to Gitea
+
+on:
+  # WARNING: pull_request_target MUST NOT be used to run code under the control
+  # of the source PR, as it would risk leaking GITEA_TOKEN. It is used here
+  # because the job needs the base repository's secrets, which a plain
+  # pull_request event does not get for forked PRs.
+  #
+  # Crucially, no code from the pull request is loaded or run: the checkout is
+  # sparse and the only operations are `git push` and Gitea API calls.
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitea-pr-${{ github.event.pull_request.number }}
+
+jobs:
+  sync-pr:
+    runs-on: ubuntu-latest
+    env:
+      GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+      GITEA_URL: ${{ secrets.GITEA_URL }}
+      GITEA_REPO: ${{ vars.GITEA_REPO || github.repository }}
+      PR_NUM: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Checkout PR head
+        if: github.event.action != 'closed'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Push PR branch to Gitea
+        if: github.event.action != 'closed'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          host="${GITEA_URL#http://}"; host="${host#https://}"; host="${host%/}"
+          remote="https://oauth2:${GITEA_TOKEN}@${host}/${GITEA_REPO}.git"
+          git push -f "$remote" "${HEAD_SHA}:refs/heads/gh-pr/${PR_NUM}"
+
+      - name: Create PR on Gitea
+        if: github.event.action == 'opened'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          base="${GITEA_URL%/}/api/v1/repos/${GITEA_REPO}"
+          payload="$(jq -n \
+            --arg head "gh-pr/${PR_NUM}" \
+            --arg base "${BASE_BRANCH}" \
+            --arg title "[GH#${PR_NUM}] ${PR_TITLE}" \
+            --arg h "> **@${PR_AUTHOR}** opened PR on [GitHub](${PR_URL}):" \
+            --arg body "${PR_BODY}" \
+            '{head: $head, base: $base, title: $title, body: ($h + "\n\n" + $body)}')"
+          curl -sf -X POST "${base}/pulls" \
+            -H "Authorization: token ${GITEA_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$payload" > /dev/null
+          echo "Created Gitea PR for [GH#${PR_NUM}]"
+
+      - name: Close PR on Gitea and drop its branch
+        if: github.event.action == 'closed'
+        run: |
+          set -euo pipefail
+          base="${GITEA_URL%/}/api/v1/repos/${GITEA_REPO}"
+          auth="Authorization: token ${GITEA_TOKEN}"
+          marker="[GH#${PR_NUM}]"
+
+          search="$(curl -sfG -H "$auth" -H "Accept: application/json" \
+            --data-urlencode "q=${marker}" \
+            --data-urlencode "state=all" \
+            "${base}/pulls")"
+          index="$(printf '%s' "$search" | jq -r --arg m "${marker} " \
+            'map(select(.title | startswith($m))) | .[0].number // empty')"
+
+          if [ -n "$index" ]; then
+            curl -sf -X PATCH "${base}/pulls/${index}" \
+              -H "$auth" -H "Content-Type: application/json" \
+              -d '{"state": "closed"}' > /dev/null
+            echo "Closed Gitea PR #${index}"
+          fi
+
+          host="${GITEA_URL#http://}"; host="${host#https://}"; host="${host%/}"
+          remote="https://oauth2:${GITEA_TOKEN}@${host}/${GITEA_REPO}.git"
+          git push "$remote" --delete "refs/heads/gh-pr/${PR_NUM}" || true
