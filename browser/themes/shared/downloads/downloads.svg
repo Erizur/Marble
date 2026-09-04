@@ -7,6 +7,11 @@
     :root > g:not(:target) {
       display: none;
     }
+    /* Most consumers load this without a fragment, so fall back to the plain
+       downloads glyph instead of rendering nothing. */
+    :root:not(:has(:target)) > #arrow-with-bar {
+      display: revert;
+    }
   </style>
   <defs>
     <path id="arrow-icon" d="M7.293 12.725a1 1 0 0 0 1.414 0l5-5a1 1 0 0 0-1.414-1.413L9 9.605V1.019a1 1 0 0 0-2 0v8.586L3.707 6.312a1 1 0 0 0-1.414 1.413l5 5z"/>
