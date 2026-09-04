@@ -10,7 +10,23 @@ toolbar {
 }
 
 toolbarseparator {
-  min-width: 2px;
+  color: var(--toolbarseparator-color);
+  /* NOTE: we use padding + a pseudo-element, rather than margin, so that
+   * separators are draggable. This is useful for the personal bookmarks
+   * toolbar */
+  padding: 2px;
+
+  &::before {
+    content: "";
+    flex: 1;
+    display: block;
+    border-inline-start: 0.01px solid;
+  }
+
+  panel &::before {
+    border-inline-start: none;
+    border-block-start: 0.01px solid;
+  }
 }
 
 toolbarpaletteitem {

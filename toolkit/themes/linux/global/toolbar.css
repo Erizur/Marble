@@ -39,6 +39,21 @@ toolbarseparator {
   -moz-default-appearance: separator;
   margin: 0;
   min-width: 2px;
+
+  /* The native separator is drawn along the toolbar's axis. That is right in a
+   * toolbar, but in a panel separators run across the menu, so draw those
+   * ourselves rather than letting GTK render them on their side. */
+  panel & {
+    appearance: none;
+    min-width: 0;
+
+    &::before {
+      content: "";
+      flex: 1;
+      display: block;
+      border-block-start: 0.01px solid;
+    }
+  }
 }
 
 toolbarspacer {
