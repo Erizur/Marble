@@ -499,6 +499,99 @@ toolbar[brighttext] .toolbaritem-combined-buttons > separator {
   transform: translateX(-300px);
 }
 
+/* Photon-era toolbar button animations, restored behind browser.photon.animations.enabled.
+   The sprites use 18px-wide frames instead of the 16/20px ones the stock filmstrips use,
+   so the animatable box and every frame count has to be resized along with them. */
+
+@keyframes overflow-animation-photon {
+  from {
+    transform: translateX(0);
+  }
+  50% {
+    fill: var(--toolbarbutton-icon-fill-attention);
+    fill-opacity: 1;
+  }
+  to {
+    transform: translateX(-1260px);
+    fill: var(--toolbarbutton-icon-fill-attention);
+    fill-opacity: 1;
+  }
+}
+
+@keyframes stop-to-reload-photon {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-450px);
+  }
+}
+
+@keyframes reload-to-stop-photon {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-450px);
+  }
+}
+
+@media -moz-pref("browser.photon.animations.enabled") {
+  #nav-bar-overflow-button > .toolbarbutton-animatable-box {
+    top: calc(50% - 18px);
+    width: 18px;
+    height: 36px;
+  }
+
+  #nav-bar-overflow-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    background-image: url("chrome://browser/skin/chevron-animation-photon.svg");
+    width: 1278px;
+    height: 36px;
+  }
+
+  #nav-bar-overflow-button[animate] > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    animation-name: overflow-animation-photon;
+    animation-timing-function: steps(70);
+    animation-duration: 1167ms;
+  }
+
+  :is(#reload-button, #stop-button) > .toolbarbutton-animatable-box {
+    width: 18px;
+    height: 20px;
+  }
+
+  #stop-reload-button[animate] > #reload-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    background-image: url("chrome://browser/skin/stop-to-reload-photon.svg");
+    width: 468px;
+  }
+
+  #stop-reload-button[animate] > #reload-button:not([displaystop]) > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    animation-name: stop-to-reload-photon;
+  }
+
+  #stop-reload-button[animate] > #reload-button[displaystop] + #stop-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    background-image: url("chrome://browser/skin/reload-to-stop-photon.svg");
+    width: 468px;
+    animation-name: reload-to-stop-photon;
+    animation-duration: 417ms;
+  }
+
+  #reload-button:not([displaystop]) > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    animation-timing-function: steps(25);
+    animation-duration: 417ms;
+  }
+
+  #reload-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    transform: translateX(-450px);
+  }
+
+  #reload-button[displaystop] + #stop-button > .toolbarbutton-animatable-box > .toolbarbutton-animatable-image {
+    animation-timing-function: steps(25);
+    animation-duration: 417ms;
+    transform: translateX(-450px);
+  }
+}
+
 /* Bookmark buttons */
 
 #personal-toolbar-empty-description,

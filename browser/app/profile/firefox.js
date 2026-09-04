@@ -1427,6 +1427,10 @@ pref("browser.preferences.defaultPerformanceSettings.enabled", true);
 
 pref("browser.proton.toolbar.version", 0);
 
+// Swaps the stock toolbar button filmstrips (overflow chevron, stop/reload)
+// for the Photon-era ones.
+pref("browser.photon.animations.enabled", false);
+
 // Backspace and Shift+Backspace behavior
 // 0 goes Back/Forward
 // 1 act like PgUp/PgDown
