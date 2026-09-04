@@ -742,7 +742,10 @@ nsStyleXUL::nsStyleXUL()
       mBoxAlign(StyleBoxAlign::Stretch),
       mBoxDirection(StyleBoxDirection::Normal),
       mBoxOrient(StyleBoxOrient::Horizontal),
-      mBoxPack(StyleBoxPack::Start) {
+      mBoxPack(StyleBoxPack::Start),
+      mWindowTransformOrigin{LengthPercentage::FromPercentage(0.5),
+                             LengthPercentage::FromPercentage(0.5),
+                             {0.}} {
   MOZ_COUNT_CTOR(nsStyleXUL);
 }
 
@@ -752,7 +755,8 @@ nsStyleXUL::nsStyleXUL(const nsStyleXUL& aSource)
       mBoxAlign(aSource.mBoxAlign),
       mBoxDirection(aSource.mBoxDirection),
       mBoxOrient(aSource.mBoxOrient),
-      mBoxPack(aSource.mBoxPack) {
+      mBoxPack(aSource.mBoxPack),
+      mWindowTransformOrigin(aSource.mWindowTransformOrigin) {
   MOZ_COUNT_CTOR(nsStyleXUL);
 }
 
@@ -761,6 +765,9 @@ nsChangeHint nsStyleXUL::CalcDifference(const nsStyleXUL& aNewData) const {
       mBoxDirection == aNewData.mBoxDirection &&
       mBoxFlex == aNewData.mBoxFlex && mBoxOrient == aNewData.mBoxOrient &&
       mBoxPack == aNewData.mBoxPack && mBoxOrdinal == aNewData.mBoxOrdinal) {
+    if (mWindowTransformOrigin != aNewData.mWindowTransformOrigin) {
+      return nsChangeHint_NeutralChange;
+    }
     return nsChangeHint(0);
   }
   if (mBoxOrdinal != aNewData.mBoxOrdinal) {
