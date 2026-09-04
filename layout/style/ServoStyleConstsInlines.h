@@ -1083,7 +1083,7 @@ inline const StyleImage& StyleImage::FinalImage() const {
 template <>
 inline bool StyleImage::IsImageRequestType() const {
   const auto& finalImage = FinalImage();
-  return finalImage.IsUrl();
+  return finalImage.IsUrl() || finalImage.IsRect();
 }
 
 template <>
@@ -1091,6 +1091,9 @@ inline const StyleComputedUrl* StyleImage::GetImageRequestURLValue() const {
   const auto& finalImage = FinalImage();
   if (finalImage.IsUrl()) {
     return &finalImage.AsUrl();
+  }
+  if (finalImage.IsRect()) {
+    return &finalImage.AsRect()->url;
   }
   return nullptr;
 }
@@ -1113,6 +1116,8 @@ template <>
 bool StyleImage::IsSizeAvailable() const;
 template <>
 bool StyleImage::IsComplete() const;
+template <>
+Maybe<StyleImage::ActualCropRect> StyleImage::ComputeActualCropRect() const;
 template <>
 void StyleImage::ResolveImage(dom::Document&, const StyleImage*);
 
