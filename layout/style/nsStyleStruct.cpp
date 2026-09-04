@@ -612,7 +612,8 @@ nsChangeHint nsStyleBorder::CalcDifference(
 }
 
 nsStyleOutline::nsStyleOutline()
-    : mOutlineWidth(kMediumBorderWidth),
+    : mOutlineRadius(ZeroBorderRadius()),
+      mOutlineWidth(kMediumBorderWidth),
       mOutlineOffset(0),
       mOutlineColor(StyleColor::CurrentColor()),
       mOutlineStyle(StyleOutlineStyle::BorderStyle(StyleBorderStyle::None)) {
@@ -620,7 +621,8 @@ nsStyleOutline::nsStyleOutline()
 }
 
 nsStyleOutline::nsStyleOutline(const nsStyleOutline& aSrc)
-    : mOutlineWidth(aSrc.mOutlineWidth),
+    : mOutlineRadius(aSrc.mOutlineRadius),
+      mOutlineWidth(aSrc.mOutlineWidth),
       mOutlineOffset(aSrc.mOutlineOffset),
       mOutlineColor(aSrc.mOutlineColor),
       mOutlineStyle(aSrc.mOutlineStyle) {
@@ -635,7 +637,8 @@ nsChangeHint nsStyleOutline::CalcDifference(
   if (shouldPaintOutline != aNewData.ShouldPaintOutline() ||
       mOutlineWidth != aNewData.mOutlineWidth ||
       mOutlineStyle.IsAuto() != aNewData.mOutlineStyle.IsAuto() ||
-      (shouldPaintOutline && mOutlineOffset != aNewData.mOutlineOffset)) {
+      (shouldPaintOutline && mOutlineOffset != aNewData.mOutlineOffset) ||
+      mOutlineRadius != aNewData.mOutlineRadius) {
     return nsChangeHint_UpdateOverflow | nsChangeHint_SchedulePaint |
            nsChangeHint_RepaintFrame;
   }

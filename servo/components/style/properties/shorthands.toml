@@ -482,6 +482,12 @@ kind = "two_properties"
 sub_properties = ["outline-color", "outline-style", "outline-width"]
 spec = "https://drafts.csswg.org/css-ui/#propdef-outline"
 
+# The -moz-outline-radius shorthand is non-standard and not on a standards track.
+[-moz-outline-radius]
+engine = "gecko"
+sub_properties = ["-moz-outline-radius-topleft", "-moz-outline-radius-topright", "-moz-outline-radius-bottomright", "-moz-outline-radius-bottomleft"]
+spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-outline-radius)"
+
 [columns]
 sub_properties = ["column-width", "column-count"]
 spec = "https://drafts.csswg.org/css-multicol/#propdef-columns"

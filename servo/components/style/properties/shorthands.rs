@@ -231,6 +231,48 @@ pub mod border_radius {
     }
 }
 
+#[cfg(feature = "gecko")]
+pub mod _moz_outline_radius {
+    pub use crate::properties::generated::shorthands::_moz_outline_radius::*;
+
+    use super::*;
+    use crate::values::generics::border::BorderCornerRadius;
+    use crate::values::generics::rect::Rect;
+    use crate::values::specified::BorderRadius;
+
+    pub fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let radii = BorderRadius::parse(context, input)?;
+        Ok(expanded! {
+            _moz_outline_radius_topleft: radii.top_left,
+            _moz_outline_radius_topright: radii.top_right,
+            _moz_outline_radius_bottomright: radii.bottom_right,
+            _moz_outline_radius_bottomleft: radii.bottom_left,
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+        where
+            W: fmt::Write,
+        {
+            let LonghandsToSerialize {
+                _moz_outline_radius_topleft: &BorderCornerRadius(ref tl),
+                _moz_outline_radius_topright: &BorderCornerRadius(ref tr),
+                _moz_outline_radius_bottomright: &BorderCornerRadius(ref br),
+                _moz_outline_radius_bottomleft: &BorderCornerRadius(ref bl),
+            } = *self;
+
+            let widths = Rect::new(tl.width(), tr.width(), br.width(), bl.width());
+            let heights = Rect::new(tl.height(), tr.height(), br.height(), bl.height());
+
+            BorderRadius::serialize_rects(widths, heights, dest)
+        }
+    }
+}
+
 pub mod corner_shape {
     pub use crate::properties::generated::shorthands::corner_shape::*;
 

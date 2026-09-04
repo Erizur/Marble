@@ -1531,6 +1531,48 @@ spec = "https://drafts.csswg.org/css-ui/#propdef-outline-width"
 servo_restyle_damage = "repaint"
 affects = "overflow"
 
+# The -moz-outline-radius-* properties are non-standard and not on a standards
+# track.
+[-moz-outline-radius-topleft]
+type = "BorderCornerRadius"
+initial = "computed::BorderCornerRadius::zero()"
+struct = "outline"
+engine = "gecko"
+boxed = true
+gecko_ffi_name = "mOutlineRadius.top_left"
+spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-outline-radius)"
+affects = "paint"
+
+[-moz-outline-radius-topright]
+type = "BorderCornerRadius"
+initial = "computed::BorderCornerRadius::zero()"
+struct = "outline"
+engine = "gecko"
+boxed = true
+gecko_ffi_name = "mOutlineRadius.top_right"
+spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-outline-radius)"
+affects = "paint"
+
+[-moz-outline-radius-bottomright]
+type = "BorderCornerRadius"
+initial = "computed::BorderCornerRadius::zero()"
+struct = "outline"
+engine = "gecko"
+boxed = true
+gecko_ffi_name = "mOutlineRadius.bottom_right"
+spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-outline-radius)"
+affects = "paint"
+
+[-moz-outline-radius-bottomleft]
+type = "BorderCornerRadius"
+initial = "computed::BorderCornerRadius::zero()"
+struct = "outline"
+engine = "gecko"
+boxed = true
+gecko_ffi_name = "mOutlineRadius.bottom_left"
+spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-outline-radius)"
+affects = "paint"
+
 [overflow-anchor]
 type = "OverflowAnchor"
 initial = "computed::OverflowAnchor::Auto"

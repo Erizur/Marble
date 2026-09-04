@@ -989,7 +989,12 @@ nsCSSRendering::CreateBorderRendererForNonThemedOutline(
   nsRectCornerRadii twipsRadii;
 
   // get the radius for our outline
-  if (aForFrame->GetBorderRadii(twipsRadii)) {
+  if (nsLayoutUtils::HasNonZeroCorner(ourOutline->mOutlineRadius)) {
+    nsIFrame::ComputeBorderRadii(
+        ourOutline->mOutlineRadius, aStyle->StyleBorder()->mCornerShape,
+        aForFrame->GetSize(), outerRect.Size(), Sides(), twipsRadii);
+    ComputePixelRadii(twipsRadii, oneDevPixel, &outlineRadii);
+  } else if (aForFrame->GetBorderRadii(twipsRadii)) {
     RectCornerRadii innerRadii;
     ComputePixelRadii(twipsRadii, oneDevPixel, &innerRadii);
 
