@@ -1,19 +1,7 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<svg width="16" height="16" fill="context-fill" fill-opacity="context-fill-opacity" xmlns="http://www.w3.org/2000/svg">
-<style>
-.nova { display: none; }
-
-@media -moz-pref("browser.nova.enabled") {
-  .proton { display: none; }
-  .nova { display: revert; }
-}
-</style>
-<g class="proton">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M14 2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12zm-2 10.5H2a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5h10v9z"/>
-</g>
-<g class="nova">
-  <path fill-rule="evenodd" d="M8 2c2.001 0 3.858.113 5.546.288A2.746 2.746 0 0 1 16 5.025v5.95a2.76 2.76 0 0 1-2.477 2.74 53.6 53.6 0 0 1-11.069-.003A2.746 2.746 0 0 1 0 10.975v-5.95a2.76 2.76 0 0 1 2.478-2.74A54 54 0 0 1 8 2m0 1.5c-1.617 0-3.418.074-5.368.276v.001A1.26 1.26 0 0 0 1.5 5.025v5.95c0 .644.481 1.179 1.11 1.245a52 52 0 0 0 9.39.126V3.654A52 52 0 0 0 8 3.5" clip-rule="evenodd" />
-</g>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="context-fill" fill-opacity="context-fill-opacity">
+  <path d="M13 1H3a3.007 3.007 0 0 0-3 3v8a3.009 3.009 0 0 0 3 3h10a3.005 3.005 0 0 0 3-3V4a3.012 3.012 0 0 0-3-3zM2 12V4a1 1 0 0 1 1-1h5v10H3a1 1 0 0 1-1-1zm12 0a1 1 0 0 1-1 1H9V3h4a1 1 0 0 1 1 1z"/>
+  <path d="M12.5 5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 0 1zm0 2h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 0 1zm-1 2h-1a.5.5 0 0 1 0-1h1a.5.5 0 0 1 0 1z"/>
 </svg>
