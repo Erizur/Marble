@@ -3,7 +3,7 @@
     "color": {
       "value": {
         "light": "white",
-        "dark": "rgb(28, 27, 34)",
+        "dark": "#38383d",
         "nativeTheme": "-moz-sidebar"
       }
     }
@@ -11,7 +11,7 @@
   "text": {
     "color": {
       "value": {
-        "light": "rgb(21, 20, 26)",
+        "light": "rgb(12, 12, 13)",
         "dark": "rgb(249, 249, 250)",
         "nativeTheme": "-moz-sidebartext"
       }

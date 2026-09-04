@@ -3,8 +3,8 @@
     "color": {
       "@base": {
         "value": {
-          "light": "rgb(234, 234, 237)",
-          "dark": "{color.gray.90}",
+          "light": "#d7d7db",
+          "dark": "hsl(240, 5%, 5%)",
           "nativeTheme": "-moz-headerbar"
         }
       },
@@ -35,8 +35,8 @@
     "color": {
       "@base": {
         "value": {
-          "light": "{color.gray.100}",
-          "dark": "{color.gray.0}",
+          "light": "rgb(12, 12, 13)",
+          "dark": "rgb(249, 249, 250)",
           "nativeTheme": "-moz-headerbartext"
         }
       },

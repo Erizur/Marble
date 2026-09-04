@@ -8,8 +8,8 @@
         },
         "nativeTheme": "LinkText",
         "platform": {
-          "light": "{color.blue.60}",
-          "dark": "{color.cyan.30}"
+          "light": "#0060df",
+          "dark": "#45a1ff"
         }
       }
     },

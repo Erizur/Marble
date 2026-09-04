@@ -4,7 +4,7 @@
       "@base": {
         "value": {
           "light": "{color.white.@base}",
-          "dark": "{color.gray.80}",
+          "dark": "#38383d",
           "prefersContrast": "{background.color.canvas}"
         }
       },

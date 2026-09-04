@@ -9,7 +9,8 @@
       "color": {
         "@base": {
           "value": {
-            "default": "{border.color.transparent}",
+            "light": "#cccccc",
+            "dark": "rgba(249, 249, 250, 0.2)",
             "prefersContrast": "{input.border.color}"
           }
         },
@@ -25,15 +26,15 @@
       "color": {
         "@base": {
           "value": {
-            "light": "rgba(0, 0, 0, 0.05)",
-            "dark": "{color.black.alpha.30}",
+            "light": "{color.white.@base}",
+            "dark": "rgb(71, 71, 73)",
             "prefersContrast": "Field"
           }
         },
         "focus": {
           "value": {
             "light": "{color.white.@base}",
-            "dark": "rgb(66, 65, 77)",
+            "dark": "rgb(74, 74, 79)",
             "nativeTheme": "Field"
           }
         }
@@ -43,16 +44,16 @@
       "color": {
         "@base": {
           "value": {
-            "light": "{color.gray.100}",
-            "dark": "{color.gray.0}",
+            "light": "rgb(12, 12, 13)",
+            "dark": "rgb(249, 249, 250)",
             "nativeTheme": "inherit",
             "prefersContrast": "FieldText"
           }
         },
         "focus": {
           "value": {
-            "light": "{color.black.@base}",
-            "dark": "{color.gray.0}",
+            "light": "rgb(12, 12, 13)",
+            "dark": "rgb(249, 249, 250)",
             "nativeTheme": "FieldText"
           }
         }
@@ -62,8 +63,8 @@
   "background": {
     "color": {
       "value": {
-        "light": "#f9f9fb",
-        "dark": "rgb(43, 42, 51)",
+        "light": "#f9f9fa",
+        "dark": "hsl(240, 1%, 20%)",
         "nativeTheme": "color-mix(in srgb, -moz-dialog 85%, {color.white.@base})"
       }
     }
@@ -71,8 +72,8 @@
   "text": {
     "color": {
       "value": {
-        "light": "{color.gray.100}",
-        "dark": "{color.gray.0}",
+        "light": "rgb(12, 12, 13)",
+        "dark": "rgb(249, 249, 250)",
         "nativeTheme": "-moz-dialogtext"
       }
     }

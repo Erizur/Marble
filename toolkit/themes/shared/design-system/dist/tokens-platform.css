@@ -107,52 +107,52 @@
 
       /** button **/
       /* TODO Bug 1821203 - Gray use needs to be consolidated */
-      --button-background-color: light-dark(rgba(207, 207, 216, 0.33), rgba(0, 0, 0, 0.33));
-      --button-background-color-hover: light-dark(rgba(207, 207, 216, 0.66), rgba(207, 207, 216, 0.2));
-      --button-background-color-active: light-dark(rgb(207, 207, 216), rgba(207, 207, 216, 0.4));
-      --button-text-color: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
-      --button-text-color-primary: light-dark(rgb(251, 251, 254), rgb(43, 42, 51));
+      --button-background-color: light-dark(rgba(12, 12, 13, 0.1), rgba(249, 249, 250, 0.1));
+      --button-background-color-hover: light-dark(rgba(12, 12, 13, 0.2), rgba(249, 249, 250, 0.15));
+      --button-background-color-active: light-dark(rgba(12, 12, 13, 0.3), rgba(249, 249, 250, 0.2));
+      --button-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
+      --button-text-color-primary: #fff;
 
       /** color **/
       --color-accent-attention: light-dark(#2ac3a2, #54ffbd);
-      --color-accent-primary: light-dark(var(--color-blue-60), var(--color-cyan-30));
-      --color-accent-primary-hover: light-dark(var(--color-blue-70), var(--color-cyan-20));
-      --color-accent-primary-active: light-dark(var(--color-blue-80), var(--color-cyan-10));
-      --color-accent-primary-selected: light-dark(var(--color-blue-60), var(--color-cyan-30));
+      --color-accent-primary: light-dark(#0060df, #45a1ff);
+      --color-accent-primary-hover: light-dark(#003eaa, #0a84ff);
+      --color-accent-primary-active: light-dark(#002275, #0060df);
+      --color-accent-primary-selected: light-dark(#0060df, #45a1ff);
 
       /** input **/
-      --input-text-background-color: light-dark(var(--color-white), #42414d);
-      --input-text-color: light-dark(rgb(21, 20, 26), rgb(251, 251, 254));
+      --input-text-background-color: light-dark(var(--color-white), rgb(71, 71, 73));
+      --input-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
 
       /** link **/
-      --link-color: light-dark(var(--color-blue-60), var(--color-cyan-30));
+      --link-color: light-dark(#0060df, #45a1ff);
 
       /** panel **/
-      --panel-background-color: light-dark(var(--color-white), rgb(66, 65, 77));
-      --panel-border-color: light-dark(rgb(240, 240, 244), rgb(82, 82, 94));
-      --panel-text-color: light-dark(var(--color-black), rgb(251, 251, 254));
+      --panel-background-color: light-dark(var(--color-white), #4a4a4f);
+      --panel-border-color: light-dark(#cccccc, #27272b);
+      --panel-text-color: light-dark(#0c0c0d, rgb(249, 249, 250));
 
       /** sidebar **/
-      --sidebar-background-color: light-dark(white, rgb(28, 27, 34));
+      --sidebar-background-color: light-dark(white, #38383d);
       --sidebar-border-color: var(--card-border-color);
-      --sidebar-text-color: light-dark(rgb(21, 20, 26), rgb(249, 249, 250));
+      --sidebar-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
 
       /** toolbar **/
-      --toolbar-background-color: light-dark(#f9f9fb, rgb(43, 42, 51));
-      --toolbar-field-background-color-focus: light-dark(var(--color-white), rgb(66, 65, 77));
-      --toolbar-field-text-color: light-dark(var(--color-gray-100), var(--color-gray-0));
-      --toolbar-field-text-color-focus: light-dark(var(--color-black), var(--color-gray-0));
-      --toolbar-text-color: light-dark(var(--color-gray-100), var(--color-gray-0));
+      --toolbar-background-color: light-dark(#f9f9fa, hsl(240, 1%, 20%));
+      --toolbar-field-background-color-focus: light-dark(var(--color-white), rgb(74, 74, 79));
+      --toolbar-field-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
+      --toolbar-field-text-color-focus: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
+      --toolbar-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
 
       /** toolbarbutton **/
-      --toolbarbutton-icon-fill: light-dark(var(--color-gray-70), var(--color-gray-0));
-      --toolbarbutton-icon-fill-attention: light-dark(var(--color-blue-60), var(--color-cyan-30));
+      --toolbarbutton-icon-fill: light-dark(#5b5b66, rgb(249, 249, 250));
+      --toolbarbutton-icon-fill-attention: light-dark(#0a84ff, #45a1ff);
       --toolbarbutton-icon-fill-attention-text: light-dark(var(--color-gray-20), var(--color-gray-90));
 
       /** toolbox **/
-      --toolbox-background-color: light-dark(rgb(234, 234, 237), var(--color-gray-90));
+      --toolbox-background-color: light-dark(#d7d7db, hsl(240, 5%, 5%));
       --toolbox-background-color-inactive: var(--toolbox-background-color);
-      --toolbox-text-color: light-dark(var(--color-gray-100), var(--color-gray-0));
+      --toolbox-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
       --toolbox-text-color-inactive: var(--toolbox-text-color);
     }
   }

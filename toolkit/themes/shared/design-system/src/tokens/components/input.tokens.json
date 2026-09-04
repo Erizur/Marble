@@ -20,7 +20,7 @@
             "nativeTheme": "Field",
             "platform": {
               "light": "{color.white.@base}",
-              "dark": "#42414d"
+              "dark": "rgb(71, 71, 73)"
             }
           }
         },
@@ -50,8 +50,8 @@
         "value": {
           "nativeTheme": "FieldText",
           "platform": {
-            "light": "rgb(21, 20, 26)",
-            "dark": "rgb(251, 251, 254)"
+            "light": "rgb(12, 12, 13)",
+            "dark": "rgb(249, 249, 250)"
           }
         }
       },

@@ -524,8 +524,8 @@
     "primary": {
       "@base": {
         "value": {
-          "light": "{color.blue.60}",
-          "dark": "{color.cyan.30}",
+          "light": "#0060df",
+          "dark": "#45a1ff",
           "nativeTheme": "AccentColor",
           "forcedColors": "ButtonText"
         }
@@ -533,24 +533,24 @@
       "hover": {
         "value": {
           "forcedColors": "SelectedItem",
-          "light": "{color.blue.70}",
-          "dark": "{color.cyan.20}",
+          "light": "#003eaa",
+          "dark": "#0a84ff",
           "nativeTheme": "color-mix(in srgb, black 10%, {color.accent.primary.@base})"
         }
       },
       "active": {
         "value": {
           "forcedColors": "{color.accent.primary.hover}",
-          "light": "{color.blue.80}",
-          "dark": "{color.cyan.10}",
+          "light": "#002275",
+          "dark": "#0060df",
           "nativeTheme": "color-mix(in srgb, black 20%, {color.accent.primary.@base})"
         }
       },
       "selected": {
         "value": {
           "forcedColors": "SelectedItem",
-          "light": "{color.blue.60}",
-          "dark": "{color.cyan.30}",
+          "light": "#0060df",
+          "dark": "#45a1ff",
           "nativeTheme": "SelectedItem"
         }
       }

@@ -11,7 +11,7 @@
   :root,
   :host(.anonymous-content-host) {
     /** background-color **/
-    --background-color-box: light-dark(var(--color-white), var(--color-gray-80));
+    --background-color-box: light-dark(var(--color-white), #38383d);
     --background-color-critical: light-dark(var(--color-red-0), var(--color-red-90));
     --background-color-dimmed: light-dark(color-mix(in srgb, currentColor 12%, transparent), color-mix(in srgb, currentColor 17%, transparent));
     --background-color-dimmed-further: light-dark(color-mix(in srgb, currentColor 20%, transparent), color-mix(in srgb, currentColor 14%, transparent));
@@ -182,10 +182,10 @@
 
     /** color **/
     --color-accent-attention: light-dark(#2ac3a2, #54ffbd);
-    --color-accent-primary: light-dark(var(--color-blue-60), var(--color-cyan-30));
-    --color-accent-primary-hover: light-dark(var(--color-blue-70), var(--color-cyan-20));
-    --color-accent-primary-active: light-dark(var(--color-blue-80), var(--color-cyan-10));
-    --color-accent-primary-selected: light-dark(var(--color-blue-60), var(--color-cyan-30));
+    --color-accent-primary: light-dark(#0060df, #45a1ff);
+    --color-accent-primary-hover: light-dark(#003eaa, #0a84ff);
+    --color-accent-primary-active: light-dark(#002275, #0060df);
+    --color-accent-primary-selected: light-dark(#0060df, #45a1ff);
     --color-black: #000000;
     --color-black-alpha-10: oklch(0 0 0 / 10%);
     --color-black-alpha-20: oklch(0 0 0 / 20%);
@@ -419,10 +419,10 @@
     --opacity-deemphasized-strong: 0.6;
 
     /** panel **/
-    --panel-background-color: light-dark(var(--color-white), rgb(66, 65, 77));
+    --panel-background-color: light-dark(var(--color-white), #4a4a4f);
     --panel-background-color-dimmed: var(--background-color-dimmed);
     --panel-background-color-dimmed-further: var(--background-color-dimmed-further);
-    --panel-border-color: light-dark(rgb(240, 240, 244), rgb(82, 82, 94));
+    --panel-border-color: light-dark(#cccccc, #27272b);
     --panel-border-radius: var(--border-radius-medium);
     --panel-box-shadow: 0 0 var(--panel-box-shadow-margin) hsla(0, 0%, 0%, 0.2);
     --panel-box-shadow-margin: 4px;
@@ -435,16 +435,16 @@
     --panel-menuitem-padding-inline: 8px;
     --panel-padding: 16px;
     --panel-padding-block: 4px;
-    --panel-text-color: light-dark(var(--color-black), rgb(251, 251, 254));
+    --panel-text-color: light-dark(#0c0c0d, rgb(249, 249, 250));
     --panel-width: initial;
 
     /** popup **/
     --popup-box-shadow: var(--box-shadow-level-3);
 
     /** sidebar **/
-    --sidebar-background-color: light-dark(white, rgb(28, 27, 34));
+    --sidebar-background-color: light-dark(white, #38383d);
     --sidebar-border-color: var(--card-border-color);
-    --sidebar-text-color: light-dark(rgb(21, 20, 26), rgb(249, 249, 250));
+    --sidebar-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
 
     /** size **/
     --size-image-xsmall: var(--dimension-40);
@@ -495,15 +495,15 @@
     --text-color-list-item-hover: var(--text-color);
 
     /** toolbar **/
-    --toolbar-background-color: light-dark(#f9f9fb, rgb(43, 42, 51));
-    --toolbar-field-background-color: light-dark(rgba(0, 0, 0, 0.05), var(--color-black-alpha-30));
-    --toolbar-field-background-color-focus: light-dark(var(--color-white), rgb(66, 65, 77));
-    --toolbar-field-border-color: var(--border-color-transparent);
+    --toolbar-background-color: light-dark(#f9f9fa, hsl(240, 1%, 20%));
+    --toolbar-field-background-color: light-dark(var(--color-white), rgb(71, 71, 73));
+    --toolbar-field-background-color-focus: light-dark(var(--color-white), rgb(74, 74, 79));
+    --toolbar-field-border-color: light-dark(#cccccc, rgba(249, 249, 250, 0.2));
     --toolbar-field-border-color-focus: color-mix(in srgb, var(--focus-outline-color) 50%, transparent);
-    --toolbar-field-text-color: light-dark(var(--color-gray-100), var(--color-gray-0));
-    --toolbar-field-text-color-focus: light-dark(var(--color-black), var(--color-gray-0));
+    --toolbar-field-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
+    --toolbar-field-text-color-focus: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
     --toolbar-padding-inline: 8px;
-    --toolbar-text-color: light-dark(var(--color-gray-100), var(--color-gray-0));
+    --toolbar-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
 
     /** toolbarbutton **/
     --toolbarbutton-background-color-hover: color-mix(in srgb, currentColor 17%, transparent);
@@ -515,8 +515,8 @@
     --toolbarbutton-badge-padding-block-end: 1px;
     --toolbarbutton-badge-padding-inline: 2px;
     --toolbarbutton-border-radius: var(--button-border-radius);
-    --toolbarbutton-icon-fill: light-dark(var(--color-gray-70), var(--color-gray-0));
-    --toolbarbutton-icon-fill-attention: light-dark(var(--color-blue-60), var(--color-cyan-30));
+    --toolbarbutton-icon-fill: light-dark(#5b5b66, rgb(249, 249, 250));
+    --toolbarbutton-icon-fill-attention: light-dark(#0a84ff, #45a1ff);
     --toolbarbutton-icon-fill-attention-text: light-dark(var(--color-gray-20), var(--color-gray-90));
     --toolbarbutton-opacity-disabled: var(--button-opacity-disabled);
     --toolbarbutton-outline: var(--border-width) solid var(--toolbarbutton-outline-color);
@@ -537,9 +537,9 @@
     --toolbarseparator-color: var(--text-color-deemphasized);
 
     /** toolbox **/
-    --toolbox-background-color: light-dark(rgb(234, 234, 237), var(--color-gray-90));
+    --toolbox-background-color: light-dark(#d7d7db, hsl(240, 5%, 5%));
     --toolbox-background-color-inactive: var(--toolbox-background-color);
-    --toolbox-text-color: light-dark(var(--color-gray-100), var(--color-gray-0));
+    --toolbox-text-color: light-dark(rgb(12, 12, 13), rgb(249, 249, 250));
     --toolbox-text-color-inactive: var(--toolbox-text-color);
   }
 }

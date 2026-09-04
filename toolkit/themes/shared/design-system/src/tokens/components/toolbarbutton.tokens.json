@@ -67,16 +67,16 @@
     "fill": {
       "@base": {
         "value": {
-          "light": "{color.gray.70}",
-          "dark": "{color.gray.0}",
+          "light": "#5b5b66",
+          "dark": "rgb(249, 249, 250)",
           "nativeTheme": "currentColor"
         }
       },
       "attention": {
         "@base": {
           "value": {
-            "light": "{color.blue.60}",
-            "dark": "{color.cyan.30}",
+            "light": "#0a84ff",
+            "dark": "#45a1ff",
             "nativeTheme": "AccentColor"
           }
         },

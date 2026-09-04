@@ -4,7 +4,7 @@
       "@base": {
         "value": {
           "light": "{color.white.@base}",
-          "dark": "rgb(66, 65, 77)",
+          "dark": "#4a4a4f",
           "nativeTheme": "Field"
         }
       },
@@ -21,8 +21,8 @@
   "border": {
     "color": {
       "value": {
-        "light": "rgb(240, 240, 244)",
-        "dark": "rgb(82, 82, 94)",
+        "light": "#cccccc",
+        "dark": "#27272b",
         "nativeTheme": "ThreeDShadow"
       }
     },
@@ -51,8 +51,8 @@
   "text": {
     "color": {
       "value": {
-        "light": "{color.black.@base}",
-        "dark": "rgb(251, 251, 254)",
+        "light": "#0c0c0d",
+        "dark": "rgb(249, 249, 250)",
         "nativeTheme": "FieldText"
       }
     }
