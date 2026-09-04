@@ -296,7 +296,8 @@ class nsTreeBodyFrame final : public mozilla::SimpleXULLeafFrame,
   // Fetch an image from the image cache, or request it.
   already_AddRefed<imgIContainer> GetImage(int32_t aRowIndex,
                                            nsTreeColumn* aCol, bool aUseContext,
-                                           ComputedStyle* aComputedStyle);
+                                           ComputedStyle* aComputedStyle,
+                                           bool& aAllowImageRegions);
 
   // Returns the size of a given image.   This size *includes* border and
   // padding.  It does not include margins.
@@ -305,10 +306,10 @@ class nsTreeBodyFrame final : public mozilla::SimpleXULLeafFrame,
 
   // Returns the destination size of the image, not including borders and
   // padding.
-  nsSize GetImageDestSize(ComputedStyle*, imgIContainer*);
+  nsSize GetImageDestSize(ComputedStyle*, bool, imgIContainer*);
 
   // Returns the source rectangle of the image to be displayed.
-  nsRect GetImageSourceRect(ComputedStyle*, imgIContainer*);
+  nsRect GetImageSourceRect(ComputedStyle*, bool, imgIContainer*);
 
   // Returns the height of rows in the tree.
   int32_t GetRowHeight();

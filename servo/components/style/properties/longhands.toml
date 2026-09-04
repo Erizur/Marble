@@ -1266,6 +1266,16 @@ spec = "https://drafts.csswg.org/css-lists/#propdef-list-style-image"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
+[-moz-image-region]
+type = "ClipRectOrAuto"
+initial = "computed::ClipRectOrAuto::auto()"
+struct = "list"
+engine = "gecko"
+gecko_ffi_name = "mImageRegion"
+boxed = true
+spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-image-region)"
+affects = "layout"
+
 [list-style-type]
 type = "ListStyleType"
 initial = "computed::ListStyleType::disc()"
