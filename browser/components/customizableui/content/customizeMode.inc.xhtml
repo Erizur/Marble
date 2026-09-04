@@ -29,6 +29,25 @@
 <button id="customization-toolbar-visibility-button" class="footer-button" type="menu" data-l10n-id="customize-mode-toolbars">
   <menupopup id="customization-toolbar-menu"/>
 </button>
+<button id="customization-lwtheme-button" data-l10n-id="customize-mode-lwthemes" class="footer-button" type="menu">
+  <panel type="arrow" id="customization-lwtheme-menu"
+         orient="vertical"
+         position="topleft bottomleft"
+         flip="none"
+         role="menu">
+    <label id="customization-lwtheme-menu-header" data-l10n-id="customize-mode-lwthemes-my-themes"/>
+    <hbox id="customization-lwtheme-menu-footer">
+      <toolbarbutton id="customization-lwthemes-menu-manage"
+                     class="customization-lwtheme-menu-footeritem"
+                     data-l10n-id="customize-mode-lwthemes-menu-manage"
+                     tabindex="0"/>
+      <toolbarbutton id="customization-lwthemes-menu-get-more"
+                     class="customization-lwtheme-menu-footeritem"
+                     data-l10n-id="customize-mode-lwthemes-menu-get-more"
+                     tabindex="0"/>
+    </hbox>
+  </panel>
+</button>
 <button id="customization-uidensity-button"
         data-l10n-id="customize-mode-uidensity"
         class="footer-button"
@@ -63,10 +82,6 @@
 #endif
   </panel>
 </button>
-<label is="text-link"
-       id="customization-lwtheme-link"
-       class="customization-link"
-       data-l10n-id="customize-mode-lwthemes-link" />
 
 <button id="whimsy-button"
         type="checkbox"
