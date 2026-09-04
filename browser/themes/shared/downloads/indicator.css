@@ -212,3 +212,46 @@ toolbarpaletteitem > #downloads-button > .toolbarbutton-badge-stack > #downloads
     transform: translateX(calc(18 * -20px));
   }
 }
+
+/* Photon drew download progress as a bar underneath the arrow rather than as a
+   ring around it, using the fragments in the downloads.svg sprite. The stock
+   ring stays the default; this only applies when the photon animations are on. */
+@media -moz-pref("browser.photon.animations.enabled") {
+  #downloads-indicator-anchor {
+    list-style-image: url("chrome://browser/skin/downloads/downloads.svg#arrow");
+  }
+
+  #downloads-button[progress] > .toolbarbutton-badge-stack > #downloads-indicator-anchor > #downloads-indicator-icon {
+    visibility: visible;
+  }
+
+  #downloads-button > .toolbarbutton-badge-stack > #downloads-indicator-progress-outer {
+    visibility: visible;
+    top: calc(50% - 8px);
+    left: calc(50% - 8px);
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 0;
+    -moz-context-properties: fill, fill-opacity;
+    fill: var(--toolbarbutton-icon-fill);
+    background: url("chrome://browser/skin/downloads/downloads.svg#default-bar") center no-repeat;
+    background-size: 16px;
+  }
+
+  #downloads-button[progress]:not([notification]) > .toolbarbutton-badge-stack > #downloads-indicator-progress-outer {
+    background-image: url("chrome://browser/skin/downloads/downloads.svg#progress-bar-bg");
+  }
+
+  #downloads-indicator-progress-inner {
+    width: 16px;
+    height: 16px;
+    border-radius: 0;
+    -moz-context-properties: fill, fill-opacity;
+    fill: var(--toolbarbutton-icon-fill-attention);
+    fill-opacity: 1;
+    background: url("chrome://browser/skin/downloads/downloads.svg#progress-bar-fg") left center no-repeat;
+    background-size: 16px;
+    clip-path: inset(0 calc(100% - var(--download-progress-pcent)) 0 0);
+  }
+}
