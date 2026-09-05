@@ -582,6 +582,10 @@ def gen_css_properties_js(output):
         "-moz-window-opacity",                # chrome-only internal properties
         "-moz-window-transform",              # chrome-only internal properties
         "-moz-window-transform-origin",       # chrome-only internal properties
+        "-moz-border-top-colors",             # chrome-only internal properties
+        "-moz-border-right-colors",           # chrome-only internal properties
+        "-moz-border-bottom-colors",          # chrome-only internal properties
+        "-moz-border-left-colors",            # chrome-only internal properties
         "-moz-window-shadow",                 # chrome-only internal properties
     ])
 
