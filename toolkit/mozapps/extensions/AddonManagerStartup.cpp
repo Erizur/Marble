@@ -710,13 +710,16 @@ class RegistryEntries final : public nsIJSRAIIHelper,
 
   using Override = AutoTArray<nsCString, 2>;
   using Locale = AutoTArray<nsCString, 3>;
+  using Skin = AutoTArray<nsCString, 3>;
 
   RegistryEntries(FileLocation& location, nsTArray<Override>&& overrides,
-                  nsTArray<ContentEntry>&& content, nsTArray<Locale>&& locales)
+                  nsTArray<ContentEntry>&& content, nsTArray<Locale>&& locales,
+                  nsTArray<Skin>&& skins)
       : mLocation(location),
         mOverrides(std::move(overrides)),
         mContent(std::move(content)),
-        mLocales(std::move(locales)) {}
+        mLocales(std::move(locales)),
+        mSkins(std::move(skins)) {}
 
   void Register();
 
@@ -728,6 +731,7 @@ class RegistryEntries final : public nsIJSRAIIHelper,
   const nsTArray<Override> mOverrides;
   const nsTArray<ContentEntry> mContent;
   const nsTArray<Locale> mLocales;
+  const nsTArray<Skin> mSkins;
 };
 
 NS_IMPL_ISUPPORTS(RegistryEntries, nsIJSRAIIHelper)
@@ -751,6 +755,11 @@ void RegistryEntries::Register() {
   for (auto& locale : mLocales) {
     const char* args[] = {locale[0].get(), locale[1].get(), locale[2].get()};
     cr->ManifestLocale(context, 0, const_cast<char**>(args), 0);
+  }
+
+  for (auto& skin : mSkins) {
+    const char* args[] = {skin[0].get(), skin[1].get(), skin[2].get()};
+    cr->ManifestSkin(context, 0, const_cast<char**>(args), 0);
   }
 }
 
@@ -794,6 +803,7 @@ AddonManagerStartup::RegisterChrome(nsIURI* manifestURI,
   FileLocation location = MOZ_TRY(GetFileLocation(manifestURI));
 
   nsTArray<RegistryEntries::Locale> locales;
+  nsTArray<RegistryEntries::Skin> skins;
   nsTArray<ContentEntry> content;
   nsTArray<RegistryEntries::Override> overrides;
 
@@ -835,6 +845,9 @@ AddonManagerStartup::RegisterChrome(nsIURI* manifestURI,
     } else if (type.EqualsLiteral("locale")) {
       NS_ENSURE_TRUE(vals.Length() == 3, NS_ERROR_INVALID_ARG);
       locales.AppendElement(std::move(vals));
+    } else if (type.EqualsLiteral("skin")) {
+      NS_ENSURE_TRUE(vals.Length() == 3, NS_ERROR_INVALID_ARG);
+      skins.AppendElement(std::move(vals));
     } else {
       return NS_ERROR_INVALID_ARG;
     }
@@ -849,7 +862,8 @@ AddonManagerStartup::RegisterChrome(nsIURI* manifestURI,
   }
 
   auto entry = MakeRefPtr<RegistryEntries>(
-      location, std::move(overrides), std::move(content), std::move(locales));
+      location, std::move(overrides), std::move(content), std::move(locales),
+      std::move(skins));
 
   entry->Register();
   GetRegistryEntries().insertBack(entry);
