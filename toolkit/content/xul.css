@@ -126,6 +126,13 @@ vbox {
   flex-direction: column;
 }
 
+/******** grid *******/
+
+rows,
+column {
+  flex-direction: column;
+}
+
 /********** label **********/
 
 label {
