@@ -527,7 +527,7 @@ export const BrightworkProvider = {
 
     let browser = browsingContext?.top?.embedderElement;
     let win =
-      browser?.ownerGlobal ||
+      browser?.ownerDocument?.defaultView ||
       Services.wm.getMostRecentWindow("navigator:browser") ||
       Services.wm.getMostRecentWindow(null);
 
@@ -567,7 +567,12 @@ export const BrightworkProvider = {
    * Perhaps a way to exploit the browser? Not like everyone will use this anyway.
    */
   _confirmWebInstall(win, browser, host) {
-    if (browser && win && browser.ownerGlobal === win && win.PopupNotifications) {
+    if (
+      browser &&
+      win &&
+      browser.ownerDocument?.defaultView === win &&
+      win.PopupNotifications
+    ) {
       return new Promise(resolve => {
         let [message, install, cancel] = lazy.l10n.formatMessagesSync([
           "brightwork-web-install-message",
