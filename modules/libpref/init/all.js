@@ -1754,6 +1754,8 @@ pref("extensions.abuseReport.enabled", false);
 pref("extensions.abuseReport.amoFormURL", "https://addons.mozilla.org/%LOCALE%/firefox/feedback/addon/%addonID%/");
 pref("extensions.addonAbuseReport.url", "https://services.addons.mozilla.org/api/v5/abuse/report/addon/");
 
+pref("extensions.legacy.enabled", true);
+
 // Blocklist preferences
 pref("extensions.blocklist.enabled", true);
 pref("extensions.blocklist.detailsURL", "https://blocked.cdn.mozilla.net/");

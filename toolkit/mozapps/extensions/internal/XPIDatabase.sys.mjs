@@ -2661,6 +2661,13 @@ export const XPIDatabase = {
    * @returns {boolean} Whether the addon should be disabled for being legacy
    */
   isDisabledLegacy(addon) {
+    if (
+      addon.loader === "bootstrap" &&
+      Services.prefs.getBoolPref("extensions.legacy.enabled", false)
+    ) {
+      return false;
+    }
+
     // We still have tests that use a legacy addon type, allow them
     // if we're in automation.  Otherwise, disable if not a webextension.
     if (!Cu.isInAutomation) {
