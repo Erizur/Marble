@@ -4748,14 +4748,20 @@
         return true;
       }
 
-      const maxTabsUndo = Services.prefs.getIntPref(
-        "browser.sessionstore.max_tabs_undo"
+      const classicWarning = Services.prefs.getBoolPref(
+        "browser.tabs.classicCloseWarning",
+        false
       );
-      if (
-        aCloseTabs != this.closingTabsEnum.ALL &&
-        tabsToClose <= maxTabsUndo
-      ) {
-        return true;
+      if (!classicWarning) {
+        const maxTabsUndo = Services.prefs.getIntPref(
+          "browser.sessionstore.max_tabs_undo"
+        );
+        if (
+          aCloseTabs != this.closingTabsEnum.ALL &&
+          tabsToClose <= maxTabsUndo
+        ) {
+          return true;
+        }
       }
 
       // Our prompt to close this window is most important, so replace others.
@@ -4770,14 +4776,29 @@
       // solve the problem of windows "obscuring" the prompt.
       // see bug #350299 for more details
       window.focus();
-      const [title, button, checkbox] = this.tabLocalization.formatValuesSync([
-        {
-          id: "tabbrowser-confirm-close-tabs-title",
-          args: { tabCount: tabsToClose },
-        },
-        { id: "tabbrowser-confirm-close-tabs-button" },
-        { id: "tabbrowser-ask-close-tabs-checkbox" },
-      ]);
+      let title, message, button, checkbox;
+      if (classicWarning) {
+        [title, message, button, checkbox] =
+          this.tabLocalization.formatValuesSync([
+            { id: "tabbrowser-confirm-close-tabs-classic-title" },
+            {
+              id: "tabbrowser-confirm-close-tabs-classic-message",
+              args: { tabCount: tabsToClose },
+            },
+            { id: "tabbrowser-confirm-close-tabs-classic-button" },
+            { id: "tabbrowser-ask-close-tabs-classic-checkbox" },
+          ]);
+      } else {
+        message = null;
+        [title, button, checkbox] = this.tabLocalization.formatValuesSync([
+          {
+            id: "tabbrowser-confirm-close-tabs-title",
+            args: { tabCount: tabsToClose },
+          },
+          { id: "tabbrowser-confirm-close-tabs-button" },
+          { id: "tabbrowser-ask-close-tabs-checkbox" },
+        ]);
+      }
       let flags =
         ps.BUTTON_TITLE_IS_STRING * ps.BUTTON_POS_0 +
         ps.BUTTON_TITLE_CANCEL * ps.BUTTON_POS_1;
@@ -4786,7 +4807,7 @@
       var buttonPressed = ps.confirmEx(
         window,
         title,
-        null,
+        message,
         flags,
         button,
         null,

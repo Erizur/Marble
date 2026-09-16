@@ -100,6 +100,18 @@ tabbrowser-confirm-close-tabs-title =
 tabbrowser-confirm-close-tabs-button = Close tabs
 tabbrowser-ask-close-tabs-checkbox = Ask before closing multiple tabs
 
+## Classic variant of the confirmation dialog above.
+
+tabbrowser-confirm-close-tabs-classic-title = Confirm close
+# Variables:
+#   $tabCount (Number): The number of tabs that will be closed.
+tabbrowser-confirm-close-tabs-classic-message =
+    { $tabCount ->
+       *[other] You are about to close { $tabCount } tabs. Are you sure you want to continue?
+    }
+tabbrowser-confirm-close-tabs-classic-button = Close tabs
+tabbrowser-ask-close-tabs-classic-checkbox = Warn me when I attempt to close multiple tabs
+
 ## Confirmation dialog when quitting using the menu and multiple windows are open.
 
 # The forms for 0 or 1 items are not considered since this string is used only for
