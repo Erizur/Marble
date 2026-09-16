@@ -42,6 +42,11 @@
   pointer-events: none;
 }
 
+image[native] {
+  max-width: 16px;
+  max-height: 16px;
+}
+
 #label-box:not([native]) {
   align-items: center;
   justify-content: center;
