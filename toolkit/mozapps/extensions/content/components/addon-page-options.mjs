@@ -54,6 +54,12 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
             data-l10n-attrs="accesskey"
           ></panel-item>
           <panel-item
+            action="restart"
+            data-l10n-id="addon-page-restart"
+            data-l10n-attrs="accesskey"
+            hidden
+          ></panel-item>
+          <panel-item
             action="install-brightwork-from-folder"
             data-l10n-id="addon-install-brightwork-from-folder"
             data-l10n-attrs="accesskey"
@@ -123,6 +129,7 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
     // This panel-list id is going to be set on the addon-page-header
     // more-options moz-button menuId attribute to wire the two together.
     this.panel.id = this.panelListId;
+    this.restartEl = this.querySelector('[action="restart"]');
     this.installFromFile = this.querySelector('[action="install-from-file"]');
     this.toggleUpdatesEl = this.querySelector(
       '[action="set-update-automatically"]'
@@ -147,6 +154,7 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
           : "addon-install-from-file"
       );
       this.installFromFile.hidden = !lazy.XPINSTALL_ENABLED;
+      await this.updateRestartAction();
     }
   }
 
@@ -168,6 +176,9 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
         break;
       case "install-brightwork-from-file":
         await installBrightworkFromFile();
+        break;
+      case "restart":
+        this.restartApplication();
         break;
       case "debug-addons":
         this.openAboutDebugging();
@@ -243,6 +254,93 @@ class AddonPageOptions extends AboutAddonsHTMLElement {
   /**
    * AddonManager listener events.
    */
+
+  restartApplication() {
+    const cancel = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
+      Ci.nsISupportsPRBool
+    );
+    Services.obs.notifyObservers(
+      cancel,
+      "quit-application-requested",
+      "restart"
+    );
+    if (!cancel.data) {
+      Services.startup.quit(
+        Ci.nsIAppStartup.eAttemptQuit | Ci.nsIAppStartup.eRestart
+      );
+    }
+  }
+
+  async updateRestartAction() {
+    const onXULThemeView =
+      gViewController.currentViewId === "addons://list/xul-theme" ||
+      document.querySelector("addon-card[expanded]")?.addon?.isXULTheme;
+    if (!onXULThemeView) {
+      this.restartEl.hidden = true;
+      return;
+    }
+
+    const [addons, installs] = await Promise.all([
+      AddonManager.getAddonsByTypes(["extension"]),
+      AddonManager.getAllInstalls(),
+    ]);
+    const needsRestart = addon =>
+      !!(
+        (addon.pendingOperations & AddonManager.PENDING_UNINSTALL &&
+          addon.operationsRequiringRestart &
+            AddonManager.OP_NEEDS_RESTART_UNINSTALL) ||
+        (addon.pendingOperations & AddonManager.PENDING_ENABLE &&
+          addon.operationsRequiringRestart &
+            AddonManager.OP_NEEDS_RESTART_ENABLE) ||
+        (addon.pendingOperations & AddonManager.PENDING_DISABLE &&
+          addon.operationsRequiringRestart &
+            AddonManager.OP_NEEDS_RESTART_DISABLE)
+      );
+    this.restartEl.hidden = !(
+      addons.some(addon => addon.isXULTheme && needsRestart(addon)) ||
+      installs.some(
+        install =>
+          install.state === AddonManager.STATE_INSTALLED &&
+          install.addon?.isXULTheme
+      )
+    );
+  }
+
+  onOperationCancelled() {
+    this.updateRestartAction();
+  }
+
+  onEnabling() {
+    this.updateRestartAction();
+  }
+
+  onDisabling() {
+    this.updateRestartAction();
+  }
+
+  onEnabled() {
+    this.updateRestartAction();
+  }
+
+  onDisabled() {
+    this.updateRestartAction();
+  }
+
+  onUninstalling() {
+    this.updateRestartAction();
+  }
+
+  onUninstalled() {
+    this.updateRestartAction();
+  }
+
+  onInstallEnded() {
+    this.updateRestartAction();
+  }
+
+  onInstallCancelled() {
+    this.updateRestartAction();
+  }
 
   onUpdateModeChanged() {
     let updatesEnabled = this.automaticUpdatesEnabled();
