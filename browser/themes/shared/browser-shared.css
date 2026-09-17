@@ -246,6 +246,12 @@ body {
     color: var(--toolbox-text-color-inactive);
   }
 
+  @media (-moz-windows-glass) {
+    :root:not([lwtheme]) & {
+      background-color: transparent;
+    }
+  }
+
   :root[customizing] & {
     border-bottom-style: none;
   }
