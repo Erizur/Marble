@@ -16,6 +16,10 @@ browser.jar:
   content/builtin-themes/light/icon.svg            (light/icon.svg)
   content/builtin-themes/light/manifest.json       (light/manifest.json)
 
+  content/builtin-themes/canica                    (canica/*.png)
+  content/builtin-themes/canica                    (canica/*.svg)
+  content/builtin-themes/canica/manifest.json      (canica/manifest.json)
+
   content/builtin-themes/aiwindow/manifest.json       (aiwindow/manifest.json)
   content/builtin-themes/aiwindow/aiwindow-theme.css  (aiwindow/aiwindow-theme.css)
 

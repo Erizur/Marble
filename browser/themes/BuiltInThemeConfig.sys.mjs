@@ -46,4 +46,11 @@ export const BuiltInThemeConfig = new Map([
       path: "resource://builtin-themes/alpenglow/",
     },
   ],
+  [
+    "marble-canica@mozilla.org",
+    {
+      version: "1.1",
+      path: "resource://builtin-themes/canica/",
+    },
+  ],
 ]);
