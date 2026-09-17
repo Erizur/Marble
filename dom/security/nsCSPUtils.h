@@ -14,6 +14,7 @@
 #include "nsUnicharUtils.h"
 
 class nsIChannel;
+class nsIPrincipal;
 
 namespace mozilla::dom {
 struct CSP;
@@ -218,6 +219,12 @@ void CSP_ApplyMetaCSPToDoc(mozilla::dom::Document& aDoc,
 
 // Checks if the URI is "chrome://browser/content/browser.xhtml"
 bool CSP_IsBrowserXHTML(nsIURI* aURI);
+
+// Whether CSP is enforced for content loaded by aPrincipal. Enforcement can be
+// turned off for web content with security.csp.enable, but the browser's own
+// privileged documents (system principal, chrome:, resource:, about: and
+// moz-src:) and extension pages always keep it.
+bool CSP_IsEnabledFor(nsIPrincipal* aPrincipal);
 
 /* =============== nsCSPSrc ================== */
 

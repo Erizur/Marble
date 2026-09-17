@@ -1458,6 +1458,10 @@ nsresult WorkerPrivate::SetCSPFromHeaderValues(
   AssertIsOnMainThread();
   MOZ_DIAGNOSTIC_ASSERT(!mLoadInfo.mCSP);
 
+  if (!CSP_IsEnabledFor(mLoadInfo.mPrincipal)) {
+    return NS_OK;
+  }
+
   NS_ConvertASCIItoUTF16 cspHeaderValue(aCSPHeaderValue);
   NS_ConvertASCIItoUTF16 cspROHeaderValue(aCSPReportOnlyHeaderValue);
 

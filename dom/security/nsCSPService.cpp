@@ -12,6 +12,7 @@
 #include "mozilla/net/DocumentLoadListener.h"
 #include "nsAsyncRedirectVerifyHelper.h"
 #include "nsCOMPtr.h"
+#include "nsCSPUtils.h"
 #include "nsContentPolicyUtils.h"
 #include "nsContentUtils.h"
 #include "nsError.h"
@@ -36,6 +37,15 @@ NS_IMPL_ISUPPORTS(CSPService, nsIContentPolicy, nsIChannelEventSink)
 
 static bool SubjectToCSP(nsILoadInfo* aLoadInfo, nsIURI* aURI,
                          nsContentPolicyType aContentType) {
+  // security.csp.enable can turn off CSP enforcement for web content.
+  nsIPrincipal* principal = aLoadInfo->GetLoadingPrincipal();
+  if (!principal) {
+    principal = aLoadInfo->TriggeringPrincipal();
+  }
+  if (!CSP_IsEnabledFor(principal)) {
+    return false;
+  }
+
   ExtContentPolicyType contentType =
       nsContentUtils::InternalContentPolicyTypeToExternal(aContentType);
 

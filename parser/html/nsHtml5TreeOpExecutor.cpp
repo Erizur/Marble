@@ -9,6 +9,7 @@
 #include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/nsCSPContext.h"
 #include "mozilla/dom/nsCSPService.h"
+#include "mozilla/dom/nsCSPUtils.h"
 #include "mozilla/dom/PolicyContainer.h"
 
 #include "imgLoader.h"
@@ -1448,6 +1449,10 @@ void nsHtml5TreeOpExecutor::UpdateReferrerInfoFromMeta(
 
 void nsHtml5TreeOpExecutor::AddSpeculationCSP(const nsAString& aCSP) {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+
+  if (!CSP_IsEnabledFor(mDocument->NodePrincipal())) {
+    return;
+  }
 
   nsresult rv = NS_OK;
   nsCOMPtr<nsIContentSecurityPolicy> preloadCsp = mDocument->GetPreloadCsp();

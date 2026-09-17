@@ -1023,6 +1023,10 @@ nsresult CheckCSPFrameAncestorPolicy(nsIChannel* aChannel,
       aChannel, getter_AddRefs(resultPrincipal));
   NS_ENSURE_SUCCESS(rv, rv);
 
+  if (!CSP_IsEnabledFor(resultPrincipal)) {
+    return NS_OK;
+  }
+
   RefPtr<extensions::WebExtensionPolicy> addonPolicy;
   if (!httpChannel) {
     addonPolicy = BasePrincipal::Cast(resultPrincipal)->AddonPolicy();

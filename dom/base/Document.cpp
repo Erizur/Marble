@@ -3809,6 +3809,14 @@ nsresult Document::InitCSP(nsIChannel* aChannel) {
     }
   }
 
+  // security.csp.enable only turns off CSP for web content; the baseline CSP
+  // applied above and any policy of a privileged document stay in place.
+  if (!CSP_IsEnabledFor(principal)) {
+    MOZ_LOG(gCspPRLog, LogLevel::Debug,
+            ("CSP is disabled, skipping CSP init for document %p", this));
+    return NS_OK;
+  }
+
   nsAutoCString tCspHeaderValue, tCspROHeaderValue;
 
   nsCOMPtr<nsIHttpChannel> httpChannel;

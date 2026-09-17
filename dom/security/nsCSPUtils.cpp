@@ -5,6 +5,7 @@
 #include "nsCSPUtils.h"
 
 #include "mozilla/Assertions.h"
+#include "mozilla/BasePrincipal.h"
 #include "mozilla/Components.h"
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/dom/CSPDictionariesBinding.h"
@@ -128,9 +129,35 @@ bool CSP_ShouldURIInheritCSP(nsIURI* aURI) {
          aURI->SchemeIs("filesystem") || aURI->SchemeIs("javascript");
 }
 
+bool CSP_IsEnabledFor(nsIPrincipal* aPrincipal) {
+  if (mozilla::StaticPrefs::security_csp_enable()) {
+    return true;
+  }
+
+  // Be conservative when we cannot tell what we are dealing with.
+  if (!aPrincipal || aPrincipal->IsSystemPrincipal()) {
+    return true;
+  }
+
+  if (mozilla::BasePrincipal::Cast(aPrincipal)->AddonPolicy()) {
+    return true;
+  }
+
+  static constexpr const char* kInternalSchemes[] = {"chrome", "resource",
+                                                     "about", "moz-src"};
+  for (const char* scheme : kInternalSchemes) {
+    bool matches = false;
+    if (NS_SUCCEEDED(aPrincipal->SchemeIs(scheme, &matches)) && matches) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void CSP_ApplyMetaCSPToDoc(mozilla::dom::Document& aDoc,
                            const nsAString& aPolicyStr) {
-  if (aDoc.IsLoadedAsData()) {
+  if (aDoc.IsLoadedAsData() || !CSP_IsEnabledFor(aDoc.NodePrincipal())) {
     return;
   }
 
