@@ -67,6 +67,7 @@ EXPORTS.mozilla.widget += [
     "WinModifierKeyState.h",
     "WinRegistry.h",
     "WinTaskbar.h",
+    "WinThemeSurface.h",
     "WinWindowOcclusionTracker.h",
 ]
 
