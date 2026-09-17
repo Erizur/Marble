@@ -7,39 +7,47 @@
 // This is loaded into chrome windows with the subscript loader. Wrap in
 // a block to prevent accidentally leaking globals onto `window`.
 {
-  const NEWLINE_HANDLING = {
-    pasteintact: Ci.nsIEditor.eNewlinesPasteIntact,
-    pastetofirst: Ci.nsIEditor.eNewlinesPasteToFirst,
-    replacewithspaces: Ci.nsIEditor.eNewlinesReplaceWithSpaces,
-    strip: Ci.nsIEditor.eNewlinesStrip,
-    replacewithcommas: Ci.nsIEditor.eNewlinesReplaceWithCommas,
-    stripsurroundingwhitespace:
-      Ci.nsIEditor.eNewlinesStripSurroundingWhitespace,
-  };
-
   class MozTextbox extends MozXULElement {
     static get inheritedAttributes() {
       return {
         ".textbox-input-box": "context,spellcheck",
         ".textbox-input":
-          "value,type,maxlength,disabled,size,readonly,placeholder,tabindex,accesskey,noinitialfocus,spellcheck",
+          "value,type,min,max,step,maxlength,disabled,size,readonly,placeholder,tabindex,accesskey,noinitialfocus,mozactionhint,spellcheck,rows,cols,wrap",
       };
     }
 
     static get markup() {
       return `
         <moz-input-box class="textbox-input-box" flex="1">
-          <html:input class="textbox-input"/>
+          <html:input class="textbox-input" anonid="input" />
         </moz-input-box>
       `;
     }
 
+    static get multilineMarkup() {
+      return `
+        <moz-input-box class="textbox-input-box" flex="1">
+          <html:textarea class="textbox-input textbox-textarea" anonid="input"></html:textarea>
+        </moz-input-box>
+      `;
+    }
+
+    static get multilineFragment() {
+      if (!this.hasOwnProperty("_multilineFragment")) {
+        this._multilineFragment = MozXULElement.parseXULToFragment(
+          this.multilineMarkup,
+          this.entities
+        );
+      }
+      return document.importNode(this._multilineFragment, true);
+    }
+
     constructor() {
       super();
-      this._mInputField = null;
-      this._mIgnoreClick = false;
-      this._mIgnoreFocus = false;
-      this._mEditor = null;
+      this._inputField = null;
+      this._ignoreClick = false;
+      this._ignoreFocus = false;
+      this._editor = null;
     }
 
     connectedCallback() {
@@ -48,8 +56,14 @@
       }
 
       this.textContent = "";
-      this.appendChild(this.constructor.fragment);
+      const fragment =
+        this.getAttribute("multiline") == "true"
+          ? this.constructor.multilineFragment
+          : this.constructor.fragment;
+      this.appendChild(fragment);
       this.initializeAttributeInheritance();
+      this._syncBooleanAttributes();
+      this._syncValueAttribute();
       this._initialized = true;
 
       this.addEventListener("focus", this._onFocus, true);
@@ -58,69 +72,93 @@
       this.addEventListener("click", this._onClick);
 
       this._setNewlineHandling();
-
       if (this.hasAttribute("emptytext")) {
         this.placeholder = this.getAttribute("emptytext");
       }
     }
 
-    get inputField() {
-      if (!this._mInputField) {
-        this._mInputField = this.querySelector(".textbox-input");
+    attributeChangedCallback(name, oldValue, newValue) {
+      super.attributeChangedCallback(name, oldValue, newValue);
+      if (!this._initialized || oldValue == newValue) {
+        return;
       }
-      return this._mInputField;
+      if (name == "disabled" || name == "readonly") {
+        this._syncBooleanAttribute(name);
+      } else if (name == "value") {
+        this._syncValueAttribute();
+      }
+    }
+
+    _syncBooleanAttributes() {
+      this._syncBooleanAttribute("disabled");
+      this._syncBooleanAttribute("readonly");
+    }
+
+    _syncBooleanAttribute(name) {
+      this.inputField[name == "readonly" ? "readOnly" : name] =
+        this.getAttribute(name) == "true";
+    }
+
+    _syncValueAttribute() {
+      this.inputField.value = this.getAttribute("value") ?? "";
+    }
+
+    get inputField() {
+      if (!this._inputField) {
+        this._inputField = this.querySelector(
+          ".textbox-input, .textbox-textarea"
+        );
+      }
+      return this._inputField;
     }
 
     get value() {
       return this.inputField.value;
     }
 
-    set value(val) {
-      this.inputField.value = val;
+    set value(value) {
+      this.inputField.value = value;
     }
 
     get defaultValue() {
       return this.inputField.defaultValue;
     }
 
-    set defaultValue(val) {
-      this.inputField.defaultValue = val;
+    set defaultValue(value) {
+      this.inputField.defaultValue = value;
     }
 
     get label() {
-      return (
-        this.getAttribute("label") ||
-        (this.labelElement ? this.labelElement.value : this.placeholder)
-      );
+      return this.getAttribute("label") || this.placeholder;
     }
 
-    set label(val) {
-      this.setAttribute("label", val);
+    set label(value) {
+      this.setAttribute("label", value);
     }
 
     get placeholder() {
       return this.inputField.placeholder;
     }
 
-    set placeholder(val) {
-      this.inputField.placeholder = val;
+    set placeholder(value) {
+      this.inputField.placeholder = value;
     }
 
     get emptyText() {
       return this.placeholder;
     }
 
-    set emptyText(val) {
-      this.placeholder = val;
+    set emptyText(value) {
+      this.placeholder = value;
     }
 
     get type() {
-      return this.getAttribute("type");
+      return this.getAttribute("type") || "text";
     }
 
-    set type(val) {
-      if (val) {
-        this.setAttribute("type", val);
+    set type(value) {
+      if (value) {
+        this.setAttribute("type", value);
       } else {
         this.removeAttribute("type");
       }
@@ -130,33 +168,29 @@
       return this.inputField.maxLength;
     }
 
-    set maxLength(val) {
-      this.inputField.maxLength = val;
+    set maxLength(value) {
+      this.inputField.maxLength = value;
     }
 
     get disabled() {
       return this.inputField.disabled;
     }
 
-    set disabled(val) {
-      this.inputField.disabled = val;
-      if (val) {
-        this.setAttribute("disabled", "true");
-      } else {
-        this.removeAttribute("disabled");
-      }
+    set disabled(value) {
+      this.inputField.disabled = !!value;
+      this.toggleAttribute("disabled", !!value);
     }
 
     get tabIndex() {
-      return parseInt(this.getAttribute("tabindex")) || 0;
+      return this.inputField.tabIndex;
     }
 
-    set tabIndex(val) {
-      this.inputField.tabIndex = val;
-      if (val) {
-        this.setAttribute("tabindex", val);
-      } else {
+    set tabIndex(value) {
+      this.inputField.tabIndex = value;
+      if (value == null) {
         this.removeAttribute("tabindex");
+      } else {
+        this.setAttribute("tabindex", value);
       }
     }
 
@@ -164,40 +198,32 @@
       return this.inputField.size;
     }
 
-    set size(val) {
-      this.inputField.size = val;
+    set size(value) {
+      this.inputField.size = value;
     }
 
     get readOnly() {
       return this.inputField.readOnly;
     }
 
-    set readOnly(val) {
-      this.inputField.readOnly = val;
-      if (val) {
-        this.setAttribute("readonly", "true");
-      } else {
-        this.removeAttribute("readonly");
-      }
+    set readOnly(value) {
+      this.inputField.readOnly = !!value;
+      this.toggleAttribute("readonly", !!value);
     }
 
     get clickSelectsAll() {
       return this.getAttribute("clickSelectsAll") == "true";
     }
 
-    set clickSelectsAll(val) {
-      if (val) {
-        this.setAttribute("clickSelectsAll", "true");
-      } else {
-        this.removeAttribute("clickSelectsAll");
-      }
+    set clickSelectsAll(value) {
+      this.toggleAttribute("clickSelectsAll", !!value);
     }
 
     get editor() {
-      if (!this._mEditor) {
-        this._mEditor = this.inputField.editor;
+      if (!this._editor) {
+        this._editor = this.inputField.editor;
       }
-      return this._mEditor;
+      return this._editor;
     }
 
     get controllers() {
@@ -212,16 +238,16 @@
       return this.inputField.selectionStart;
     }
 
-    set selectionStart(val) {
-      this.inputField.selectionStart = val;
+    set selectionStart(value) {
+      this.inputField.selectionStart = value;
     }
 
     get selectionEnd() {
       return this.inputField.selectionEnd;
     }
 
-    set selectionEnd(val) {
-      this.inputField.selectionEnd = val;
+    set selectionEnd(value) {
+      this.inputField.selectionEnd = value;
     }
 
     setSelectionRange(start, end) {
@@ -241,92 +267,96 @@
       try {
         this.editor.transactionManager.clear();
         return true;
-      } catch (ex) {
+      } catch (e) {
         return false;
       }
     }
 
+    doCommand(command = this.getAttribute("command")) {
+      if (!command) {
+        return;
+      }
+      const controller =
+        this.ownerDocument.commandDispatcher.getControllerForCommand(command);
+      controller?.doCommand(command);
+    }
+
     _setNewlineHandling() {
-      let handling = NEWLINE_HANDLING[this.getAttribute("newlines")];
-      if (handling !== undefined && this.editor) {
-        this.editor.newlineHandling = handling;
+      const newlineName = this.getAttribute("newlines");
+      if (!newlineName || !this.editor) {
+        return;
+      }
+
+      for (const name in Ci.nsIPlaintextEditor) {
+        const match = /^eNewlines(.*)$/i.exec(name);
+        if (match && match[1].toLowerCase() == newlineName.toLowerCase()) {
+          this.editor.QueryInterface(Ci.nsIPlaintextEditor).newlineHandling =
+            Ci.nsIPlaintextEditor[name];
+          break;
+        }
       }
     }
 
     _maybeSelectAll() {
       if (
-        !this._mIgnoreClick &&
+        !this._ignoreClick &&
         this.clickSelectsAll &&
-        document.activeElement == this.inputField &&
+        this.ownerDocument.activeElement == this.inputField &&
         this.inputField.selectionStart == this.inputField.selectionEnd
       ) {
         this.editor.selectAll();
       }
     }
 
-    _onFocus(event) {
+    _onFocus = event => {
       if (this.hasAttribute("focused")) {
         return;
       }
 
-      switch (event.originalTarget) {
-        case this:
-          this.inputField.focus();
-          break;
-        case this.inputField:
-          if (this._mIgnoreFocus) {
-            this._mIgnoreFocus = false;
-          } else if (this.clickSelectsAll) {
-            try {
-              let imeEditor = this.editor.QueryInterface(
-                Ci.nsIEditorIMESupport
-              );
-              if (!imeEditor || !imeEditor.composing) {
-                this.editor.selectAll();
-              }
-            } catch (ex) {}
-          }
-          break;
-        default:
-          return;
+      const target = event.originalTarget || event.target;
+      if (target == this) {
+        this.inputField.focus();
+      } else if (target == this.inputField) {
+        if (this._ignoreFocus) {
+          this._ignoreFocus = false;
+        } else if (this.clickSelectsAll) {
+          try {
+            const imeEditor = this.editor.QueryInterface(
+              Ci.nsIEditorIMESupport
+            );
+            if (!imeEditor || !imeEditor.composing) {
+              this.editor.selectAll();
+            }
+          } catch (e) {}
+        }
+      } else {
+        return;
       }
+
       this.setAttribute("focused", "true");
-    }
+    };
 
-    _onBlur() {
+    _onBlur = () => {
       this.removeAttribute("focused");
-      if (
-        window == window.top &&
-        window.isChromeWindow &&
-        document.activeElement == this.inputField
-      ) {
-        this._mIgnoreFocus = true;
-      }
-    }
+    };
 
-    _onMouseDown(event) {
-      this._mIgnoreClick = this.hasAttribute("focused");
-      if (!this._mIgnoreClick) {
-        this._mIgnoreFocus = true;
+    _onMouseDown = event => {
+      this._ignoreClick = this.hasAttribute("focused");
+      if (!this._ignoreClick) {
+        this._ignoreFocus = true;
         this.inputField.setSelectionRange(0, 0);
-        if (
-          event.originalTarget == this ||
-          event.originalTarget == this.inputField.parentNode
-        ) {
+        const target = event.originalTarget || event.target;
+        if (target == this || target == this.inputField.parentNode) {
           this.inputField.focus();
         }
       }
-    }
+    };
 
-    _onClick() {
-      this._maybeSelectAll();
-    }
+    _onClick = () => this._maybeSelectAll();
   }
 
   customElements.define("textbox", MozTextbox);
 
-  // timed-textbox
-  // extends textbox
   class MozTimedTextbox extends MozTextbox {
     constructor() {
       super();
@@ -344,69 +374,50 @@
     }
 
     get timeout() {
-      return parseInt(this.getAttribute("timeout")) || 0;
+      return parseInt(this.getAttribute("timeout"), 10) || 0;
     }
 
-    set timeout(val) {
-      this.setAttribute("timeout", val);
-    }
-
-    set value(val) {
-      this.inputField.value = val;
-      this._clearTimer();
+    set timeout(value) {
+      this.setAttribute("timeout", value);
     }
 
     get value() {
-      return this.inputField.value;
+      return super.value;
     }
-
-    _clearTimer() {
+    set value(value) {
+      this.inputField.value = value;
       if (this._timer) {
         clearTimeout(this._timer);
         this._timer = null;
       }
     }
 
-    _fireCommand() {
+    _fireCommand = () => {
       this._timer = null;
       this.doCommand();
-    }
+    };
 
-    _onTimedInput() {
-      this._clearTimer();
-      if (this.timeout) {
-        this._timer = setTimeout(() => this._fireCommand(), this.timeout);
-      }
-    }
+    _onTimedInput = () => {
+      clearTimeout(this._timer);
+      this._timer = this.timeout
+        ? setTimeout(this._fireCommand, this.timeout)
+        : null;
+    };
 
-    _onTimedKeypress(event) {
+    _onTimedKeypress = event => {
       if (event.keyCode == KeyEvent.DOM_VK_RETURN) {
-        this._clearTimer();
+        clearTimeout(this._timer);
         this._fireCommand();
         event.preventDefault();
       }
-    }
+    };
   }
 
   customElements.define("timed-textbox", MozTimedTextbox);
 
-  // textarea
-  // extends textbox with <textarea> instead of <input>
   class MozTextarea extends MozTextbox {
-    static get inheritedAttributes() {
-      return {
-        ".textbox-input-box": "context,spellcheck",
-        ".textbox-textarea":
-          "value,disabled,tabindex,rows,cols,readonly,wrap,placeholder,spellcheck",
-      };
-    }
-
     static get markup() {
-      return `
-        <moz-input-box class="textbox-input-box" flex="1">
-          <html:textarea class="textbox-textarea textbox-input"></html:textarea>
-        </moz-input-box>
-      `;
+      return this.multilineMarkup;
     }
   }
 

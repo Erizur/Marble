@@ -57,6 +57,7 @@
       this.initializeAttributeInheritance();
     }
 
+
     set checked(val) {
       let change = val != (this.getAttribute("checked") == "true");
       if (val) {
