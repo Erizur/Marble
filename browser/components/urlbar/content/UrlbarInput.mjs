@@ -357,6 +357,7 @@ ${
     this.inputField.setAttribute("aria-controls", resultListboxId);
 
     if (this.#isAddressbar) {
+      this.panel.id = "PopupAutoCompleteRichResult";
       this.inputField.id = "urlbar-input";
 
       let schemeField = document.createElement("input");
