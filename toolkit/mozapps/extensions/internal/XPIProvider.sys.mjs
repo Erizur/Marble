@@ -2719,17 +2719,6 @@ export var XPIProvider = {
 
       logger.debug("startup");
 
-      if (Services.prefs.getBoolPref("extensions.legacy.enabled", false)) {
-        try {
-          const { BootstrapLoader } = ChromeUtils.importESModule(
-            "resource://gre/modules/addons/LegacyBootstrap.sys.mjs"
-          );
-          AddonManager.addExternalExtensionLoader(BootstrapLoader);
-        } catch (e) {
-          logger.warn("Failed to register the legacy bootstrap loader", e);
-        }
-      }
-
       this.builtInAddons = {};
       try {
         let url = Services.io.newURI(BUILT_IN_ADDONS_URI);
