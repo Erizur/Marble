@@ -14,6 +14,7 @@ Marble is a browser based on Mozilla Firefox (more specifically, the ESR variant
 - [Isabella Lulamoon](https://github.com/kawapure) for the original Native Controls Patch.
 - The [Nocturne](https://github.com/ImSwordQueen/Nocturne) browser contributors:
   - [ImSwordQueen](https://github.com/ImSwordQueen) for miscellaneous patches I applied.
+  - [OmegaAOL](https://github.com/OmegaAOL) for the base restoration of XUL/XPCOM extensions.
   - [Goodusername123](https://github.com/goodusername123/) for the VM graphics blocker patch.
 
 ### Miscelaneous
