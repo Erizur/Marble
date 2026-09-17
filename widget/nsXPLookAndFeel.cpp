@@ -516,6 +516,15 @@ static constexpr struct {
     {"widget.windows.uwp-system-colors.highlight-accent"_ns,
      widget::ThemeChangeKind::Style},
     {"widget.windows-style.modern"_ns, widget::ThemeChangeKind::Style},
+    // These change the caption button box, so the titlebar needs a relayout.
+    {"widget.native-controls.override-aero-caption-buttons-mask-width"_ns,
+     widget::ThemeChangeKind::StyleAndLayout},
+    {"widget.native-controls.override-aero-caption-buttons-mask-height"_ns,
+     widget::ThemeChangeKind::StyleAndLayout},
+    {"widget.native-controls.aero-caption-buttons-mask-radius"_ns,
+     widget::ThemeChangeKind::StyleAndLayout},
+    {"widget.native-controls.aero-caption-buttons-mask-radius-right"_ns,
+     widget::ThemeChangeKind::StyleAndLayout},
     // Affects env().
     {"layout.css.prefers-color-scheme.content-override"_ns,
      widget::ThemeChangeKind::Style},

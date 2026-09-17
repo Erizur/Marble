@@ -195,11 +195,6 @@ void nsUXThemeData::UpdateTitlebarInfo(HWND aWnd) {
 
   if (!sTitlebarInfoPopulatedAero && dwmCompositionEnabled) {
     RECT captionButtons;
-    int overrideCaptionButtonsWidth = StaticPrefs::
-        widget_native_controls_override_aero_caption_buttons_mask_width();
-    int overrideCaptionButtonsHeight = StaticPrefs::
-        widget_native_controls_override_aero_caption_buttons_mask_height();
-
     if (SUCCEEDED(DwmGetWindowAttribute(aWnd, DWMWA_CAPTION_BUTTON_BOUNDS,
                                         &captionButtons,
                                         sizeof(captionButtons)))) {
@@ -207,14 +202,6 @@ void nsUXThemeData::UpdateTitlebarInfo(HWND aWnd) {
           captionButtons.right - captionButtons.left - 3;
       sCommandButtonBoxMetrics.cy =
           (captionButtons.bottom - captionButtons.top) - 1;
-
-      if (overrideCaptionButtonsWidth > 0) {
-        sCommandButtonBoxMetrics.cx = overrideCaptionButtonsWidth;
-      }
-
-      if (overrideCaptionButtonsHeight > 0) {
-        sCommandButtonBoxMetrics.cy = overrideCaptionButtonsHeight;
-      }
 
       sCommandButtonBoxMetricsInitialized = true;
       // MOZ_ASSERT(

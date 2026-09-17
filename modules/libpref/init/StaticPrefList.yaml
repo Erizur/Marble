@@ -20174,6 +20174,18 @@
   value: 0
   mirror: always
 
+# Radius, in device pixels, of the bottom corners of the area cleared for the
+# Aero caption buttons.
+- name: widget.native-controls.aero-caption-buttons-mask-radius
+  type: int32_t
+  value: 0
+  mirror: always
+
+- name: widget.native-controls.aero-caption-buttons-mask-radius-right
+  type: int32_t
+  value: 0
+  mirror: always
+
 # Whether enable windows-modern mode for stylesheets
 - name: widget.windows-style.modern
   type: bool

@@ -74,6 +74,7 @@
 #include "mozilla/TimeStamp.h"
 
 #include "mozilla/ipc/MessageChannel.h"
+#include <cmath>
 #include <algorithm>
 
 #include "mozilla/widget/WinEventObserver.h"
@@ -4299,9 +4300,53 @@ void nsWindow::UpdateThemeGeometries(
 void nsWindow::AddWindowOverlayWebRenderCommands(
     layers::WebRenderBridgeChild* aWrBridge, wr::DisplayListBuilder& aBuilder,
     wr::IpcResourceUpdateQueue& aResources) {
-  if (mWindowButtonsRect) {
-    wr::LayoutRect rect = wr::ToLayoutRect(*mWindowButtonsRect);
+  if (!mWindowButtonsRect) {
+    return;
+  }
+
+  auto pushClear = [&](const LayoutDeviceIntRect& aRect) {
+    wr::LayoutRect rect = wr::ToLayoutRect(aRect);
     aBuilder.PushClearRect(rect, rect);
+  };
+
+  const LayoutDeviceIntRect& buttons = *mWindowButtonsRect;
+  auto radiusPref = [&](int32_t aRadius) {
+    return std::min({aRadius, buttons.Width() / 2, buttons.Height()});
+  };
+  int32_t leftRadius = radiusPref(
+      StaticPrefs::widget_native_controls_aero_caption_buttons_mask_radius());
+  int32_t rightRadius =
+      mFrameState->GetSizeMode() == nsSizeMode_Maximized
+          ? radiusPref(
+                StaticPrefs::
+                    widget_native_controls_aero_caption_buttons_mask_radius_right())
+          : 0;
+  if (leftRadius <= 0 && rightRadius <= 0) {
+    pushClear(buttons);
+    return;
+  }
+
+  // WebRender does not composite clipped clear rects, so the rounded corners
+  // are cleared one row at a time instead.
+  int32_t maxRadius = std::max(leftRadius, rightRadius);
+  pushClear(LayoutDeviceIntRect(buttons.X(), buttons.Y(), buttons.Width(),
+                                buttons.Height() - maxRadius));
+
+  for (int32_t row = 0; row < maxRadius; ++row) {
+    auto inset = [&](int32_t aRadius) -> int32_t {
+      int32_t rowFromCenter = row - (maxRadius - aRadius);
+      if (rowFromCenter < 0) {
+        return 0;
+      }
+      double dy = rowFromCenter + 0.5;
+      return aRadius - int32_t(std::round(
+                           std::sqrt(double(aRadius) * aRadius - dy * dy)));
+    };
+    int32_t left = inset(leftRadius);
+    int32_t right = inset(rightRadius);
+    pushClear(LayoutDeviceIntRect(buttons.X() + left,
+                                  buttons.YMost() - maxRadius + row,
+                                  buttons.Width() - left - right, 1));
   }
 }
 

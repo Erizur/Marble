@@ -11,6 +11,7 @@
 
 #include "nscore.h"
 #include "mozilla/LookAndFeel.h"
+#include "mozilla/StaticPrefs_widget.h"
 #include "mozilla/Maybe.h"
 #include "WinUtils.h"
 
@@ -103,7 +104,18 @@ class nsUXThemeData {
   }
   static SIZE GetCommandButtonBoxMetrics() {
     EnsureCommandButtonBoxMetrics();
-    return sCommandButtonBoxMetrics;
+    SIZE metrics = sCommandButtonBoxMetrics;
+    if (int32_t width = mozilla::StaticPrefs::
+            widget_native_controls_override_aero_caption_buttons_mask_width();
+        width > 0) {
+      metrics.cx = width;
+    }
+    if (int32_t height = mozilla::StaticPrefs::
+            widget_native_controls_override_aero_caption_buttons_mask_height();
+        height > 0) {
+      metrics.cy = height;
+    }
+    return metrics;
   }
   static void UpdateNativeThemeInfo();
   static bool IsDefaultWindowTheme();
