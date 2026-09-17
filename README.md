@@ -1,18 +1,42 @@
-![Firefox Browser](./docs/readme/readme-banner.svg)
+![Marble Browser](./docs/readme/marble-banner.svg)
 
-[Firefox](https://firefox.com/) is a fast, reliable and private web browser from the non-profit [Mozilla organization](https://mozilla.org/).
+Marble is a browser based on Mozilla Firefox (more specifically, the ESR variant) that aims to restore the Photon style & layout, while adding removed native styling features for various platforms.
 
-### Contributing
+## Credits
 
-To learn how to contribute to Firefox read the [Firefox Contributors' Quick Reference document](https://firefox-source-docs.mozilla.org/contributing/contribution_quickref.html).
+### Direct Marble contributors
 
-We use [bugzilla.mozilla.org](https://bugzilla.mozilla.org/) as our issue tracker, please file bugs there.
+- [Aubymori](https://github.com/aubymori) for past contributions in Nara and Echelon Browser used for Marble.
+- [zapSNH](https://github.com/zapSNH/) for the original Photon fixes for modern Firefox.
 
-### Resources
+### Other contributors
 
-* [Firefox Source Docs](https://firefox-source-docs.mozilla.org/) is our primary documentation repository
-* Nightly development builds can be downloaded from [Firefox Nightly page](https://www.mozilla.org/firefox/channel/desktop/#nightly)
+- [Isabella Lulamoon](https://github.com/kawapure) for the original Native Controls Patch.
+- The [Nocturne](https://github.com/ImSwordQueen/Nocturne) browser contributors:
+  - [ImSwordQueen](https://github.com/ImSwordQueen) for miscellaneous patches I applied.
+  - [Goodusername123](https://github.com/goodusername123/) for the VM graphics blocker patch.
 
-If you have a question about developing Firefox, and can't find the solution
-on [Firefox Source Docs](https://firefox-source-docs.mozilla.org/), you can try asking your question on Matrix at
-chat.mozilla.org in the [Introduction channel](https://chat.mozilla.org/#/room/#introduction:mozilla.org).
+### Miscelaneous
+
+- My house for food and electricity.
+- My computer for being able to build this.
+- My old computer for resisting, and for hosting [the official git mirror](https://git.amerizur.com/Biidama/Marble).
+- For the past Marble themes:
+  - Asumiko Nakamura, Sajou Rihito and Hikaru Kusakabe. ([Doukyuusei](https://addons.mozilla.org/en-US/firefox/addon/doukyuusei-marble/) theme)
+  - The Orange Lounge members, Tomosuke Funaki and Shizue Touki. (Orange Lounge theme)
+  - The CAPSULE members, Yasutaka Nakata and Toshiko Koshijima. (CAPSULE (2001/2003) theme)
+
+## Contributing
+
+Because Marble is forked from Firefox, its documentation mostly applies for us as well.
+
+Please read [this document](https://firefox-source-docs.mozilla.org/contributing/directory_structure.html) to understand the Mozilla directory structure.
+
+Here are some useful sources for Mozilla documentation (in order):
+
+1. [Mozilla Wiki (Gecko:Overview)](https://wiki.mozilla.org/Gecko:Overview) - by far the most useful source to understanding the Mozilla framework architecture.
+2. [Firefox Source Docs](https://firefox-source-docs.mozilla.org/) - pertains more to modern Firefox specifically.
+
+## Building from source
+
+[Same as regular Firefox.](https://firefox-source-docs.mozilla.org/contributing/contribution_quickref.html)
