@@ -6,4 +6,4 @@
 # Unlike the one located in build/variables.py, this one heads onto
 # different files, more specifically, the tools that handle bwork stuff.
 # which means, this has to be bumped alongside the other abi-related variable.
-BRIGHTWORK_ABI = 1
+BRIGHTWORK_ABI = 2

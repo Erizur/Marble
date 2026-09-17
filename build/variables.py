@@ -13,7 +13,7 @@ SOURCESTAMP_FILENAME = "sourcestamp.txt"
 # addons that don't follow the current ABI version.
 # This value should only be updated when a major release happens, and minor ones
 # should keep it as it is unless it's an emergency of sorts.
-MOZ_BRIGHTWORK_ABI = 1
+MOZ_BRIGHTWORK_ABI = 2
 
 
 def brightwork_abi_header(output):
