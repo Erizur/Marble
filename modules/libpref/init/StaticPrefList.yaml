@@ -16468,6 +16468,12 @@
   value: 2
   mirror: always
 
+# Whether Content-Security-Policy (aka CSP) is enforced for web content.
+- name: security.csp.enable
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
 - name: security.csp.reporting.script-sample.max-length
   type: int32_t
   value: 40

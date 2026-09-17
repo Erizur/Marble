@@ -12,6 +12,7 @@
 #include "nsIURI.h"
 #include "nsIContent.h"
 #include "nsCSPService.h"
+#include "nsCSPUtils.h"
 #include "nsIContentSecurityPolicy.h"
 #include "nsError.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
@@ -36,6 +37,15 @@ NS_IMPL_ISUPPORTS(CSPService, nsIContentPolicy, nsIChannelEventSink)
 
 static bool SubjectToCSP(nsILoadInfo* aLoadInfo, nsIURI* aURI,
                          nsContentPolicyType aContentType) {
+  // security.csp.enable can turn off CSP enforcement for web content.
+  nsIPrincipal* principal = aLoadInfo->GetLoadingPrincipal();
+  if (!principal) {
+    principal = aLoadInfo->TriggeringPrincipal();
+  }
+  if (!CSP_IsEnabledFor(principal)) {
+    return false;
+  }
+
   ExtContentPolicyType contentType =
       nsContentUtils::InternalContentPolicyTypeToExternal(aContentType);
 
