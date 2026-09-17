@@ -4,21 +4,31 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsNativeThemeWin.h"
+#include "mozilla/widget/WinThemeSurface.h"
 
 #include <algorithm>
+#include <cmath>
 #include <malloc.h>
+#include <cstring>
 
 #include "gfxContext.h"
 #include "gfxPlatform.h"
 #include "gfxWindowsNativeDrawing.h"
 #include "gfxWindowsPlatform.h"
 #include "gfxWindowsSurface.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/gfx/Types.h"  // for Color::FromABGR
 #include "mozilla/Logging.h"
 #include "mozilla/RelativeLuminanceUtils.h"
+#include "mozilla/ScopeExit.h"
 #include "mozilla/StaticPrefs_layout.h"
+#include "mozilla/StaticPtr.h"
+#include "mozilla/ipc/SharedMemoryMapping.h"
 #include "mozilla/StaticPrefs_widget.h"
+#ifdef MOZ_SANDBOX
+#  include "mozilla/SandboxSettings.h"
+#endif
 #include "ScrollbarDrawingWin.h"
 #include "mozilla/WindowsVersion.h"
 #include "mozilla/dom/XULButtonElement.h"
@@ -41,6 +51,7 @@
 #include "nsWindow.h"
 #include "prinrval.h"
 #include "WinUtils.h"
+#include "ScrollbarDrawingWin.h"
 
 using namespace mozilla;
 using namespace mozilla::gfx;
@@ -722,7 +733,10 @@ mozilla::Maybe<nsUXThemeClass> nsNativeThemeWin::GetThemeClass(
     case StyleAppearance::PasswordInput:
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
+    case StyleAppearance::FocusOutline:
       return Some(eUXEdit);
+    case StyleAppearance::Tooltip:
+      return Some(eUXTooltip);
     case StyleAppearance::Toolbox:
       return Some(eUXRebar);
     case StyleAppearance::MozWinMediaToolbox:
@@ -742,12 +756,27 @@ mozilla::Maybe<nsUXThemeClass> nsNativeThemeWin::GetThemeClass(
     case StyleAppearance::Tabpanel:
     case StyleAppearance::Tabpanels:
       return Some(eUXTab);
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::Scrollcorner:
+      return Some(eUXScrollbar);
     case StyleAppearance::Range:
     case StyleAppearance::RangeThumb:
       return Some(eUXTrackbar);
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton:
       return Some(eUXSpin);
+    case StyleAppearance::Statusbar:
+    case StyleAppearance::Statusbarpanel:
+    case StyleAppearance::Resizerpanel:
+    case StyleAppearance::Resizer:
+      return Some(eUXStatus);
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:
     case StyleAppearance::MozMenulistArrowButton:
@@ -938,6 +967,17 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
 
       return NS_OK;
     }
+    case StyleAppearance::FocusOutline: {
+      // XXX the EDITBORDER values don't respect DTBG_OMITCONTENT
+      aPart = TFP_TEXTFIELD;  // TFP_EDITBORDER_NOSCROLL;
+      aState = TS_FOCUSED;    // TFS_EDITBORDER_FOCUSED;
+      return NS_OK;
+    }
+    case StyleAppearance::Tooltip: {
+      aPart = TTP_STANDARD;
+      aState = TS_NORMAL;
+      return NS_OK;
+    }
     case StyleAppearance::ProgressBar: {
       bool vertical = IsVerticalProgress(aFrame);
       aPart = vertical ? PP_BARVERT : PP_BAR;
@@ -993,6 +1033,66 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
       aState = TS_NORMAL;
       return NS_OK;
     }
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight: {
+      aPart = SP_BUTTON;
+      aState = (int(aAppearance) - int(StyleAppearance::ScrollbarbuttonUp)) * 4;
+      ElementState eventState = GetContentState(aFrame, aAppearance);
+      if (!aFrame)
+        aState += TS_NORMAL;
+      else if (eventState.HasState(ElementState::DISABLED))
+        aState += TS_DISABLED;
+      else {
+        nsIFrame* parent = aFrame->GetParent();
+        ElementState parentState = GetContentState(
+            parent, parent->StyleDisplay()->EffectiveAppearance());
+        if (eventState.HasAllStates(ElementState::HOVER | ElementState::ACTIVE))
+          aState += TS_ACTIVE;
+        else if (eventState.HasState(ElementState::HOVER))
+          aState += TS_HOVER;
+        else if (parentState.HasState(ElementState::HOVER))
+          aState =
+              (int(aAppearance) - int(StyleAppearance::ScrollbarbuttonUp)) +
+              SP_BUTTON_IMPLICIT_HOVER_BASE;
+        else
+          aState += TS_NORMAL;
+      }
+      return NS_OK;
+    }
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarVertical: {
+      aPart = (aAppearance == StyleAppearance::ScrollbarHorizontal)
+                  ? SP_TRACKSTARTHOR
+                  : SP_TRACKSTARTVERT;
+      aState = TS_NORMAL;
+      return NS_OK;
+    }
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::ScrollbarthumbVertical: {
+      aPart = (aAppearance == StyleAppearance::ScrollbarthumbHorizontal)
+                  ? SP_THUMBHOR
+                  : SP_THUMBVERT;
+      ElementState eventState = GetContentState(aFrame, aAppearance);
+      if (!aFrame)
+        aState = TS_NORMAL;
+      else if (eventState.HasState(ElementState::DISABLED))
+        aState = TS_DISABLED;
+      else {
+        if (eventState.HasState(
+                ElementState::ACTIVE))  // Hover is not also a requirement for
+                                        // the thumb, since the drag is not
+                                        // canceled when you move outside the
+                                        // thumb.
+          aState = TS_ACTIVE;
+        else if (eventState.HasState(ElementState::HOVER))
+          aState = TS_HOVER;
+        else
+          aState = TS_NORMAL;
+      }
+      return NS_OK;
+    }
     case StyleAppearance::Range: {
       if (IsRangeHorizontal(aFrame)) {
         aPart = TKP_TRACK;
@@ -1030,6 +1130,11 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
       }
       return NS_OK;
     }
+    case StyleAppearance::Scrollcorner: {
+      aState = 0;
+      aPart = RP_BACKGROUND;
+      return NS_OK;
+    }
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton: {
       aPart = (aAppearance == StyleAppearance::SpinnerUpbutton) ? SPNP_UP
@@ -1047,7 +1152,8 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
     case StyleAppearance::Toolbox:
     case StyleAppearance::MozWinMediaToolbox:
     case StyleAppearance::MozWinCommunicationsToolbox:
-    case StyleAppearance::MozWinBrowsertabbarToolbox: {
+    case StyleAppearance::MozWinBrowsertabbarToolbox:
+    case StyleAppearance::Statusbar: {
       aState = 0;
       aPart = RP_BACKGROUND;
       return NS_OK;
@@ -1066,6 +1172,26 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
           aState = 1;
         }
       }
+      return NS_OK;
+    }
+    case StyleAppearance::Statusbarpanel:
+    case StyleAppearance::Resizerpanel:
+    case StyleAppearance::Resizer: {
+      switch (aAppearance) {
+        case StyleAppearance::Statusbarpanel:
+          aPart = 1;
+          break;
+        case StyleAppearance::Resizerpanel:
+          aPart = 2;
+          break;
+        case StyleAppearance::Resizer:
+          aPart = 3;
+          break;
+        default:
+          MOZ_ASSERT_UNREACHABLE("Oops, we're missing a case");
+          aPart = 1;  // just something valid
+      }
+      aState = TS_NORMAL;
       return NS_OK;
     }
     case StyleAppearance::Treeview:
@@ -1349,7 +1475,7 @@ nsresult nsNativeThemeWin::GetThemePartAndState(nsIFrame* aFrame,
 
 static bool AssumeThemePartAndStateAreTransparent(int32_t aPart,
                                                   int32_t aState) {
-  if (!(IsWin8Point1OrLater() && nsUXThemeData::IsHighContrastOn()) &&
+  if (!(mozilla::IsWin8Point1OrLater() && nsUXThemeData::IsHighContrastOn()) &&
       aPart == MENU_POPUPITEM && aState == MBI_NORMAL) {
     return true;
   }
@@ -1376,24 +1502,817 @@ static inline double GetThemeDpiScaleFactor(nsIFrame* aFrame) {
   return GetThemeDpiScaleFactor(aFrame->PresContext());
 }
 
+static bool SupportsNativeThemeAtlasMetrics(StyleAppearance aAppearance) {
+  switch (aAppearance) {
+    case StyleAppearance::Button:
+    case StyleAppearance::Radio:
+    case StyleAppearance::Checkbox:
+    case StyleAppearance::NumberInput:
+    case StyleAppearance::PasswordInput:
+    case StyleAppearance::Textfield:
+    case StyleAppearance::Textarea:
+    case StyleAppearance::ProgressBar:
+    case StyleAppearance::Range:
+    case StyleAppearance::RangeThumb:
+    case StyleAppearance::SpinnerUpbutton:
+    case StyleAppearance::SpinnerDownbutton:
+    case StyleAppearance::Resizer:
+    case StyleAppearance::Menulist:
+    case StyleAppearance::MozMenulistArrowButton:
+    case StyleAppearance::Listbox:
+      return true;
+    default:
+      return false;
+  }
+}
+
+static bool SupportsNativeThemeAtlasSurface(StyleAppearance aAppearance) {
+  switch (aAppearance) {
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::Scrollcorner:
+      return true;
+    default:
+      return SupportsNativeThemeAtlasMetrics(aAppearance);
+  }
+}
+
+enum WinThemeAtlasFlags : uint8_t {
+  kWinThemeAtlasFixedSize = 1 << 0,
+  kWinThemeAtlasHorizontalTrack = 1 << 1,
+  kWinThemeAtlasVerticalTrack = 1 << 2,
+  kWinThemeAtlasRtl = 1 << 3,
+};
+
+struct WinThemeAtlasHeader {
+  uint32_t mMagic;
+  uint32_t mVersion;
+  uint32_t mEntryCount;
+  uint32_t mPixelDataOffset;
+  uint32_t mTotalSize;
+};
+
+struct WinThemeAtlasEntry {
+  uint8_t mThemeClass;
+  uint8_t mPart;
+  uint8_t mState;
+  uint8_t mFlags;
+  uint16_t mVariantHeight;
+  uint16_t mWidth;
+  uint16_t mHeight;
+  uint16_t mTrueWidth;
+  uint16_t mTrueHeight;
+  uint16_t mMinWidth;
+  uint16_t mMinHeight;
+  uint16_t mMarginTop;
+  uint16_t mMarginRight;
+  uint16_t mMarginBottom;
+  uint16_t mMarginLeft;
+  uint16_t mBorderTop;
+  uint16_t mBorderRight;
+  uint16_t mBorderBottom;
+  uint16_t mBorderLeft;
+  uint32_t mPixelOffset;
+  uint32_t mPixelLength;
+};
+
+static constexpr uint32_t kWinThemeAtlasMagic = 0x5754484d;
+static constexpr uint32_t kWinThemeAtlasVersion = 2;
+
+static StaticAutoPtr<ipc::ReadOnlySharedMemoryMapping> sWinThemeAtlas;
+static StaticAutoPtr<HashMap<uint64_t, uint32_t>> sWinThemeAtlasIndex;
+
+static uint64_t WinThemeAtlasKey(nsUXThemeClass aThemeClass, int32_t aPart,
+                                 int32_t aState, bool aIsRtl,
+                                 uint16_t aVariantHeight = 0) {
+  return uint64_t(aThemeClass) | (uint64_t(aPart) << 8) |
+         (uint64_t(aState) << 16) | (uint64_t(aIsRtl) << 24) |
+         (uint64_t(aVariantHeight) << 25);
+}
+
+static const WinThemeAtlasHeader* GetWinThemeAtlasHeader() {
+  return sWinThemeAtlas ? sWinThemeAtlas->DataAs<WinThemeAtlasHeader>()
+                        : nullptr;
+}
+
+static const WinThemeAtlasEntry* GetWinThemeAtlasEntries() {
+  const WinThemeAtlasHeader* header = GetWinThemeAtlasHeader();
+  return header ? reinterpret_cast<const WinThemeAtlasEntry*>(header + 1)
+                : nullptr;
+}
+
+static const WinThemeAtlasEntry* FindWinThemeAtlasEntry(
+    nsUXThemeClass aThemeClass, int32_t aPart, int32_t aState, bool aIsRtl,
+    uint16_t aVariantHeight = 0) {
+  if (!sWinThemeAtlasIndex) {
+    return nullptr;
+  }
+  auto lookup = [&](bool aRtl, uint16_t aHeight) {
+    return sWinThemeAtlasIndex->lookup(
+        WinThemeAtlasKey(aThemeClass, aPart, aState, aRtl, aHeight));
+  };
+  auto entry = lookup(aIsRtl, aVariantHeight);
+  if (!entry && aVariantHeight) {
+    entry = lookup(aIsRtl, 0);
+  }
+  if (!entry && aIsRtl) {
+    entry = lookup(false, aVariantHeight);
+  }
+  if (!entry && aIsRtl && aVariantHeight) {
+    entry = lookup(false, 0);
+  }
+  return entry ? GetWinThemeAtlasEntries() + entry->value() : nullptr;
+}
+
+bool ShouldUseWindowsNativeThemeAtlas() {
+  if (!StaticPrefs::widget_native_controls_windows_theme_atlas_enabled() ||
+      !mozilla::IsWin10OrLater()) {
+    return false;
+  }
+#ifdef MOZ_SANDBOX
+  return GetEffectiveContentSandboxLevel() > 4;
+#else
+  return false;
+#endif
+}
+
+bool HasWindowsNativeThemeAtlas() {
+  return ShouldUseWindowsNativeThemeAtlas() && bool(sWinThemeAtlas);
+}
+
+void SetWindowsNativeThemeAtlas(ipc::ReadOnlySharedMemoryHandle&& aHandle) {
+  static bool initialized = false;
+  if (!initialized) {
+    initialized = true;
+    ClearOnShutdown(&sWinThemeAtlas);
+    ClearOnShutdown(&sWinThemeAtlasIndex);
+  }
+  sWinThemeAtlas = nullptr;
+  sWinThemeAtlasIndex = nullptr;
+  if (!ShouldUseWindowsNativeThemeAtlas() || !aHandle) {
+    return;
+  }
+
+  auto mapping = aHandle.Map();
+  if (!mapping || mapping.Size() < sizeof(WinThemeAtlasHeader)) {
+    return;
+  }
+  const auto* header = mapping.DataAs<WinThemeAtlasHeader>();
+  CheckedInt<size_t> entriesEnd =
+      CheckedInt<size_t>(sizeof(WinThemeAtlasHeader)) +
+      CheckedInt<size_t>(header->mEntryCount) * sizeof(WinThemeAtlasEntry);
+  if (header->mMagic != kWinThemeAtlasMagic ||
+      header->mVersion != kWinThemeAtlasVersion || !entriesEnd.isValid() ||
+      entriesEnd.value() > header->mPixelDataOffset ||
+      header->mTotalSize != mapping.Size()) {
+    return;
+  }
+
+  const auto* entries = reinterpret_cast<const WinThemeAtlasEntry*>(header + 1);
+  auto index = MakeUnique<HashMap<uint64_t, uint32_t>>();
+  for (uint32_t i = 0; i < header->mEntryCount; ++i) {
+    const WinThemeAtlasEntry& entry = entries[i];
+    CheckedInt<size_t> pixelEnd =
+        CheckedInt<size_t>(entry.mPixelOffset) + entry.mPixelLength;
+    if (entry.mThemeClass >= eUXNumClasses ||
+        entry.mPart >= THEME_PART_DISTINCT_VALUE_COUNT || entry.mWidth == 0 ||
+        entry.mHeight == 0 || !pixelEnd.isValid() ||
+        entry.mPixelOffset < header->mPixelDataOffset ||
+        pixelEnd.value() > mapping.Size() ||
+        entry.mPixelLength != size_t(entry.mWidth) * entry.mHeight * 4 ||
+        !index->put(
+            WinThemeAtlasKey(nsUXThemeClass(entry.mThemeClass), entry.mPart,
+                             entry.mState, entry.mFlags & kWinThemeAtlasRtl,
+                             entry.mVariantHeight),
+            i)) {
+      return;
+    }
+  }
+
+  sWinThemeAtlas = new ipc::ReadOnlySharedMemoryMapping(std::move(mapping));
+  sWinThemeAtlasIndex = index.release();
+}
+
+bool nsNativeThemeWin::RenderWidgetSurface(
+    StyleAppearance aAppearance, int32_t aPart, int32_t aState,
+    const IntSize& aThemeSize, const IntSize& aSurfaceSize, double aThemeScale,
+    bool aIsRtl, bool aIsVertical, nsTArray<uint8_t>& aPixels) {
+  if (!SupportsNativeThemeAtlasSurface(aAppearance)) {
+    return false;
+  }
+
+  CheckedInt<size_t> byteCount =
+      CheckedInt<size_t>(aSurfaceSize.width) * aSurfaceSize.height * 4;
+  if (aPart < 0 || aPart > UINT8_MAX || aState < 0 || aState > UINT8_MAX ||
+      aThemeSize.width <= 0 || aThemeSize.height <= 0 ||
+      aThemeSize.width > 1024 || aThemeSize.height > 1024 ||
+      aSurfaceSize.width <= 0 || aSurfaceSize.height <= 0 ||
+      aSurfaceSize.width > 1024 || aSurfaceSize.height > 1024 ||
+      !std::isfinite(aThemeScale) || aThemeScale <= 0.0 || aThemeScale > 8.0 ||
+      !byteCount.isValid() || byteCount.value() > 4 * 1024 * 1024) {
+    return false;
+  }
+
+  Maybe<nsUXThemeClass> themeClass = GetThemeClass(aAppearance);
+  if (themeClass.isNothing()) {
+    return false;
+  }
+  HANDLE theme = nsUXThemeData::GetTheme(themeClass.value());
+  if (!theme) {
+    return false;
+  }
+
+  RefPtr<DrawTarget> drawTarget = Factory::CreateDrawTarget(
+      BackendType::SKIA, aSurfaceSize, SurfaceFormat::B8G8R8A8);
+  UniquePtr<gfxContext> context = gfxContext::CreateOrNull(drawTarget);
+  if (!context) {
+    return false;
+  }
+  drawTarget->ClearRect(Rect(Point(), Size(aSurfaceSize)));
+  context->SetMatrix(
+      context->CurrentMatrix().PreScale(aThemeScale, aThemeScale));
+
+  gfxRect rect(0, 0, aThemeSize.width, aThemeSize.height);
+  gfxWindowsNativeDrawing nativeDrawing(
+      context.get(), rect, GetWidgetNativeDrawingFlags(aAppearance));
+
+  do {
+    HDC hdc = nativeDrawing.BeginNativeDrawing();
+    if (!hdc) {
+      return false;
+    }
+
+    RECT widgetRect;
+    nativeDrawing.TransformToNativeRect(rect, widgetRect);
+    RECT clipRect = widgetRect;
+
+    if (aAppearance == StyleAppearance::Range) {
+      RECT contentRect;
+      SIZE partSize;
+      if (SUCCEEDED(GetThemeBackgroundContentRect(theme, hdc, aPart, aState,
+                                                  &widgetRect, &contentRect)) &&
+          SUCCEEDED(GetThemePartSize(theme, hdc, aPart, aState, &widgetRect,
+                                     TS_TRUE, &partSize))) {
+        if (!aIsVertical) {
+          contentRect.top +=
+              (contentRect.bottom - contentRect.top - partSize.cy) / 2;
+          contentRect.bottom = contentRect.top + partSize.cy;
+        } else if (!aIsRtl) {
+          contentRect.left +=
+              (contentRect.right - contentRect.left - partSize.cx) / 2;
+          contentRect.right = contentRect.left + partSize.cx;
+        } else {
+          contentRect.right -=
+              (contentRect.right - contentRect.left - partSize.cx) / 2;
+          contentRect.left = contentRect.right - partSize.cx;
+        }
+        DrawThemeBackground(theme, hdc, aPart, aState, &contentRect, &clipRect);
+      } else {
+        DrawThemeBackground(theme, hdc, aPart, aState, &widgetRect, &clipRect);
+      }
+    } else if (aAppearance == StyleAppearance::Resizer ||
+               aAppearance == StyleAppearance::MozMenulistArrowButton) {
+      DrawThemeBGRTLAware(theme, hdc, aPart, aState, &widgetRect, &clipRect,
+                          aIsRtl);
+    } else if (aAppearance == StyleAppearance::NumberInput ||
+               aAppearance == StyleAppearance::PasswordInput ||
+               aAppearance == StyleAppearance::Textfield ||
+               aAppearance == StyleAppearance::Textarea) {
+      DrawThemeBackground(theme, hdc, aPart, aState, &widgetRect, &clipRect);
+      if (aState == TFS_EDITBORDER_DISABLED) {
+        InflateRect(&widgetRect, -1, -1);
+        ::FillRect(hdc, &widgetRect,
+                   reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1));
+      }
+    } else if (aAppearance == StyleAppearance::ProgressBar) {
+      COLORREF color = GetPixel(hdc, widgetRect.left, widgetRect.top);
+      DrawThemeBackground(theme, hdc, aPart, aState, &widgetRect, &clipRect);
+      SetPixel(hdc, widgetRect.left, widgetRect.top, color);
+      SetPixel(hdc, widgetRect.right - 1, widgetRect.top, color);
+      SetPixel(hdc, widgetRect.right - 1, widgetRect.bottom - 1, color);
+      SetPixel(hdc, widgetRect.left, widgetRect.bottom - 1, color);
+    } else {
+      DrawThemeBackground(theme, hdc, aPart, aState, &widgetRect, &clipRect);
+    }
+
+    if (aAppearance == StyleAppearance::ScrollbarthumbHorizontal ||
+        aAppearance == StyleAppearance::ScrollbarthumbVertical) {
+      SIZE gripSize;
+      MARGINS thumbMargins;
+      int32_t gripPart =
+          aAppearance == StyleAppearance::ScrollbarthumbHorizontal
+              ? SP_GRIPPERHOR
+              : SP_GRIPPERVERT;
+      if (GetThemePartSize(theme, hdc, gripPart, aState, nullptr, TS_TRUE,
+                           &gripSize) == S_OK &&
+          GetThemeMargins(theme, hdc, aPart, aState, TMT_CONTENTMARGINS,
+                          nullptr, &thumbMargins) == S_OK &&
+          gripSize.cx + thumbMargins.cxLeftWidth + thumbMargins.cxRightWidth <=
+              widgetRect.right - widgetRect.left &&
+          gripSize.cy + thumbMargins.cyTopHeight +
+                  thumbMargins.cyBottomHeight <=
+              widgetRect.bottom - widgetRect.top) {
+        DrawThemeBackground(theme, hdc, gripPart, aState, &widgetRect,
+                            &clipRect);
+      }
+    }
+
+    nativeDrawing.EndNativeDrawing();
+  } while (nativeDrawing.ShouldRenderAgain());
+
+  nativeDrawing.PaintToContext();
+  drawTarget->Flush();
+  RefPtr<SourceSurface> snapshot = drawTarget->Snapshot();
+  RefPtr<DataSourceSurface> surface =
+      snapshot ? snapshot->GetDataSurface() : nullptr;
+  if (!surface) {
+    return false;
+  }
+  DataSourceSurface::ScopedMap map(surface, DataSourceSurface::READ);
+  if (!map.IsMapped() ||
+      !aPixels.SetLength(byteCount.value(), mozilla::fallible)) {
+    return false;
+  }
+
+  size_t rowBytes = size_t(aSurfaceSize.width) * 4;
+  for (int32_t y = 0; y < aSurfaceSize.height; ++y) {
+    std::memcpy(aPixels.Elements() + size_t(y) * rowBytes,
+                map.GetData() + size_t(y) * map.GetStride(), rowBytes);
+  }
+  return true;
+}
+
+bool BuildWindowsNativeThemeAtlas(nsTArray<uint8_t>& aData) {
+  if (!ShouldUseWindowsNativeThemeAtlas()) {
+    return false;
+  }
+
+  struct PartSpec {
+    StyleAppearance mAppearance;
+    int32_t mPart;
+    int32_t mState;
+    uint8_t mFlags;
+    uint16_t mVariantHeight;
+  };
+
+  nsTArray<PartSpec> specs;
+  auto addStates = [&specs](StyleAppearance aAppearance, int32_t aPart,
+                            int32_t aFirstState, int32_t aLastState,
+                            uint8_t aFlags = 0) {
+    for (int32_t state = aFirstState; state <= aLastState; ++state) {
+      specs.AppendElement(PartSpec{aAppearance, aPart, state, aFlags, 0});
+    }
+  };
+  auto addRtlStates = [&addStates](StyleAppearance aAppearance, int32_t aPart,
+                                   int32_t aFirstState, int32_t aLastState,
+                                   uint8_t aFlags) {
+    addStates(aAppearance, aPart, aFirstState, aLastState, aFlags);
+    addStates(aAppearance, aPart, aFirstState, aLastState,
+              aFlags | kWinThemeAtlasRtl);
+  };
+  auto addDropdownStates = [&specs, &addRtlStates](int32_t aPart) {
+    addRtlStates(StyleAppearance::MozMenulistArrowButton, aPart, 1, 4,
+                 kWinThemeAtlasFixedSize);
+    for (uint16_t height = 8; height <= 128; ++height) {
+      for (int32_t state = 1; state <= 4; ++state) {
+        specs.AppendElement(PartSpec{StyleAppearance::MozMenulistArrowButton,
+                                     aPart, state, kWinThemeAtlasFixedSize,
+                                     height});
+        specs.AppendElement(
+            PartSpec{StyleAppearance::MozMenulistArrowButton, aPart, state,
+                     kWinThemeAtlasFixedSize | kWinThemeAtlasRtl, height});
+      }
+    }
+  };
+
+  addStates(StyleAppearance::Button, BP_BUTTON, 1, 5);
+  addStates(StyleAppearance::Checkbox, BP_CHECKBOX, 1, 12,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::Radio, BP_RADIO, 1, 8, kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::Textfield, TFP_EDITBORDER_NOSCROLL, 1, 4);
+  addStates(StyleAppearance::ProgressBar, PP_BAR, 1, 1,
+            kWinThemeAtlasHorizontalTrack);
+  addStates(StyleAppearance::ProgressBar, PP_BARVERT, 1, 1,
+            kWinThemeAtlasVerticalTrack);
+  addStates(StyleAppearance::Range, TKP_TRACK, 1, 1,
+            kWinThemeAtlasHorizontalTrack);
+  addStates(StyleAppearance::Range, TKP_TRACKVERT, 1, 1,
+            kWinThemeAtlasVerticalTrack);
+  addStates(StyleAppearance::RangeThumb, TKP_THUMBBOTTOM, 1, 5,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::RangeThumb, TKP_THUMBLEFT, 1, 5,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::RangeThumb, TKP_THUMBRIGHT, 1, 5,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::SpinnerUpbutton, SPNP_UP, 1, 4,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::SpinnerDownbutton, SPNP_DOWN, 1, 4,
+            kWinThemeAtlasFixedSize);
+  addRtlStates(StyleAppearance::Resizer, 3, 1, 1, kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::Menulist, CBP_DROPBORDER, 1, 4);
+  addStates(StyleAppearance::Menulist, CBP_DROPFRAME, 1, 4);
+  addDropdownStates(CBP_DROPMARKER_VISTA);
+  addDropdownStates(CBP_DROPMARKER);
+  addStates(StyleAppearance::Listbox, TREEVIEW_BODY, 1, 1);
+  addStates(StyleAppearance::ScrollbarHorizontal, SP_BUTTON, 1, 20,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::ScrollbarHorizontal, SP_TRACKSTARTHOR, 1, 1,
+            kWinThemeAtlasHorizontalTrack);
+  addStates(StyleAppearance::ScrollbarVertical, SP_TRACKSTARTVERT, 1, 1,
+            kWinThemeAtlasVerticalTrack);
+  addStates(StyleAppearance::ScrollbarHorizontal, SP_THUMBHOR, 1, 4,
+            kWinThemeAtlasHorizontalTrack);
+  addStates(StyleAppearance::ScrollbarVertical, SP_THUMBVERT, 1, 4,
+            kWinThemeAtlasVerticalTrack);
+  addStates(StyleAppearance::ScrollbarHorizontal, SP_GRIPPERHOR, 1, 4,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::ScrollbarVertical, SP_GRIPPERVERT, 1, 4,
+            kWinThemeAtlasFixedSize);
+  addStates(StyleAppearance::Scrollcorner, RP_BACKGROUND, 0, 0);
+
+  HDC hdc = ::GetDC(nullptr);
+  if (!hdc) {
+    return false;
+  }
+  auto releaseDC = MakeScopeExit([&] { ::ReleaseDC(nullptr, hdc); });
+
+  nsTArray<WinThemeAtlasEntry> entries;
+  nsTArray<uint8_t> pixels;
+  for (const PartSpec& spec : specs) {
+    Maybe<nsUXThemeClass> themeClass =
+        nsNativeThemeWin::GetThemeClass(spec.mAppearance);
+    if (themeClass.isNothing()) {
+      continue;
+    }
+    HANDLE theme = nsUXThemeData::GetTheme(themeClass.value());
+    if (!theme) {
+      continue;
+    }
+
+    SIZE trueSize = {};
+    if (FAILED(GetThemePartSize(theme, hdc, spec.mPart, spec.mState, nullptr,
+                                TS_TRUE, &trueSize))) {
+      continue;
+    }
+    SIZE minSize = trueSize;
+    (void)GetThemePartSize(theme, hdc, spec.mPart, spec.mState, nullptr, TS_MIN,
+                           &minSize);
+    trueSize.cx = std::max(1L, trueSize.cx);
+    trueSize.cy = std::max(1L, trueSize.cy);
+    minSize.cx = std::max(0L, minSize.cx);
+    minSize.cy = std::max(0L, minSize.cy);
+
+    IntSize imageSize;
+    if (spec.mAppearance == StyleAppearance::MozMenulistArrowButton) {
+      imageSize =
+          IntSize(std::max(1, ::GetSystemMetrics(SM_CXVSCROLL)),
+                  spec.mVariantHeight ? spec.mVariantHeight : trueSize.cy);
+    } else if (spec.mFlags & kWinThemeAtlasFixedSize) {
+      imageSize = IntSize(trueSize.cx, trueSize.cy);
+    } else if (spec.mFlags & kWinThemeAtlasHorizontalTrack) {
+      imageSize = IntSize(std::max(64L, trueSize.cx), trueSize.cy);
+    } else if (spec.mFlags & kWinThemeAtlasVerticalTrack) {
+      imageSize = IntSize(trueSize.cx, std::max(64L, trueSize.cy));
+    } else {
+      imageSize =
+          IntSize(std::max(64L, trueSize.cx), std::max(32L, trueSize.cy));
+    }
+
+    nsTArray<uint8_t> image;
+    bool isRtl = spec.mFlags & kWinThemeAtlasRtl;
+    bool isVertical = spec.mFlags & kWinThemeAtlasVerticalTrack;
+    if (!nsNativeThemeWin::RenderWidgetSurface(
+            spec.mAppearance, spec.mPart, spec.mState, imageSize, imageSize,
+            1.0, isRtl, isVertical, image)) {
+      continue;
+    }
+
+    WinThemeAtlasEntry entry{};
+    entry.mThemeClass = uint8_t(themeClass.value());
+    entry.mPart = uint8_t(spec.mPart);
+    entry.mState = uint8_t(spec.mState);
+    entry.mFlags = spec.mFlags;
+    entry.mWidth = uint16_t(imageSize.width);
+    entry.mHeight = uint16_t(imageSize.height);
+    entry.mVariantHeight = spec.mVariantHeight;
+    entry.mTrueWidth = uint16_t(std::min(65535L, trueSize.cx));
+    entry.mTrueHeight = uint16_t(std::min(65535L, trueSize.cy));
+    entry.mMinWidth = uint16_t(std::min(65535L, minSize.cx));
+    entry.mMinHeight = uint16_t(std::min(65535L, minSize.cy));
+
+    MARGINS margins{};
+    if (SUCCEEDED(GetThemeMargins(theme, hdc, spec.mPart, spec.mState,
+                                  TMT_SIZINGMARGINS, nullptr, &margins))) {
+      entry.mMarginTop =
+          uint16_t(std::clamp(margins.cyTopHeight, 0, imageSize.height / 2));
+      entry.mMarginRight =
+          uint16_t(std::clamp(margins.cxRightWidth, 0, imageSize.width / 2));
+      entry.mMarginBottom =
+          uint16_t(std::clamp(margins.cyBottomHeight, 0, imageSize.height / 2));
+      entry.mMarginLeft =
+          uint16_t(std::clamp(margins.cxLeftWidth, 0, imageSize.width / 2));
+    }
+
+    RECT outerRect = {100, 100, 200, 200};
+    RECT contentRect = outerRect;
+    if (SUCCEEDED(GetThemeBackgroundContentRect(
+            theme, hdc, spec.mPart, spec.mState, &outerRect, &contentRect))) {
+      entry.mBorderTop =
+          uint16_t(std::clamp(contentRect.top - outerRect.top, 0L, 65535L));
+      entry.mBorderRight =
+          uint16_t(std::clamp(outerRect.right - contentRect.right, 0L, 65535L));
+      entry.mBorderBottom = uint16_t(
+          std::clamp(outerRect.bottom - contentRect.bottom, 0L, 65535L));
+      entry.mBorderLeft =
+          uint16_t(std::clamp(contentRect.left - outerRect.left, 0L, 65535L));
+    }
+
+    if (entry.mMarginTop == 0 && entry.mMarginRight == 0 &&
+        entry.mMarginBottom == 0 && entry.mMarginLeft == 0) {
+      entry.mMarginTop =
+          std::min<uint16_t>(entry.mBorderTop, entry.mHeight / 2);
+      entry.mMarginRight =
+          std::min<uint16_t>(entry.mBorderRight, entry.mWidth / 2);
+      entry.mMarginBottom =
+          std::min<uint16_t>(entry.mBorderBottom, entry.mHeight / 2);
+      entry.mMarginLeft =
+          std::min<uint16_t>(entry.mBorderLeft, entry.mWidth / 2);
+    }
+    entry.mPixelOffset = pixels.Length();
+    entry.mPixelLength = image.Length();
+    pixels.AppendElements(image);
+    entries.AppendElement(entry);
+  }
+
+  CheckedInt<size_t> pixelOffset =
+      CheckedInt<size_t>(sizeof(WinThemeAtlasHeader)) +
+      CheckedInt<size_t>(entries.Length()) * sizeof(WinThemeAtlasEntry);
+  CheckedInt<size_t> totalSize = pixelOffset + pixels.Length();
+  if (entries.IsEmpty() || !totalSize.isValid() ||
+      totalSize.value() > UINT32_MAX ||
+      !aData.SetLength(totalSize.value(), mozilla::fallible)) {
+    return false;
+  }
+
+  auto* header = reinterpret_cast<WinThemeAtlasHeader*>(aData.Elements());
+  *header = WinThemeAtlasHeader{
+      kWinThemeAtlasMagic, kWinThemeAtlasVersion, uint32_t(entries.Length()),
+      uint32_t(pixelOffset.value()), uint32_t(totalSize.value())};
+  auto* outputEntries = reinterpret_cast<WinThemeAtlasEntry*>(header + 1);
+  for (size_t i = 0; i < entries.Length(); ++i) {
+    outputEntries[i] = entries[i];
+    outputEntries[i].mPixelOffset += header->mPixelDataOffset;
+  }
+  std::memcpy(aData.Elements() + header->mPixelDataOffset, pixels.Elements(),
+              pixels.Length());
+  return true;
+}
+
+bool nsNativeThemeWin::GetWidgetMetricsFromAtlas(
+    nsIFrame* aFrame, StyleAppearance aAppearance, uint8_t aSizeReq,
+    LayoutDeviceIntMargin& aBorder, LayoutDeviceIntSize& aMinimumSize) {
+  Maybe<nsUXThemeClass> themeClass = GetThemeClass(aAppearance);
+  int32_t part;
+  int32_t state;
+  if (themeClass.isNothing() ||
+      NS_FAILED(GetThemePartAndState(aFrame, aAppearance, part, state)) ||
+      part < 0 || part >= THEME_PART_DISTINCT_VALUE_COUNT) {
+    return false;
+  }
+
+  int32_t borderIndex =
+      themeClass.value() * THEME_PART_DISTINCT_VALUE_COUNT + part;
+  int32_t minimumPart =
+      aAppearance == StyleAppearance::Button && aSizeReq == TS_MIN ? BP_Count
+                                                                   : part;
+  int32_t minimumIndex =
+      themeClass.value() * THEME_PART_DISTINCT_VALUE_COUNT + minimumPart;
+  uint8_t borderBit = 1u << (borderIndex % 8);
+  uint8_t minimumBit = 1u << (minimumIndex % 8);
+  if ((mBorderCacheValid[borderIndex / 8] & borderBit) &&
+      (mMinimumWidgetSizeCacheValid[minimumIndex / 8] & minimumBit)) {
+    aBorder = mBorderCache[borderIndex];
+    aMinimumSize = mMinimumWidgetSizeCache[minimumIndex];
+    return true;
+  }
+
+  const WinThemeAtlasEntry* entry =
+      FindWinThemeAtlasEntry(themeClass.value(), part, state, false);
+  if (!entry) {
+    return false;
+  }
+  aBorder.top = entry->mBorderTop;
+  aBorder.right = entry->mBorderRight;
+  aBorder.bottom = entry->mBorderBottom;
+  aBorder.left = entry->mBorderLeft;
+  if (aSizeReq == TS_MIN) {
+    aMinimumSize.width = entry->mMinWidth;
+    aMinimumSize.height = entry->mMinHeight;
+  } else {
+    aMinimumSize.width = entry->mTrueWidth;
+    aMinimumSize.height = entry->mTrueHeight;
+  }
+  if (aAppearance == StyleAppearance::SpinnerUpbutton ||
+      aAppearance == StyleAppearance::SpinnerDownbutton) {
+    aMinimumSize.width++;
+    aMinimumSize.height = aMinimumSize.height / 2 + 1;
+  }
+
+  mBorderCache[borderIndex] = aBorder;
+  mBorderCacheValid[borderIndex / 8] |= borderBit;
+  mMinimumWidgetSizeCache[minimumIndex] = aMinimumSize;
+  mMinimumWidgetSizeCacheValid[minimumIndex / 8] |= minimumBit;
+  return true;
+}
+
+bool nsNativeThemeWin::DrawWidgetBackgroundFromAtlas(
+    gfxContext* aContext, nsIFrame* aFrame, StyleAppearance aAppearance,
+    const nsRect& aRect) {
+  Maybe<nsUXThemeClass> themeClass = GetThemeClass(aAppearance);
+  int32_t part;
+  int32_t state;
+  if (themeClass.isNothing() ||
+      NS_FAILED(GetThemePartAndState(aFrame, aAppearance, part, state)) ||
+      part < 0 || part > UINT8_MAX || state < 0 || state > UINT8_MAX) {
+    return false;
+  }
+
+  double themeScale = GetThemeDpiScaleFactor(aFrame);
+  gfxFloat p2a = gfxFloat(aFrame->PresContext()->AppUnitsPerDevPixel());
+  Rect destination(float(aRect.X() / p2a), float(aRect.Y() / p2a),
+                   float(aRect.Width() / p2a), float(aRect.Height() / p2a));
+  destination.Round();
+  if (destination.IsEmpty() || !std::isfinite(themeScale) ||
+      themeScale <= 0.0) {
+    return false;
+  }
+
+  uint16_t variantHeight = 0;
+  if (aAppearance == StyleAppearance::MozMenulistArrowButton) {
+    int32_t logicalHeight = NSToIntRound(destination.height / themeScale);
+    if (logicalHeight >= 8 && logicalHeight <= 128) {
+      variantHeight = uint16_t(logicalHeight);
+    }
+  }
+
+  bool isRtl = IsFrameRTL(aFrame);
+  const WinThemeAtlasEntry* entry = FindWinThemeAtlasEntry(
+      themeClass.value(), part, state, isRtl, variantHeight);
+  if (!entry || !sWinThemeAtlas) {
+    return false;
+  }
+
+  auto getSurface =
+      [&](const WinThemeAtlasEntry& aEntry) -> RefPtr<SourceSurface> {
+    uint64_t key = aEntry.mPixelOffset;
+    if (auto cached = mThemeAtlasSurfaceCache.lookup(key)) {
+      return cached->value();
+    }
+    uint8_t* data = const_cast<uint8_t*>(sWinThemeAtlas->DataAs<uint8_t>() +
+                                         aEntry.mPixelOffset);
+    RefPtr<DataSourceSurface> surface =
+        Factory::CreateWrappingDataSourceSurface(
+            data, int32_t(aEntry.mWidth) * 4,
+            IntSize(aEntry.mWidth, aEntry.mHeight), SurfaceFormat::B8G8R8A8);
+    if (!surface || !mThemeAtlasSurfaceCache.put(key, surface)) {
+      return nullptr;
+    }
+    return surface;
+  };
+
+  RefPtr<SourceSurface> surface = getSurface(*entry);
+  if (!surface) {
+    return false;
+  }
+
+  if (aAppearance == StyleAppearance::Range) {
+    if (entry->mFlags & kWinThemeAtlasHorizontalTrack) {
+      float height =
+          std::min(destination.height,
+                   float(NSToIntRound(entry->mTrueHeight * themeScale)));
+      destination.y += (destination.height - height) / 2.0f;
+      destination.height = height;
+    } else if (entry->mFlags & kWinThemeAtlasVerticalTrack) {
+      float width =
+          std::min(destination.width,
+                   float(NSToIntRound(entry->mTrueWidth * themeScale)));
+      destination.x += (destination.width - width) / 2.0f;
+      destination.width = width;
+    }
+  }
+
+  DrawTarget* drawTarget = aContext->GetDrawTarget();
+  auto drawWholeSurface = [&](SourceSurface* aSurface,
+                              const WinThemeAtlasEntry& aEntry,
+                              const Rect& aDestination) {
+    drawTarget->DrawSurface(
+        aSurface, aDestination,
+        Rect(0, 0, float(aEntry.mWidth), float(aEntry.mHeight)),
+        DrawSurfaceOptions(), DrawOptions(1.0, CompositionOp::OP_OVER));
+  };
+
+  if (entry->mFlags & kWinThemeAtlasFixedSize) {
+    float width =
+        std::min(destination.width,
+                 float(std::max(1, NSToIntRound(entry->mWidth * themeScale))));
+    float height =
+        std::min(destination.height,
+                 float(std::max(1, NSToIntRound(entry->mHeight * themeScale))));
+    Rect fixedDestination(
+        std::round(destination.x + (destination.width - width) / 2.0f),
+        std::round(destination.y + (destination.height - height) / 2.0f), width,
+        height);
+    drawWholeSurface(surface, *entry, fixedDestination);
+  } else {
+    float sourceX[] = {0.0f, float(entry->mMarginLeft),
+                       float(entry->mWidth - entry->mMarginRight),
+                       float(entry->mWidth)};
+    float sourceY[] = {0.0f, float(entry->mMarginTop),
+                       float(entry->mHeight - entry->mMarginBottom),
+                       float(entry->mHeight)};
+    float left =
+        std::min(float(entry->mMarginLeft * themeScale), destination.width / 2);
+    float right = std::min(float(entry->mMarginRight * themeScale),
+                           destination.width / 2);
+    float top =
+        std::min(float(entry->mMarginTop * themeScale), destination.height / 2);
+    float bottom = std::min(float(entry->mMarginBottom * themeScale),
+                            destination.height / 2);
+    float destinationX[] = {destination.x, destination.x + left,
+                            destination.XMost() - right, destination.XMost()};
+    float destinationY[] = {destination.y, destination.y + top,
+                            destination.YMost() - bottom, destination.YMost()};
+    for (size_t y = 0; y < 3; ++y) {
+      for (size_t x = 0; x < 3; ++x) {
+        Rect sourceRect(sourceX[x], sourceY[y], sourceX[x + 1] - sourceX[x],
+                        sourceY[y + 1] - sourceY[y]);
+        Rect destinationRect(destinationX[x], destinationY[y],
+                             destinationX[x + 1] - destinationX[x],
+                             destinationY[y + 1] - destinationY[y]);
+        if (!sourceRect.IsEmpty() && !destinationRect.IsEmpty()) {
+          drawTarget->DrawSurface(surface, destinationRect, sourceRect);
+        }
+      }
+    }
+  }
+
+  if (aAppearance == StyleAppearance::ScrollbarthumbHorizontal ||
+      aAppearance == StyleAppearance::ScrollbarthumbVertical) {
+    int32_t gripPart = aAppearance == StyleAppearance::ScrollbarthumbHorizontal
+                           ? SP_GRIPPERHOR
+                           : SP_GRIPPERVERT;
+    const WinThemeAtlasEntry* gripEntry =
+        FindWinThemeAtlasEntry(themeClass.value(), gripPart, state, false);
+    if (gripEntry) {
+      float width = gripEntry->mWidth * themeScale;
+      float height = gripEntry->mHeight * themeScale;
+      if (width <= destination.width && height <= destination.height) {
+        if (RefPtr<SourceSurface> gripSurface = getSurface(*gripEntry)) {
+          Rect gripDestination(
+              destination.x + (destination.width - width) / 2,
+              destination.y + (destination.height - height) / 2, width, height);
+          drawWholeSurface(gripSurface, *gripEntry, gripDestination);
+        }
+      }
+    }
+  }
+  return true;
+}
+
+
 NS_IMETHODIMP
 nsNativeThemeWin::DrawWidgetBackground(gfxContext* aContext, nsIFrame* aFrame,
                                        StyleAppearance aAppearance,
                                        const nsRect& aRect,
                                        const nsRect& aDirtyRect,
                                        DrawOverflow aDrawOverflow) {
+  bool dwmCompositionEnabled =
+      StaticPrefs::widget_native_controls_force_dwm_report_off()
+          ? false
+          : gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled();
+
   if (IsWidgetNonNative(aFrame, aAppearance) != NonNative::No) {
     return Theme::DrawWidgetBackground(aContext, aFrame, aAppearance, aRect,
                                        aDirtyRect, aDrawOverflow);
   }
 
   HANDLE theme = GetTheme(aAppearance);
-  if (!theme)
+  if (!theme) {
+    if (DrawWidgetBackgroundFromAtlas(aContext, aFrame, aAppearance, aRect)) {
+      return NS_OK;
+    }
     return ClassicDrawWidgetBackground(aContext, aFrame, aAppearance, aRect,
                                        aDirtyRect);
+  }
 
   // ^^ without the right sdk, assume xp theming and fall through.
-  if (gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled()) {
+  if (dwmCompositionEnabled) {
     switch (aAppearance) {
       case StyleAppearance::MozWindowTitlebar:
       case StyleAppearance::MozWindowTitlebarMaximized:
@@ -1659,7 +2578,8 @@ RENDER_AGAIN:
                         IsFrameRTL(aFrame));
   }
   // The following widgets need to be RTL-aware
-  else if (aAppearance == StyleAppearance::MozMenulistArrowButton) {
+  else if (aAppearance == StyleAppearance::Resizer ||
+           aAppearance == StyleAppearance::MozMenulistArrowButton) {
     DrawThemeBGRTLAware(theme, hdc, part, state, &widgetRect, &clipRect,
                         IsFrameRTL(aFrame));
   } else if (aAppearance == StyleAppearance::NumberInput ||
@@ -1686,6 +2606,18 @@ RENDER_AGAIN:
   } else if (aAppearance == StyleAppearance::Progresschunk) {
     DrawThemedProgressMeter(aFrame, aAppearance, theme, hdc, part, state,
                             &widgetRect, &clipRect);
+  } else if (aAppearance == StyleAppearance::FocusOutline) {
+    // Inflate 'widgetRect' with the focus outline size.
+    LayoutDeviceIntMargin border = GetWidgetBorder(
+        aFrame->PresContext()->DeviceContext(), aFrame, aAppearance);
+    widgetRect.left -= border.left;
+    widgetRect.right += border.right;
+    widgetRect.top -= border.top;
+    widgetRect.bottom += border.bottom;
+
+    DTBGOPTS opts = {sizeof(DTBGOPTS), DTBG_OMITCONTENT | DTBG_CLIPRECT,
+                     clipRect};
+    DrawThemeBackgroundEx(theme, hdc, part, state, &widgetRect, &opts);
   }
   // If part is negative, the element wishes us to not render a themed
   // background, instead opting to be drawn specially below.
@@ -1725,6 +2657,26 @@ RENDER_AGAIN:
     widgetRect.bottom = widgetRect.top + TB_SEPARATOR_HEIGHT;
     DrawThemeEdge(theme, hdc, RP_BAND, 0, &widgetRect, EDGE_ETCHED, BF_TOP,
                   nullptr);
+  } else if (aAppearance == StyleAppearance::ScrollbarthumbHorizontal ||
+             aAppearance == StyleAppearance::ScrollbarthumbVertical) {
+    // Draw the decorative gripper for the scrollbar thumb button, if it fits
+
+    SIZE gripSize;
+    MARGINS thumbMgns;
+    int gripPart = (aAppearance == StyleAppearance::ScrollbarthumbHorizontal)
+                       ? SP_GRIPPERHOR
+                       : SP_GRIPPERVERT;
+
+    if (GetThemePartSize(theme, hdc, gripPart, state, nullptr, TS_TRUE,
+                         &gripSize) == S_OK &&
+        GetThemeMargins(theme, hdc, part, state, TMT_CONTENTMARGINS, nullptr,
+                        &thumbMgns) == S_OK &&
+        gripSize.cx + thumbMgns.cxLeftWidth + thumbMgns.cxRightWidth <=
+            widgetRect.right - widgetRect.left &&
+        gripSize.cy + thumbMgns.cyTopHeight + thumbMgns.cyBottomHeight <=
+            widgetRect.bottom - widgetRect.top) {
+      DrawThemeBackground(theme, hdc, gripPart, state, &widgetRect, &clipRect);
+    }
   }
 
   nativeDrawing.EndNativeDrawing();
@@ -1774,7 +2726,10 @@ LayoutDeviceIntMargin nsNativeThemeWin::GetWidgetBorder(
   if (!themeClass.isNothing()) {
     theme = nsUXThemeData::GetTheme(themeClass.value());
   }
-  if (!theme) {
+  // Classic scrollbar thumbs require classic borders. The theme procedure will
+  // break horizontal scrollbar thumbs otherwise.
+  if (aAppearance == StyleAppearance::ScrollbarthumbVertical ||
+      aAppearance == StyleAppearance::ScrollbarthumbHorizontal) {
     result = ClassicGetWidgetBorder(aContext, aFrame, aAppearance);
     ScaleForFrameDPI(&result, aFrame);
     return result;
@@ -1785,7 +2740,12 @@ LayoutDeviceIntMargin nsNativeThemeWin::GetWidgetBorder(
       aAppearance == StyleAppearance::MozWinMediaToolbox ||
       aAppearance == StyleAppearance::MozWinCommunicationsToolbox ||
       aAppearance == StyleAppearance::MozWinBrowsertabbarToolbox ||
+      aAppearance == StyleAppearance::Statusbar ||
+      aAppearance == StyleAppearance::Resizer ||
       aAppearance == StyleAppearance::Tabpanel ||
+      aAppearance == StyleAppearance::ScrollbarHorizontal ||
+      aAppearance == StyleAppearance::ScrollbarVertical ||
+      aAppearance == StyleAppearance::Scrollcorner ||
       aAppearance == StyleAppearance::Menuitem ||
       aAppearance == StyleAppearance::Checkmenuitem ||
       aAppearance == StyleAppearance::Radiomenuitem ||
@@ -1799,6 +2759,17 @@ LayoutDeviceIntMargin nsNativeThemeWin::GetWidgetBorder(
       aAppearance == StyleAppearance::MozWinBorderlessGlass)
     return result;  // Don't worry about it.
 
+  if (!theme) {
+    LayoutDeviceIntSize minimumSize;
+    if (!SupportsNativeThemeAtlasMetrics(aAppearance) ||
+        !GetWidgetMetricsFromAtlas(aFrame, aAppearance, TS_TRUE, result,
+                                   minimumSize)) {
+      result = ClassicGetWidgetBorder(aContext, aFrame, aAppearance);
+      ScaleForFrameDPI(&result, aFrame);
+      return result;
+    }
+  }
+
   int32_t part, state;
   nsresult rv = GetThemePartAndState(aFrame, aAppearance, part, state);
   if (NS_FAILED(rv)) return result;
@@ -1809,8 +2780,10 @@ LayoutDeviceIntMargin nsNativeThemeWin::GetWidgetBorder(
     return result;
   }
 
-  result = GetCachedWidgetBorder(theme, themeClass.value(), aAppearance, part,
-                                 state);
+  if (theme) {
+    result = GetCachedWidgetBorder(theme, themeClass.value(), aAppearance, part,
+                                   state);
+  }
 
   // Remove the edges for tabs that are before or after the selected tab,
   if (aAppearance == StyleAppearance::Tab) {
@@ -1845,6 +2818,11 @@ bool nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
                                         nsIFrame* aFrame,
                                         StyleAppearance aAppearance,
                                         LayoutDeviceIntMargin* aResult) {
+  bool dwmCompositionEnabled =
+      StaticPrefs::widget_native_controls_force_dwm_report_off()
+          ? false
+          : gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled();
+
   switch (aAppearance) {
     // Radios and checkboxes return a fixed size in GetMinimumWidgetSize
     // and have a meaningful baseline, so they can't have
@@ -1864,7 +2842,7 @@ bool nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
     aResult->SizeTo(0, 0, 0, 0);
 
     // aero glass doesn't display custom buttons
-    if (gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled()) return true;
+    if (dwmCompositionEnabled) return true;
 
     // button padding for standard windows
     if (aAppearance == StyleAppearance::MozWindowButtonBox) {
@@ -1883,7 +2861,7 @@ bool nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
     // adding padding to the top of the window that is the size of the caption
     // area and then "removing" it when calculating the client area for
     // WM_NCCALCSIZE.  See bug 618353,
-    if (!IsWin10OrLater() &&
+    if (StaticPrefs::widget_windows_style_modern() != true &&
         aAppearance == StyleAppearance::MozWindowTitlebarMaximized) {
       nsCOMPtr<nsIWidget> rootWidget;
       if (WinUtils::HasSystemMetricsForDpi()) {
@@ -1902,7 +2880,8 @@ bool nsNativeThemeWin::GetWidgetPadding(nsDeviceContext* aContext,
   }
 
   HANDLE theme = GetTheme(aAppearance);
-  if (!theme) {
+  if (!theme && !(SupportsNativeThemeAtlasMetrics(aAppearance) &&
+                  HasWindowsNativeThemeAtlas())) {
     ok = ClassicGetWidgetPadding(aContext, aFrame, aAppearance, aResult);
     ScaleForFrameDPI(aResult, aFrame);
     return ok;
@@ -2032,12 +3011,29 @@ bool nsNativeThemeWin::GetWidgetOverflow(nsDeviceContext* aContext,
   }
 #endif
 
+  if (aAppearance == StyleAppearance::FocusOutline) {
+    LayoutDeviceIntMargin border =
+        GetWidgetBorder(aContext, aFrame, aAppearance);
+    int32_t p2a = aContext->AppUnitsPerDevPixel();
+    nsMargin m(NSIntPixelsToAppUnits(border.top, p2a),
+               NSIntPixelsToAppUnits(border.right, p2a),
+               NSIntPixelsToAppUnits(border.bottom, p2a),
+               NSIntPixelsToAppUnits(border.left, p2a));
+    aOverflowRect->Inflate(m);
+    return true;
+  }
+
   return false;
 }
 
 LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
     nsPresContext* aPresContext, nsIFrame* aFrame,
     StyleAppearance aAppearance) {
+  bool dwmCompositionEnabled =
+      StaticPrefs::widget_native_controls_force_dwm_report_off()
+          ? false
+          : gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled();
+
   if (IsWidgetNonNative(aFrame, aAppearance) == NonNative::Always) {
     return Theme::GetMinimumWidgetSize(aPresContext, aFrame, aAppearance);
   }
@@ -2047,7 +3043,15 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
   if (!themeClass.isNothing()) {
     theme = nsUXThemeData::GetTheme(themeClass.value());
   }
-  if (!theme) {
+
+  bool useAtlasTheme = !theme && SupportsNativeThemeAtlasMetrics(aAppearance) &&
+                       HasWindowsNativeThemeAtlas();
+
+  // Classic scrollbar thumbs require classic borders. The theme procedure will
+  // break horizontal scrollbar thumbs otherwise.
+  if (aAppearance == StyleAppearance::ScrollbarthumbVertical ||
+      aAppearance == StyleAppearance::ScrollbarthumbHorizontal ||
+      (!theme && !useAtlasTheme)) {
     auto result = ClassicGetMinimumWidgetSize(aFrame, aAppearance);
     ScaleForFrameDPI(&result, aFrame);
     return result;
@@ -2063,6 +3067,7 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
     case StyleAppearance::MozWinCommunicationsToolbox:
     case StyleAppearance::MozWinBrowsertabbarToolbox:
     case StyleAppearance::Toolbar:
+    case StyleAppearance::Statusbar:
     case StyleAppearance::Progresschunk:
     case StyleAppearance::Tabpanels:
     case StyleAppearance::Tabpanel:
@@ -2085,6 +3090,16 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
   //  Windows appears to always use metrics when drawing standard scrollbars)
   THEMESIZE sizeReq = TS_TRUE;  // Best-fit size
   switch (aAppearance) {
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::SpinnerUpbutton:
+    case StyleAppearance::SpinnerDownbutton:
     case StyleAppearance::MozMenulistArrowButton: {
       auto result = ClassicGetMinimumWidgetSize(aFrame, aAppearance);
       ScaleForFrameDPI(&result, aFrame);
@@ -2120,6 +3135,9 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
       sizeReq = TS_MIN;
       break;
 
+    case StyleAppearance::Resizer:
+      break;
+
     case StyleAppearance::RangeThumb: {
       LayoutDeviceIntSize result(12, 20);
       if (!IsRangeHorizontal(aFrame)) {
@@ -2127,6 +3145,17 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
       }
       ScaleForFrameDPI(&result, aFrame);
       return result;
+    }
+
+    case StyleAppearance::Scrollcorner: {
+      if (nsLookAndFeel::GetInt(nsLookAndFeel::IntID::UseOverlayScrollbars) !=
+          0) {
+        LayoutDeviceIntSize result(::GetSystemMetrics(SM_CXHSCROLL),
+                                   ::GetSystemMetrics(SM_CYVSCROLL));
+        ScaleForFrameDPI(&result, aFrame);
+        return result;
+      }
+      break;
     }
 
     case StyleAppearance::Separator: {
@@ -2192,7 +3221,7 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
 
     case StyleAppearance::MozWindowButtonBox:
     case StyleAppearance::MozWindowButtonBoxMaximized: {
-      if (gfxWindowsPlatform::GetPlatform()->DwmCompositionEnabled()) {
+      if (dwmCompositionEnabled) {
         SIZE sz = nsUXThemeData::GetCommandButtonBoxMetrics();
         LayoutDeviceIntSize result(sz.cx,
                                    sz.cy - GetSystemMetrics(SM_CYFRAME) -
@@ -2210,15 +3239,23 @@ LayoutDeviceIntSize nsNativeThemeWin::GetMinimumWidgetSize(
       break;
   }
 
-  int32_t part, state;
-  nsresult rv = GetThemePartAndState(aFrame, aAppearance, part, state);
-  if (NS_FAILED(rv)) {
-    return {};
-  }
-
   LayoutDeviceIntSize result;
-  rv = GetCachedMinimumWidgetSize(aFrame, theme, themeClass.value(),
-                                  aAppearance, part, state, sizeReq, &result);
+  if (useAtlasTheme) {
+    LayoutDeviceIntMargin border;
+    if (!GetWidgetMetricsFromAtlas(aFrame, aAppearance, sizeReq, border,
+                                   result)) {
+      result = ClassicGetMinimumWidgetSize(aFrame, aAppearance);
+    }
+  } else {
+    int32_t part, state;
+    nsresult rv = GetThemePartAndState(aFrame, aAppearance, part, state);
+    if (NS_FAILED(rv)) {
+      return {};
+    }
+    (void)GetCachedMinimumWidgetSize(aFrame, theme, themeClass.value(),
+                                     aAppearance, part, state, sizeReq,
+                                     &result);
+  }
   ScaleForFrameDPI(&result, aFrame);
   return result;
 }
@@ -2231,7 +3268,11 @@ bool nsNativeThemeWin::WidgetAttributeChangeRequiresRepaint(
       aAppearance == StyleAppearance::MozWinCommunicationsToolbox ||
       aAppearance == StyleAppearance::MozWinBrowsertabbarToolbox ||
       aAppearance == StyleAppearance::Toolbar ||
+      aAppearance == StyleAppearance::Statusbar ||
+      aAppearance == StyleAppearance::Statusbarpanel ||
+      aAppearance == StyleAppearance::Resizerpanel ||
       aAppearance == StyleAppearance::Progresschunk ||
+      aAppearance == StyleAppearance::Tooltip ||
       aAppearance == StyleAppearance::ProgressBar ||
       aAppearance == StyleAppearance::Tabpanels ||
       aAppearance == StyleAppearance::Tabpanel ||
@@ -2258,6 +3299,7 @@ nsNativeThemeWin::ThemeChanged() {
   nsUXThemeData::Invalidate();
   memset(mBorderCacheValid, 0, sizeof(mBorderCacheValid));
   memset(mMinimumWidgetSizeCacheValid, 0, sizeof(mMinimumWidgetSizeCacheValid));
+  mThemeAtlasSurfaceCache.clear();
   mGutterSizeCacheValid = false;
   return NS_OK;
 }
@@ -2267,6 +3309,10 @@ bool nsNativeThemeWin::ThemeSupportsWidget(nsPresContext* aPresContext,
                                            StyleAppearance aAppearance) {
   // XXXdwh We can go even further and call the API to ask if support exists for
   // specific widgets.
+
+  if (aAppearance == StyleAppearance::FocusOutline) {
+    return true;
+  }
 
   if (IsWidgetNonNative(aFrame, aAppearance) == NonNative::Always) {
     return Theme::ThemeSupportsWidget(aPresContext, aFrame, aAppearance);
@@ -2280,7 +3326,11 @@ bool nsNativeThemeWin::ThemeSupportsWidget(nsPresContext* aPresContext,
   else
     theme = GetTheme(aAppearance);
 
-  if (theme || ClassicThemeSupportsWidget(aFrame, aAppearance))
+  if (theme && aAppearance == StyleAppearance::Resizer) return true;
+
+  bool atlasTheme = !theme && HasWindowsNativeThemeAtlas() &&
+                    SupportsNativeThemeAtlasSurface(aAppearance);
+  if (theme || atlasTheme || ClassicThemeSupportsWidget(aFrame, aAppearance))
     // turn off theming for some HTML widgets styled by the page
     return (!IsWidgetStyled(aPresContext, aFrame, aAppearance));
 
@@ -2349,6 +3399,15 @@ nsITheme::Transparency nsNativeThemeWin::GetWidgetTransparency(
   }
 
   switch (aAppearance) {
+    case StyleAppearance::Resizer: {
+      // The classic native resizer has an opaque grey background which doesn't
+      // match the usually white background of the scrollable container, so
+      // only support the native resizer if not in a scrollframe.
+      nsIFrame* parentFrame = aFrame->GetParent();
+      return (!parentFrame || !parentFrame->IsScrollContainerFrame())
+                 ? eTransparent
+                 : eOpaque;
+    }
     case StyleAppearance::MozWinGlass:
     case StyleAppearance::MozWinBorderlessGlass:
     case StyleAppearance::ProgressBar:
@@ -2363,7 +3422,8 @@ nsITheme::Transparency nsNativeThemeWin::GetWidgetTransparency(
   // For the classic theme we don't really have a way of knowing
   if (!theme) {
     // menu backgrounds which can't be themed are opaque
-    if (aAppearance == StyleAppearance::Menupopup) {
+    if (aAppearance == StyleAppearance::Tooltip ||
+        aAppearance == StyleAppearance::Menupopup) {
       return eOpaque;
     }
     return eUnknownTransparency;
@@ -2390,6 +3450,13 @@ nsITheme::Transparency nsNativeThemeWin::GetWidgetTransparency(
 bool nsNativeThemeWin::ClassicThemeSupportsWidget(nsIFrame* aFrame,
                                                   StyleAppearance aAppearance) {
   switch (aAppearance) {
+    case StyleAppearance::Resizer: {
+      // The classic native resizer has an opaque grey background which doesn't
+      // match the usually white background of the scrollable container, so
+      // only support the native resizer if not in a scrollframe.
+      nsIFrame* parentFrame = aFrame->GetParent();
+      return !parentFrame || !parentFrame->IsScrollContainerFrame();
+    }
     case StyleAppearance::Menubar:
     case StyleAppearance::Menupopup:
       // Classic non-flat menus are handled almost entirely through CSS.
@@ -2405,6 +3472,15 @@ bool nsNativeThemeWin::ClassicThemeSupportsWidget(nsIFrame* aFrame,
     case StyleAppearance::Range:
     case StyleAppearance::RangeThumb:
     case StyleAppearance::Groupbox:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::Scrollcorner:
     case StyleAppearance::Menulist:
     case StyleAppearance::MenulistButton:
     case StyleAppearance::MozMenulistArrowButton:
@@ -2412,6 +3488,10 @@ bool nsNativeThemeWin::ClassicThemeSupportsWidget(nsIFrame* aFrame,
     case StyleAppearance::SpinnerDownbutton:
     case StyleAppearance::Listbox:
     case StyleAppearance::Treeview:
+    case StyleAppearance::Tooltip:
+    case StyleAppearance::Statusbar:
+    case StyleAppearance::Statusbarpanel:
+    case StyleAppearance::Resizerpanel:
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Progresschunk:
     case StyleAppearance::Tab:
@@ -2447,6 +3527,10 @@ LayoutDeviceIntMargin nsNativeThemeWin::ClassicGetWidgetBorder(
     case StyleAppearance::Button:
       result.top = result.left = result.bottom = result.right = 2;
       break;
+    case StyleAppearance::Statusbar:
+      result.bottom = result.left = result.right = 0;
+      result.top = 2;
+      break;
     case StyleAppearance::Listbox:
     case StyleAppearance::Treeview:
     case StyleAppearance::Menulist:
@@ -2456,7 +3540,19 @@ LayoutDeviceIntMargin nsNativeThemeWin::ClassicGetWidgetBorder(
     case StyleAppearance::PasswordInput:
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
+    case StyleAppearance::FocusOutline:
       result.top = result.left = result.bottom = result.right = 2;
+      break;
+    case StyleAppearance::Statusbarpanel:
+    case StyleAppearance::Resizerpanel: {
+      result.top = 1;
+      result.left = 1;
+      result.bottom = 1;
+      result.right = aFrame->GetNextSibling() ? 3 : 1;
+      break;
+    }
+    case StyleAppearance::Tooltip:
+      result.top = result.left = result.bottom = result.right = 1;
       break;
     case StyleAppearance::ProgressBar:
       result.top = result.left = result.bottom = result.right = 1;
@@ -2532,6 +3628,22 @@ LayoutDeviceIntSize nsNativeThemeWin::ClassicGetMinimumWidgetSize(
       result.width = ::GetSystemMetrics(SM_CXVSCROLL);
       result.height = 8;  // No good metrics available for this
       break;
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+      result.width = ::GetSystemMetrics(SM_CXVSCROLL);
+      result.height = ::GetSystemMetrics(SM_CYVSCROLL);
+      break;
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
+      result.width = ::GetSystemMetrics(SM_CYHSCROLL);
+      result.height = ::GetSystemMetrics(SM_CYHSCROLL);
+      break;
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+      // Sizing code needed after removal of XUL layout (around ESR 115)
+      result.width = ::GetSystemMetrics(SM_CYHSCROLL);
+      result.height = ::GetSystemMetrics(SM_CYHSCROLL);
+      break;
     case StyleAppearance::RangeThumb: {
       if (IsRangeHorizontal(aFrame)) {
         result.width = 12;
@@ -2542,6 +3654,35 @@ LayoutDeviceIntSize nsNativeThemeWin::ClassicGetMinimumWidgetSize(
       }
       break;
     }
+    case StyleAppearance::ScrollbarthumbVertical:
+      result.width = ::GetSystemMetrics(SM_CXVSCROLL);
+      result.height = ::GetSystemMetrics(SM_CYVTHUMB);
+      // Without theming, divide the thumb size by two in order to look more
+      // native
+      if (!GetTheme(aAppearance)) {
+        result.height >>= 1;
+      }
+      // If scrollbar-width is thin, divide the thickness by two to make
+      // it look more compact.
+      if (ScrollbarDrawing::IsScrollbarWidthThin(aFrame)) {
+        result.width >>= 1;
+      }
+      break;
+    case StyleAppearance::ScrollbarthumbHorizontal:
+      result.width = ::GetSystemMetrics(SM_CXHTHUMB);
+      result.height = ::GetSystemMetrics(SM_CYHSCROLL);
+      // Without theming, divide the thumb size by two in order to look more
+      // native
+      if (TRUE || !GetTheme(aAppearance)) {
+        result.width >>= 1;
+      }
+      // If scrollbar-width is thin, divide the thickness by two to make
+      // it look more compact.
+      if (ScrollbarDrawing::IsScrollbarWidthThin(aFrame)) {
+        result.height >>= 1;
+      }
+
+      break;
     case StyleAppearance::MozMenulistArrowButton:
       result.width = ::GetSystemMetrics(SM_CXVSCROLL);
       break;
@@ -2553,15 +3694,26 @@ LayoutDeviceIntSize nsNativeThemeWin::ClassicGetMinimumWidgetSize(
     case StyleAppearance::Treeview:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
+    case StyleAppearance::FocusOutline:
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
     case StyleAppearance::Progresschunk:
     case StyleAppearance::ProgressBar:
+    case StyleAppearance::Tooltip:
     case StyleAppearance::Tab:
     case StyleAppearance::Tabpanel:
     case StyleAppearance::Tabpanels:
       // no minimum widget size
       break;
+    case StyleAppearance::Resizer: {
+      NONCLIENTMETRICS nc;
+      nc.cbSize = sizeof(nc);
+      if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(nc), &nc, 0))
+        result.width = result.height = abs(nc.lfStatusFont.lfHeight) + 4;
+      else
+        result.width = result.height = 15;
+      break;
+    }
     case StyleAppearance::Menuseparator: {
       result.width = 0;
       result.height = 10;
@@ -2740,7 +3892,16 @@ nsresult nsNativeThemeWin::ClassicGetThemePartAndState(
     case StyleAppearance::MenulistButton:
     case StyleAppearance::Range:
     case StyleAppearance::RangeThumb:
+    case StyleAppearance::Statusbar:
+    case StyleAppearance::Statusbarpanel:
+    case StyleAppearance::Resizerpanel:
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal:
+    case StyleAppearance::Scrollcorner:
     case StyleAppearance::Progresschunk:
+    case StyleAppearance::Tooltip:
     case StyleAppearance::ProgressBar:
     case StyleAppearance::Tab:
     case StyleAppearance::Tabpanel:
@@ -2785,6 +3946,39 @@ nsresult nsNativeThemeWin::ClassicGetThemePartAndState(
 
       return NS_OK;
     }
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight: {
+      ElementState contentState = GetContentState(aFrame, aAppearance);
+
+      aPart = DFC_SCROLL;
+      switch (aAppearance) {
+        case StyleAppearance::ScrollbarbuttonUp:
+          aState = DFCS_SCROLLUP;
+          break;
+        case StyleAppearance::ScrollbarbuttonDown:
+          aState = DFCS_SCROLLDOWN;
+          break;
+        case StyleAppearance::ScrollbarbuttonLeft:
+          aState = DFCS_SCROLLLEFT;
+          break;
+        case StyleAppearance::ScrollbarbuttonRight:
+          aState = DFCS_SCROLLRIGHT;
+          break;
+        default:
+          break;
+      }
+
+      if (contentState.HasState(ElementState::DISABLED)) {
+        aState |= DFCS_INACTIVE;
+      } else if (contentState.HasAllStates(ElementState::HOVER |
+                                           ElementState::ACTIVE)) {
+        aState |= DFCS_PUSHED | DFCS_FLAT;
+      }
+
+      return NS_OK;
+    }
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton: {
       ElementState contentState = GetContentState(aFrame, aAppearance);
@@ -2811,6 +4005,11 @@ nsresult nsNativeThemeWin::ClassicGetThemePartAndState(
 
       return NS_OK;
     }
+    case StyleAppearance::Resizer:
+      aPart = DFC_SCROLL;
+      aState =
+          (IsFrameRTL(aFrame) ? DFCS_SCROLLSIZEGRIPRIGHT : DFCS_SCROLLSIZEGRIP);
+      return NS_OK;
     case StyleAppearance::Menuseparator:
       aPart = 0;
       aState = 0;
@@ -3063,9 +4262,14 @@ RENDER_AGAIN:
     // Draw controls supported by DrawFrameControl
     case StyleAppearance::Checkbox:
     case StyleAppearance::Radio:
+    case StyleAppearance::ScrollbarbuttonUp:
+    case StyleAppearance::ScrollbarbuttonDown:
+    case StyleAppearance::ScrollbarbuttonLeft:
+    case StyleAppearance::ScrollbarbuttonRight:
     case StyleAppearance::SpinnerUpbutton:
     case StyleAppearance::SpinnerDownbutton:
-    case StyleAppearance::MozMenulistArrowButton: {
+    case StyleAppearance::MozMenulistArrowButton:
+    case StyleAppearance::Resizer: {
       int32_t oldTA;
       // setup DC to make DrawFrameControl draw correctly
       oldTA = ::SetTextAlign(hdc, TA_TOP | TA_LEFT | TA_NOUPDATECP);
@@ -3105,6 +4309,13 @@ RENDER_AGAIN:
 
       break;
     }
+      // Draw ToolTip background
+    case StyleAppearance::Tooltip:
+      ::FrameRect(hdc, &widgetRect, ::GetSysColorBrush(COLOR_WINDOWFRAME));
+      InflateRect(&widgetRect, -1, -1);
+      ::FillRect(hdc, &widgetRect, ::GetSysColorBrush(COLOR_INFOBK));
+
+      break;
     case StyleAppearance::Groupbox:
       ::DrawEdge(hdc, &widgetRect, EDGE_ETCHED, BF_RECT | BF_ADJUST);
       ::FillRect(hdc, &widgetRect, (HBRUSH)(COLOR_BTNFACE + 1));
@@ -3115,8 +4326,25 @@ RENDER_AGAIN:
       ::DrawEdge(hdc, &widgetRect, BDR_SUNKENOUTER, BF_RECT | BF_MIDDLE);
       InflateRect(&widgetRect, -1, -1);
       [[fallthrough]];
-    case StyleAppearance::Tabpanel: {
+    case StyleAppearance::Tabpanel:
+    case StyleAppearance::Statusbar:
+    case StyleAppearance::Resizerpanel: {
       ::FillRect(hdc, &widgetRect, (HBRUSH)(COLOR_BTNFACE + 1));
+      break;
+    }
+      // Draw scrollbar thumb
+    case StyleAppearance::ScrollbarthumbVertical:
+    case StyleAppearance::ScrollbarthumbHorizontal:
+      ::DrawEdge(hdc, &widgetRect, EDGE_RAISED, BF_RECT | BF_MIDDLE);
+
+      break;
+      // Draw 3D inset statusbar panel
+    case StyleAppearance::Statusbarpanel: {
+      if (aFrame->GetNextSibling())
+        widgetRect.right -= 2;  // space between sibling status panels
+
+      ::DrawEdge(hdc, &widgetRect, BDR_SUNKENOUTER, BF_RECT | BF_MIDDLE);
+
       break;
     }
     case StyleAppearance::RangeThumb: {
@@ -3154,6 +4382,37 @@ RENDER_AGAIN:
       ::DrawEdge(hdc, &widgetRect, EDGE_SUNKEN, BF_RECT | BF_ADJUST);
       ::FillRect(hdc, &widgetRect, (HBRUSH)GetStockObject(GRAY_BRUSH));
 
+      break;
+    }
+      // Draw scrollbar track background
+    case StyleAppearance::ScrollbarVertical:
+    case StyleAppearance::ScrollbarHorizontal: {
+      // Windows fills in the scrollbar track differently
+      // depending on whether these are equal
+      DWORD color3D, colorScrollbar, colorWindow;
+
+      color3D = ::GetSysColor(COLOR_3DFACE);
+      colorWindow = ::GetSysColor(COLOR_WINDOW);
+      colorScrollbar = ::GetSysColor(COLOR_SCROLLBAR);
+
+      if ((color3D != colorScrollbar) && (colorWindow != colorScrollbar))
+        // Use solid brush
+        ::FillRect(hdc, &widgetRect, (HBRUSH)(COLOR_SCROLLBAR + 1));
+      else {
+        DrawCheckedRect(hdc, widgetRect, COLOR_3DHILIGHT, COLOR_3DFACE,
+                        (HBRUSH)COLOR_SCROLLBAR + 1);
+      }
+      // XXX should invert the part of the track being clicked here
+      // but the track is never :active
+
+      break;
+    }
+    case StyleAppearance::Scrollcorner: {
+      ::FillRect(hdc, &widgetRect, (HBRUSH)(COLOR_SCROLLBAR + 1));
+
+      // Are Mozilla idiots? They added this in 2018
+      // (https://github.com/mozilla/gecko-dev/blob/7038d5f94456dcb558f7c7f6fe66d913070001c5/widget/windows/nsNativeThemeWin.cpp#L3793-L3795)
+      // and never fixed this fallthrough.
       break;
     }
     case StyleAppearance::Progresschunk: {
@@ -3364,6 +4623,7 @@ uint32_t nsNativeThemeWin::GetWidgetNativeDrawingFlags(
     case StyleAppearance::Button:
     case StyleAppearance::NumberInput:
     case StyleAppearance::PasswordInput:
+    case StyleAppearance::FocusOutline:
     case StyleAppearance::Textfield:
     case StyleAppearance::Textarea:
     case StyleAppearance::Menulist:

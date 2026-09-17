@@ -20154,6 +20154,43 @@
 # Prefs starting with "widget."
 #---------------------------------------------------------------------------
 
+- name: widget.native-controls.force-dwm-report-off
+  type: bool
+  value: false
+  mirror: always
+
+- name: widget.native-controls.force-glass-reporting
+  type: int32_t
+  value: 0
+  mirror: always
+
+- name: widget.native-controls.override-aero-caption-buttons-mask-width
+  type: int32_t
+  value: 0
+  mirror: always
+
+- name: widget.native-controls.override-aero-caption-buttons-mask-height
+  type: int32_t
+  value: 0
+  mirror: always
+
+# Whether enable windows-modern mode for stylesheets
+- name: widget.windows-style.modern
+  type: bool
+  value: false
+  mirror: always
+
+# Whether enable the Windows fog for stylesheets
+- name: widget.windows-style.fog
+  type: bool
+  value: false
+  mirror: always
+
+- name: widget.native-controls.windows-theme-atlas.enabled
+  type: bool
+  value: true
+  mirror: always
+
 # Global user preference for disabling native theme in content processes.
 #
 # NOTE(emilio): When changing this make sure to update the non_native_theme

@@ -140,6 +140,15 @@ class LookAndFeel {
     WindowsGlass,
 
     /*
+     * A Boolean value to determine whether the current Windows browser instance
+     * is using the modern theme or not.
+     *
+     * This is Windows-specific and is not implemented on other platforms
+     * (will return the default of NS_ERROR_FAILURE).
+     */
+    WindowsModern,
+
+    /*
      * A Boolean value to determine whether the Mac graphite theme is
      * being used.
      */
