@@ -28,7 +28,6 @@
   --input-box-shadow-color-warning: oklch(from var(--color-yellow-30) l c h / 30%);
   --card-padding: var(--space-large);
 
-  -moz-theme: non-native;
   color-scheme: light dark;
   @media not (forced-colors) {
     accent-color: var(--color-accent-primary);
@@ -140,6 +139,7 @@ html|select,
 html|input[type="color"],
 xul|menulist {
   appearance: none;
+  -moz-theme: non-native;
   min-height: var(--button-min-height, 32px);
   color: var(--button-text-color);
   border: var(--button-border);

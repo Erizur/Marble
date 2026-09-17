@@ -45,7 +45,6 @@ checkbox {
   margin-inline-end: var(--checkbox-margin-inline);
 
   &:not([native]) {
-    -moz-theme: non-native;
     width: var(--checkbox-size);
     height: var(--checkbox-size);
   }
