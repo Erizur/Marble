@@ -227,9 +227,11 @@ def main():
     for plat in targets:
         adk = os.path.join(HERE, "adk-" + plat)
         out = os.path.join(args.out, plat)
+        overlays = [os.path.join(HERE, "overlay", d) for d in ("common", plat)]
         gre, skipped = build_from_recipe(adk, src, out, token,
                                          compress=not args.fast,
-                                         write_metadata=False)
+                                         write_metadata=False,
+                                         overlays=overlays)
         built.append(plat)
         print("Built", gre)
         print("Built", os.path.join(out, "browser", "omni.ja"))
@@ -278,6 +280,11 @@ To build the addon, run the following command:
 python build.py
 ```
 
+## Overlays
+Files under `overlay/common/` and `overlay/<platform>/` are laid out like the
+installed tree (the browser jar lives under `browser/`) and are copied over the
+built result, replacing whatever `src/` produced for the same path. Use them for
+files that already come packaged, such as ones taken from another omni.ja.
 """
 
 

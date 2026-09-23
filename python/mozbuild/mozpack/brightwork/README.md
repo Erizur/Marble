@@ -45,6 +45,7 @@ The extracted repo contains:
 ```
 brightwork-repo/
   src/          # editable chrome sources (all generated deps that go in the .jas)
+  overlay/      # optional: files laid out like the jars (common/ and win/, linux/), copied over the result
   adk/          # recipe + manifests + generated cached resources (don't edit)
   tools/        # vendored mozpack + mozbuild subset + deps (don't edit)
   build.py      # single command tool

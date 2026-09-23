@@ -76,7 +76,10 @@ def package_omnijar(
 
 def build_from_recipe(adk_dir, src_root, dest_dir, token, omnijar_name=None,
                       compress=True, jarlog=None, icon_source_dir=None,
-                      write_metadata=True):
+                      write_metadata=True, overlays=()):
+    # overlays: directories laid out like the staged dist/bin tree (browser/
+    # holds the APP jar). Their files are copied over the staging dir in
+    # order, replacing whatever the recipe produced for the same dest.
     import tempfile
 
     from mozpack.brightwork.recipe import (
@@ -99,6 +102,11 @@ def build_from_recipe(adk_dir, src_root, dest_dir, token, omnijar_name=None,
                 "`mach brightwork-extract` on the build machine so the "
                 "generated/ dir captures it."
             )
+        for overlay in overlays:
+            if os.path.isdir(overlay):
+                import shutil
+
+                shutil.copytree(overlay, staging, dirs_exist_ok=True)
         # register any new resources/routes that might have been added and update the dirs.
         ns = apply_namespaces(adk_dir, src_root, staging)
         if ns:
