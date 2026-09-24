@@ -69,7 +69,24 @@ def package_omnijar(
 
     _apply_preload(copier, jarlog)
 
-    copier.copy(dest_dir)
+    # Write next to the destination and rename into place: a browser running
+    # from dest_dir keeps reading the jar it opened instead of one rewritten
+    # under it.
+    import tempfile
+
+    os.makedirs(dest_dir, exist_ok=True)
+    tmp = tempfile.mkdtemp(prefix=".brightwork-out-", dir=dest_dir)
+    try:
+        copier.copy(tmp)
+        for root, _, files in os.walk(tmp):
+            for name in files:
+                rel = os.path.relpath(os.path.join(root, name), tmp)
+                os.makedirs(os.path.dirname(os.path.join(dest_dir, rel)), exist_ok=True)
+                os.replace(os.path.join(root, name), os.path.join(dest_dir, rel))
+    finally:
+        import shutil
+
+        shutil.rmtree(tmp, ignore_errors=True)
 
     return mozpath.join(dest_dir, omnijar_name)
 
