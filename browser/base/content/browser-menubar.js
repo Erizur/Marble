@@ -151,8 +151,8 @@ document.addEventListener(
       if (AppConstants.platform != "macosx") {
         // We only set the "openedwithkey" if a specific menu like "Edit" was opened
         // instead of the general menu bar. (e.g. Alt+E instead of just Alt)
-        if (event.target.parentNode.parentNode == this) {
-          this.setAttribute(
+        if (event.target.parentNode.parentNode == mainMenuBar) {
+          mainMenuBar.setAttribute(
             "openedwithkey",
             event.target.parentNode.openedWithKey
           );
