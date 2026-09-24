@@ -1640,14 +1640,8 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
           value.Append(accessKeyLabel);
         }
       };
-      if (AlwaysAppendAccessKey()) {
-        AppendAccessKeyLabel();
-        RefPtr c = CreateGenConTextNode(aState, value, nullptr);
-        aAddChild(c);
-        return;
-      }
 
-      const auto accessKeyStart = [&]() -> Maybe<size_t> {
+      const auto findAccessKey = [&]() -> Maybe<size_t> {
         nsAString::const_iterator start, end;
         value.BeginReading(start);
         value.EndReading(end);
@@ -1666,13 +1660,16 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
           return Nothing();
         }
         return Some(Distance(originalStart, start));
-      }();
+      };
 
+      Maybe<size_t> accessKeyStart;
+      if (!AlwaysAppendAccessKey()) {
+        accessKeyStart = findAccessKey();
+      }
       if (accessKeyStart.isNothing()) {
+        // The key goes in parentheses at the end, and is underlined there too.
         AppendAccessKeyLabel();
-        RefPtr c = CreateGenConTextNode(aState, value, nullptr);
-        aAddChild(c);
-        return;
+        accessKeyStart = Some(value.Length() - accesskey.Length() - 1);
       }
 
       if (*accessKeyStart != 0) {
