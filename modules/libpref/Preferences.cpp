@@ -4652,7 +4652,9 @@ static int pref_CompareFileNames(nsIFile* aFile1, nsIFile* aFile2) {
 
 // Load default pref files from a directory. The files in the directory are
 // sorted reverse-alphabetically.
-static nsresult pref_LoadPrefsInDir(nsIFile* aDir) {
+// aSkipLeafNames lists file names to leave out, see its caller.
+static nsresult pref_LoadPrefsInDir(
+    nsIFile* aDir, const nsTArray<nsCString>* aSkipLeafNames = nullptr) {
   MOZ_ASSERT(XRE_IsParentProcess());
 
   nsresult rv, rv2;
@@ -4684,7 +4686,8 @@ static nsresult pref_LoadPrefsInDir(nsIFile* aDir) {
 
     // Skip non-js files.
     if (StringEndsWith(leafName, ".js"_ns,
-                       nsCaseInsensitiveCStringComparator)) {
+                       nsCaseInsensitiveCStringComparator) &&
+        !(aSkipLeafNames && aSkipLeafNames->Contains(leafName))) {
       prefFiles.AppendObject(prefFile);
     }
   }
@@ -5018,6 +5021,10 @@ nsresult Preferences::InitInitialObjects(bool aIsStartup) {
   // Load jar:$app/omni.jar!/defaults/preferences/*.js
   // or jar:$gre/omni.jar!/defaults/preferences/*.js.
   RefPtr<nsZipArchive> appJarReader = Omnijar::GetReader(Omnijar::APP);
+  // A loose $app/defaults/preferences file of the same name must not override
+  // the jar's copy: with a Brightwork package over an unpackaged build, the
+  // loose files are the build's own defaults, not the package's.
+  nsTArray<nsCString> jarPrefLeafNames;
 
   // GetReader(Omnijar::APP) returns null when `$app == $gre`, in
   // which case we look for app-specific default preferences in $gre.
@@ -5039,6 +5046,8 @@ nsresult Preferences::InitInitialObjects(bool aIsStartup) {
       if (NS_FAILED(rv)) {
         NS_WARNING("Error parsing preferences.");
       }
+      jarPrefLeafNames.AppendElement(
+          Substring(prefEntries[i], prefEntries[i].RFindChar('/') + 1));
     }
 
 #ifdef MOZ_BACKGROUNDTASKS
@@ -5083,7 +5092,7 @@ nsresult Preferences::InitInitialObjects(bool aIsStartup) {
       }
 
       // Do we care if a file provided by this process fails to load?
-      pref_LoadPrefsInDir(path);
+      pref_LoadPrefsInDir(path, &jarPrefLeafNames);
     }
   }
 
