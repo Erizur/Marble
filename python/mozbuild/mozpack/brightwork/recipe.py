@@ -65,6 +65,14 @@ class BrightworkRecipe:
                 "Unsupported brightwork recipe version %r (expected %d)"
                 % (ver, RECIPE_VERSION)
             )
+        # buildconfig.defines holds strings, but the build hands them to the
+        # preprocessor through -D, which turns numbers into ints. #if/#elif
+        # treat any string as false, so without this "#elif XP_WIN" never
+        # matches and a Windows package reports AppConstants.platform "other".
+        obj["defines"] = {
+            k: int(v) if isinstance(v, str) and v.isdigit() else v
+            for k, v in obj.get("defines", {}).items()
+        }
         return cls(**obj)
 
     @classmethod
