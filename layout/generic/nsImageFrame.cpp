@@ -586,9 +586,13 @@ void nsImageFrame::DidSetComputedStyle(ComputedStyle* aOldStyle) {
   if (mKind == Kind::XULImage) {
     // Sub-rects only apply to XUL images that resolve through list-style-image,
     // so they don't affect web content.
+    const nsRect oldSubRect = mSubRect;
     mSubRect = StyleList()->GetImageRegion();
 
     if (aOldStyle) {
+      if (mSubRect.Size() != oldSubRect.Size()) {
+        UpdateIntrinsicSizeAndRatio();
+      }
       if (!mContent->AsElement()->HasNonEmptyAttr(nsGkAtoms::src) &&
           aOldStyle->StyleList()->mListStyleImage !=
               StyleList()->mListStyleImage) {
@@ -872,6 +876,10 @@ IntrinsicSize nsImageFrame::ComputeIntrinsicSize(
     return FinishIntrinsicSize(containAxes, IntrinsicSize(0, 0));
   }
 
+  if (!mSubRect.IsEmpty()) {
+    return FinishIntrinsicSize(containAxes, IntrinsicSize(mSubRect.Size()));
+  }
+
   nsSize size;
   if (mImage && NS_SUCCEEDED(mImage->GetIntrinsicSizeInAppUnits(&size))) {
     IntrinsicSize intrinsicSize;
@@ -1012,6 +1020,10 @@ AspectRatio nsImageFrame::ComputeIntrinsicRatioForImage(
     imgIContainer* aImage, bool aIgnoreContainment) const {
   if (!aIgnoreContainment && GetContainSizeAxes().IsAny()) {
     return AspectRatio();
+  }
+
+  if (!mSubRect.IsEmpty()) {
+    return AspectRatio::FromSize(mSubRect.Size());
   }
 
   if (aImage) {
