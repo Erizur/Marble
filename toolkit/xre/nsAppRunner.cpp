@@ -2222,9 +2222,6 @@ static void DumpHelp() {
 }
 
 static inline void DumpVersion() {
-  if (gAppData->vendor && *gAppData->vendor) {
-    printf("%s ", (const char*)gAppData->vendor);
-  }
   printf("%s ", (const char*)gAppData->name);
 
   // Use the displayed version
@@ -2238,9 +2235,6 @@ static inline void DumpVersion() {
 }
 
 static inline void DumpFullVersion() {
-  if (gAppData->vendor && *gAppData->vendor) {
-    printf("%s ", (const char*)gAppData->vendor);
-  }
   printf("%s ", (const char*)gAppData->name);
 
   // Use the displayed version

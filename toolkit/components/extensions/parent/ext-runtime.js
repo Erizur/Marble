@@ -334,6 +334,15 @@ this.runtime = class extends ExtensionAPIPersistent {
         getBrowserInfo: function () {
           const { name, vendor, version, appBuildID } = Services.appinfo;
           const info = { name, vendor, version, buildID: appBuildID };
+          if (
+            Services.prefs.getBoolPref(
+              "extensions.getBrowserInfo.reportFirefox",
+              true
+            )
+          ) {
+            info.name = "Firefox";
+            info.vendor = "Mozilla";
+          }
           return Promise.resolve(info);
         },
 
