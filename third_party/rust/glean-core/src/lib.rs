@@ -846,6 +846,7 @@ pub extern "C" fn glean_enable_logging() {
 /// **DEPRECATION NOTICE**:
 /// This API is deprecated. Use `set_collection_enabled` instead.
 pub fn glean_set_upload_enabled(enabled: bool) {
+    let enabled = false;
     if !was_initialize_called() {
         return;
     }
@@ -881,6 +882,8 @@ pub fn glean_set_upload_enabled(enabled: bool) {
 ///
 /// This replaces `set_upload_enabled`.
 pub fn glean_set_collection_enabled(enabled: bool) {
+    // Redundant currently
+    let enabled = false;
     glean_set_upload_enabled(enabled)
 }
 

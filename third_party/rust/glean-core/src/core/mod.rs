@@ -515,7 +515,8 @@ impl Glean {
     ///
     /// When upload is disabled, no data will be recorded.
     pub fn is_upload_enabled(&self) -> bool {
-        self.upload_enabled
+        _ = self.upload_enabled;
+        false
     }
 
     /// Check if a ping is enabled.
