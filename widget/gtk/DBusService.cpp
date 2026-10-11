@@ -36,8 +36,8 @@ void DBusService::Run() {
 // Mozilla has old GIO version in build roots
 #define G_BUS_NAME_OWNER_FLAGS_DO_NOT_QUEUE GBusNameOwnerFlags(1 << 2)
 
-#define DBUS_BUS_NAME_TEMPLATE "org.mozilla.%s"
-#define DBUS_OBJECT_PATH_TEMPLATE "/org/mozilla/%s"
+#define DBUS_BUS_NAME_TEMPLATE "com.biidama.%s"
+#define DBUS_OBJECT_PATH_TEMPLATE "/com/biidama/%s"
 
 static const char* GetDBusBusName() {
   static const char* name = []() {

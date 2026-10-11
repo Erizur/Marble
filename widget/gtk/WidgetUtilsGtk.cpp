@@ -18,6 +18,8 @@
 #include "nsIProperties.h"
 #include "nsIFile.h"
 #include "nsXULAppAPI.h"
+#include "nsAppRunner.h"
+#include "mozilla/XREAppData.h"
 #include "nsXPCOMCID.h"
 #include "nsDirectoryServiceDefs.h"
 #include "nsString.h"
@@ -183,7 +185,7 @@ static void DoRegisterHostApp() {
 
   GVariantBuilder builder;
   g_variant_builder_init(&builder, G_VARIANT_TYPE("(sa{sv})"));
-  g_variant_builder_add(&builder, "s", "org.mozilla.firefox");
+  g_variant_builder_add(&builder, "s", (const char*)gAppData->remotingName);
   GVariantBuilder dict_builder;
   g_variant_builder_init(&dict_builder, G_VARIANT_TYPE("a{sv}"));
   g_variant_builder_add_value(&builder, g_variant_builder_end(&dict_builder));

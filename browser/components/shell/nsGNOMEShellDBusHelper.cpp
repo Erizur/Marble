@@ -16,8 +16,8 @@
 #include "nsImportModule.h"
 #include "nsIOpenTabsProvider.h"
 
-#define DBUS_BUS_NAME_TEMPLATE "org.mozilla.%s.SearchProvider"
-#define DBUS_OBJECT_PATH_TEMPLATE "/org/mozilla/%s/SearchProvider"
+#define DBUS_BUS_NAME_TEMPLATE "com.biidama.%s.SearchProvider"
+#define DBUS_OBJECT_PATH_TEMPLATE "/com/biidama/%s/SearchProvider"
 
 const char* GetDBusBusName() {
   static const char* name = []() {
