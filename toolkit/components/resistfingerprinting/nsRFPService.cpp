@@ -1729,6 +1729,7 @@ nsresult nsRFPService::RandomizePixels(nsICookieJarSettings* aCookieJarSettings,
     return NS_OK;
   }
 
+  /*
   // Don't randomize if all pixels are uniform.
   static constexpr size_t bytesPerPixel = 4;
   MOZ_ASSERT(aSize == aWidth * aHeight * bytesPerPixel,
@@ -1746,6 +1747,7 @@ nsresult nsRFPService::RandomizePixels(nsICookieJarSettings* aCookieJarSettings,
   if (allPixelsMatch) {
     return NS_OK;
   }
+  */
 
   auto timerId =
       glean::fingerprinting_protection::canvas_noise_calculate_time_2.Start();
