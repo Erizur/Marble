@@ -278,25 +278,28 @@ nsresult nsXREDirProvider::GetBackgroundTasksProfilesRootDir(
  * On Linux this is /usr/{lib,lib64}/mozilla
  *   (for 32- and 64-bit systems respsectively)
  */
-static nsresult GetSystemParentDirectory(nsIFile** aFile) {
+static nsresult GetSystemParentDirectory(
+    nsIFile** aFile, const nsLiteralCString& aVendor = "Mozilla"_ns) {
   nsresult rv;
   nsCOMPtr<nsIFile> localDir;
 #  if defined(XP_MACOSX)
   rv = GetOSXFolderType(kOnSystemDisk, kApplicationSupportFolderType,
                         getter_AddRefs(localDir));
   if (NS_SUCCEEDED(rv)) {
-    rv = localDir->AppendNative("Mozilla"_ns);
+    rv = localDir->AppendNative(aVendor);
   }
 #  else
-  constexpr auto dirname =
+  nsAutoCString dirname(
 #    ifdef HAVE_USR_LIB64_DIR
-      "/usr/lib64/mozilla"_ns
+      "/usr/lib64/"_ns
 #    elif defined(__OpenBSD__) || defined(__FreeBSD__)
-      "/usr/local/lib/mozilla"_ns
+      "/usr/local/lib/"_ns
 #    else
-      "/usr/lib/mozilla"_ns
+      "/usr/lib/"_ns
 #    endif
-      ;
+  );
+  dirname.Append(aVendor);
+  ToLowerCase(dirname);
   rv = NS_NewNativeLocalFile(dirname, getter_AddRefs(localDir));
 #  endif
 
@@ -398,9 +401,9 @@ nsXREDirProvider::GetFile(const char* aProperty, bool* aPersistent,
   else if (!strcmp(aProperty, XRE_SYS_SHARE_EXTENSION_PARENT_DIR)) {
 #  ifdef ENABLE_SYSTEM_EXTENSION_DIRS
 #    if defined(__OpenBSD__) || defined(__FreeBSD__)
-    static const char* const sysLExtDir = "/usr/local/share/mozilla/extensions";
+    static const char* const sysLExtDir = "/usr/local/share/biidama/extensions";
 #    else
-    static const char* const sysLExtDir = "/usr/share/mozilla/extensions";
+    static const char* const sysLExtDir = "/usr/share/biidama/extensions";
 #    endif
     rv = NS_NewNativeLocalFile(nsDependentCString(sysLExtDir),
                                getter_AddRefs(file));
@@ -1132,7 +1135,7 @@ nsresult nsXREDirProvider::GetSystemExtensionsDirectory(nsIFile** aFile) {
   nsresult rv;
   nsCOMPtr<nsIFile> localDir;
 
-  rv = GetSystemParentDirectory(getter_AddRefs(localDir));
+  rv = GetSystemParentDirectory(getter_AddRefs(localDir), "Biidama"_ns);
   if (NS_SUCCEEDED(rv)) {
     constexpr auto sExtensions =
 #  if defined(XP_MACOSX)
@@ -1192,7 +1195,7 @@ nsresult nsXREDirProvider::AppendSysUserExtensionPath(nsIFile* aFile) {
 
 #if defined(XP_MACOSX) || defined(XP_WIN)
 
-  static const char* const sXR = "Mozilla";
+  static const char* const sXR = "Biidama";
   rv = aFile->AppendNative(nsDependentCString(sXR));
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1202,7 +1205,7 @@ nsresult nsXREDirProvider::AppendSysUserExtensionPath(nsIFile* aFile) {
 
 #elif defined(XP_UNIX)
 
-  static const char* const sXR = ".mozilla";
+  static const char* const sXR = ".biidama";
   rv = aFile->AppendNative(nsDependentCString(sXR));
   NS_ENSURE_SUCCESS(rv, rv);
 
