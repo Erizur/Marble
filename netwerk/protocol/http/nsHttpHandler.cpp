@@ -10,6 +10,7 @@
 #include "prsystem.h"
 
 #include "AltServiceChild.h"
+#include "CacheObserver.h"
 #include "nsCORSListenerProxy.h"
 #include "nsError.h"
 #include "nsHttp.h"
@@ -2186,6 +2187,11 @@ nsHttpHandler::Observe(nsISupports* subject, const char* topic,
     // clear cache of all authentication credentials.
     mAuthCache.ClearAll();
     mPrivateAuthCache.ClearAll();
+
+    if (CacheObserver::ClearCacheOnShutdown() && mAltSvcCache) {
+      mAltSvcCache->ClearAltServiceMappings();
+    }
+
     if (mWifiTickler) mWifiTickler->Cancel();
 
     // Inform nsIOService that network is tearing down.
