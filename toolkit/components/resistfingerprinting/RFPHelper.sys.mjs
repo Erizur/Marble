@@ -204,8 +204,14 @@ class _RFPHelper {
       return;
     }
 
-    let loadContext = notificationCallbacks.getInterface(Ci.nsILoadContext);
-    if (!loadContext || !loadContext.isContent) {
+    let loadContext;
+    try {
+      loadContext = notificationCallbacks.getInterface(Ci.nsILoadContext);
+    } catch (e) {
+      return;
+    }
+
+    if (!loadContext.isContent) {
       return;
     }
 
