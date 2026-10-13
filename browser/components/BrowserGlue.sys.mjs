@@ -1533,9 +1533,31 @@ BrowserGlue.prototype = {
     };
     let quitButtonLabelId = "tabbrowser-confirm-close-tabs-button";
     let closeTabButtonLabelId = "tabbrowser-confirm-close-tab-only-button";
+    let messageId = null;
 
     let showCloseCurrentTabOption = false;
-    if (windowcount > 1) {
+    if (
+      !shouldWarnForShortcut &&
+      Services.prefs.getBoolPref("browser.tabs.classicCloseWarning", false)
+    ) {
+      // The classic warning spells out what is about to close.
+      let sessionWillBeRestored =
+        Services.prefs.getIntPref("browser.startup.page") == 3 ||
+        Services.prefs.getBoolPref("browser.sessionstore.resume_session_once");
+      titleId =
+        AppConstants.platform == "win"
+          ? "tabbrowser-confirm-close-tabs-classic-exit-title"
+          : "tabbrowser-confirm-close-tabs-classic-quit-title";
+      messageId = {
+        id:
+          (windowcount > 1
+            ? "tabbrowser-confirm-close-windows-classic-message"
+            : "tabbrowser-confirm-close-tabs-classic-message") +
+          (sessionWillBeRestored ? "-restore" : ""),
+        args: { tabCount: pagecount, windowCount: windowcount },
+      };
+      quitButtonLabelId = "tabbrowser-confirm-close-tabs-classic-button";
+    } else if (windowcount > 1) {
       // More than 1 window. Compose our own message based on whether
       // the shortcut warning is on or not.
       if (shouldWarnForShortcut) {
@@ -1564,7 +1586,9 @@ BrowserGlue.prototype = {
     // The checkbox label is different depending on whether the shortcut
     // was used to quit or not.
     let checkboxLabelId;
-    if (shouldWarnForShortcut) {
+    if (messageId) {
+      checkboxLabelId = "tabbrowser-ask-close-tabs-classic-checkbox";
+    } else if (shouldWarnForShortcut) {
       const quitKeyElement = win.document.getElementById("key_quitApplication");
       const quitKey = lazy.ShortcutUtils.prettifyShortcut(quitKeyElement);
       checkboxLabelId = {
@@ -1575,11 +1599,12 @@ BrowserGlue.prototype = {
       checkboxLabelId = "tabbrowser-ask-close-tabs-checkbox";
     }
 
-    const [title, quitButtonLabel, checkboxLabel] =
+    const [title, quitButtonLabel, checkboxLabel, message] =
       win.gBrowser.tabLocalization.formatMessagesSync([
         titleId,
         quitButtonLabelId,
         checkboxLabelId,
+        ...(messageId ? [messageId] : []),
       ]);
 
     // Only format the "close current tab" message if needed
@@ -1614,7 +1639,7 @@ BrowserGlue.prototype = {
     let buttonPressed = Services.prompt.confirmEx(
       win,
       title.value,
-      null,
+      message?.value ?? null,
       flags,
       quitButtonLabel.value,
       null,

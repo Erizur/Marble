@@ -112,6 +112,29 @@ tabbrowser-confirm-close-tabs-classic-message =
 tabbrowser-confirm-close-tabs-classic-button = Close tabs
 tabbrowser-ask-close-tabs-classic-checkbox = Warn me when I attempt to close multiple tabs
 
+## Classic variant of the confirmation dialog when quitting or closing the last window.
+
+tabbrowser-confirm-close-tabs-classic-quit-title = Quit and close tabs?
+# Windows says "exit" rather than "quit".
+tabbrowser-confirm-close-tabs-classic-exit-title = Exit and close tabs?
+# Variables:
+#   $tabCount (Number): The number of tabs that will be closed.
+tabbrowser-confirm-close-tabs-classic-message-restore =
+    { $tabCount ->
+       *[other] You are about to close { $tabCount } tabs. Tabs in non-private windows will be restored when you restart. Are you sure you want to continue?
+    }
+# Variables:
+#   $windowCount (Number): The number of windows that will be closed.
+#   $tabCount (Number): The number of tabs in those windows.
+tabbrowser-confirm-close-windows-classic-message =
+    { $tabCount ->
+       *[other] You are about to close { $windowCount } windows with { $tabCount } tabs. Are you sure you want to continue?
+    }
+tabbrowser-confirm-close-windows-classic-message-restore =
+    { $tabCount ->
+       *[other] You are about to close { $windowCount } windows with { $tabCount } tabs. Tabs in non-private windows will be restored when you restart. Are you sure you want to continue?
+    }
+
 ## Confirmation dialog when quitting using the menu and multiple windows are open.
 
 # The forms for 0 or 1 items are not considered since this string is used only for
