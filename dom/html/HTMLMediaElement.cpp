@@ -2407,6 +2407,18 @@ nsresult HTMLMediaElement::OnChannelRedirect(nsIChannel* aChannel,
                                              nsIChannel* aNewChannel,
                                              uint32_t aFlags) {
   MOZ_ASSERT(mChannelLoader);
+  if (aNewChannel) {
+    nsCOMPtr<nsIURI> oldURI;
+    if (aChannel) {
+      aChannel->GetURI(getter_AddRefs(oldURI));
+    }
+    aNewChannel->GetURI(getter_AddRefs(mLoadingSrcFinalURI));
+    LOG(LogLevel::Debug,
+        ("%p OnChannelRedirect: from %s to %s", this,
+         oldURI ? oldURI->GetSpecOrDefault().get() : "null",
+         mLoadingSrcFinalURI ? mLoadingSrcFinalURI->GetSpecOrDefault().get()
+                             : "null"));
+  }
   return mChannelLoader->Redirect(aChannel, aNewChannel, aFlags);
 }
 
@@ -2445,6 +2457,8 @@ void HTMLMediaElement::AbortExistingLoads() {
     mChannelLoader = nullptr;
   }
 
+  mLoadingSrcFinalURI = nullptr;
+
   bool fireTimeUpdate = false;
 
   if (mDecoder) {
@@ -2461,6 +2475,8 @@ void HTMLMediaElement::AbortExistingLoads() {
 
   RemoveMediaElementFromURITable();
   mLoadingSrcTriggeringPrincipal = nullptr;
+  // The CORS mode is scoped to the current load.
+  mCORSMode = CORS_NONE;
   DDLOG(DDLogCategory::Property, "loading_src", "");
   DDUNLINKCHILD(mMediaSource.get());
   mMediaSource = nullptr;
@@ -2553,12 +2569,12 @@ void HTMLMediaElement::NoSupportedMediaSourceError(
 
   bool isSameOriginLoad = false;
   nsresult rv = NS_ERROR_NOT_AVAILABLE;
-  if (mSrcAttrTriggeringPrincipal && mLoadingSrc) {
-    rv = mSrcAttrTriggeringPrincipal->IsSameOrigin(mLoadingSrc,
-                                                   &isSameOriginLoad);
+  if (mLoadingSrcTriggeringPrincipal && mLoadingSrcFinalURI) {
+    rv = mLoadingSrcTriggeringPrincipal->IsSameOrigin(mLoadingSrcFinalURI,
+                                                      &isSameOriginLoad);
   }
 
-  if (NS_SUCCEEDED(rv) && !isSameOriginLoad) {
+  if (NS_FAILED(rv) || !isSameOriginLoad) {
     // aErrorDetails can include sensitive details like MimeType or HTTP Status
     // Code. In case we're loading a 3rd party resource we should not leak this
     // and pass a Generic Error Message
@@ -2761,6 +2777,9 @@ void HTMLMediaElement::SelectResource() {
   // If we have a 'src' attribute, use that exclusively.
   nsAutoString src;
   if (mSrcAttrStream) {
+    // Media provider objects use local mode, so a previous URL load's CORS
+    // mode does not apply.
+    mCORSMode = CORS_NONE;
     SetupSrcMediaStreamPlayback(mSrcAttrStream);
   } else if (GetAttr(nsGkAtoms::src, src)) {
     nsCOMPtr<nsIURI> uri;
@@ -2784,6 +2803,7 @@ void HTMLMediaElement::SelectResource() {
       } else {
         mLoadingSrc = nullptr;
       }
+      mLoadingSrcFinalURI = mLoadingSrc;
       mLoadingSrcTriggeringPrincipal = mSrcAttrTriggeringPrincipal;
       DDLOG(DDLogCategory::Property, "loading_src",
             nsCString(NS_ConvertUTF16toUTF8(src)));
@@ -3074,6 +3094,7 @@ void HTMLMediaElement::LoadFromSourceChildren() {
 
     RemoveMediaElementFromURITable();
     mLoadingSrc = uri;
+    mLoadingSrcFinalURI = mLoadingSrc;
     mLoadingSrcTriggeringPrincipal = child->GetSrcTriggeringPrincipal();
     DDLOG(DDLogCategory::Property, "loading_src",
           nsCString(NS_ConvertUTF16toUTF8(src)));
@@ -5437,6 +5458,7 @@ void HTMLMediaElement::UpdateSrcStreamTime() {
 
 void HTMLMediaElement::SetupSrcMediaStreamPlayback(DOMMediaStream* aStream) {
   NS_ASSERTION(!mSrcStream, "Should have been ended already");
+  MOZ_ASSERT(mCORSMode == CORS_NONE);
 
   mLoadingSrc = nullptr;
   mSrcStream = aStream;

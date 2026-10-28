@@ -49,6 +49,8 @@ class GPUVideoImage final : public Image {
         mColorDepth(aColorDepth),
         mColorSpace(aColorPrimaries),
         mYUVColorSpace(aYUVColorSpace),
+        mManager(aManager),
+        mSD(aSD),
         mTransferFunction(aTransferFunction),
         mColorRange(aColorRange) {
     // Create the TextureClient immediately since the GPUVideoTextureData
@@ -78,8 +80,10 @@ class GPUVideoImage final : public Image {
   gfx::ColorRange GetColorRange() const { return mColorRange; }
 
   Maybe<SurfaceDescriptor> GetDesc() override {
-    return GetDescFromTexClient(mTextureClient);
+    return Some(SurfaceDescriptor(mSD));
   }
+
+  const SurfaceDescriptorGPUVideo& SD() const { return mSD; }
 
  private:
   GPUVideoTextureData* GetData() const {
@@ -95,11 +99,10 @@ class GPUVideoImage final : public Image {
 
  public:
   already_AddRefed<gfx::SourceSurface> GetAsSourceSurface() override {
-    GPUVideoTextureData* data = GetData();
-    if (!data) {
+    if (!mManager) {
       return nullptr;
     }
-    return data->GetAsSourceSurface();
+    return mManager->Readback(mSD);
   }
 
   TextureClient* GetTextureClient(KnowsCompositor* aKnowsCompositor) override {
@@ -113,6 +116,8 @@ class GPUVideoImage final : public Image {
   gfx::ColorDepth mColorDepth;
   gfx::ColorSpace2 mColorSpace;
   gfx::YUVColorSpace mYUVColorSpace;
+  RefPtr<IGPUVideoSurfaceManager> mManager;
+  SurfaceDescriptorGPUVideo mSD;
   RefPtr<TextureClient> mTextureClient;
   gfx::TransferFunction mTransferFunction;
   gfx::ColorRange mColorRange;

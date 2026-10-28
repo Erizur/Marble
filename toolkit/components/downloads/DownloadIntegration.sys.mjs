@@ -538,7 +538,9 @@ export var DownloadIntegration = {
             requestToken,
             url,
             userActionId,
-            filePath: download.target.path,
+            // Use the path to the part-file if a part file is involved.
+            // We haven't moved it yet.
+            filePath: download.target.partFilePath || download.target.path,
             // When doing a download analysis, the Content Analysis code won't
             // display dialogs in the window, but the code still wants a
             // content window and will get the topChromeWindow to show

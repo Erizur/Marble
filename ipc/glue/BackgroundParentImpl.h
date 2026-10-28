@@ -116,6 +116,9 @@ class BackgroundParentImpl : public PBackgroundParent {
   already_AddRefed<PBackgroundSessionStorageServiceParent>
   AllocPBackgroundSessionStorageServiceParent() override;
 
+  mozilla::ipc::IPCResult RecvPBackgroundSessionStorageServiceConstructor(
+      PBackgroundSessionStorageServiceParent* aActor) override;
+
   mozilla::ipc::IPCResult RecvCreateFileSystemManagerParent(
       const PrincipalInfo& aPrincipalInfo,
       Endpoint<mozilla::dom::PFileSystemManagerParent>&& aParentEndpoint,

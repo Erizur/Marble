@@ -70,19 +70,6 @@ schemaURLs.add("chrome://extensions/content/schemas/experiments.json");
 let GlobalManager;
 let ParentAPIManager;
 
-function verifyActorForContext(actor, context) {
-  if (JSWindowActorParent.isInstance(actor)) {
-    let target = actor.browsingContext.top.embedderElement;
-    if (context.parentMessageManager !== target.messageManager) {
-      throw new Error("Got message on unexpected message manager");
-    }
-  } else if (JSProcessActorParent.isInstance(actor)) {
-    if (actor.manager.remoteType !== context.extension.remoteType) {
-      throw new Error("Got message from unexpected process");
-    }
-  }
-}
-
 // This object loads the ext-*.js scripts that define the extension API.
 let apiManager = new (class extends SchemaAPIManager {
   constructor() {
@@ -275,7 +262,7 @@ const ProxyMessenger = {
   },
 
   openNative(nativeApp, sender) {
-    let context = ParentAPIManager.getContextById(sender.childId);
+    let context = ParentAPIManager.getContext(sender.childId, sender.actor);
     if (context.extension.hasPermission("geckoViewAddons")) {
       return new lazy.GeckoViewConnection(
         this.getSender(context.extension, sender),
@@ -468,30 +455,17 @@ const ProxyMessenger = {
   },
 
   trackNativeAppPort(port) {
-    if (!port?.native) {
-      return;
-    }
-
-    try {
-      let context = ParentAPIManager.getContextById(port.senderChildId);
+    if (port?.native) {
+      // The childId was verified against its actor in openNative().
+      let context = ParentAPIManager.getContextUnchecked(port.senderChildId);
       context?.trackNativeAppPort(port);
-    } catch {
-      // getContextById will throw if the context has been destroyed
-      // in the meantime.
     }
   },
 
   untrackNativeAppPort(port) {
-    if (!port?.native) {
-      return;
-    }
-
-    try {
-      let context = ParentAPIManager.getContextById(port.senderChildId);
+    if (port?.native) {
+      let context = ParentAPIManager.getContextUnchecked(port.senderChildId);
       context?.untrackNativeAppPort(port);
-    } catch {
-      // getContextById will throw if the context has been destroyed
-      // in the meantime.
     }
   },
 };
@@ -581,19 +555,21 @@ GlobalManager = {
  * parent side of a proxied API.
  */
 class ProxyContextParent extends BaseContext {
-  constructor(envType, extension, params, browsingContext, principal) {
+  constructor(envType, extension, params, actor, principal) {
     super(envType, extension);
 
     this.childId = params.childId;
     this.uri = Services.io.newURI(params.url);
-    this.browsingContext = browsingContext;
+    // The actor is tied to the WindowGlobal or DOMProcess.
+    this.actor = actor;
+    this.browsingContext = actor.browsingContext ?? null;
 
     this.incognito = params.incognito;
 
     this.listenerPromises = new Set();
 
     // browsingContext is null when subclassed by BackgroundWorkerContextParent.
-    const xulBrowser = browsingContext?.top.embedderElement;
+    const xulBrowser = this.browsingContext?.top.embedderElement;
     // This message manager is used by ParentAPIManager to send messages and to
     // close the ProxyContext if the underlying message manager closes. This
     // message manager object may change when `xulBrowser` swaps docshells, e.g.
@@ -825,11 +801,11 @@ class ContentScriptContextParent extends ProxyContextParent {}
  * ExtensionChild.sys.mjs.
  */
 class ExtensionPageContextParent extends ProxyContextParent {
-  constructor(envType, extension, params, browsingContext) {
-    super(envType, extension, params, browsingContext, extension.principal);
+  constructor(envType, extension, params, actor) {
+    super(envType, extension, params, actor, extension.principal);
 
     this.viewType = params.viewType;
-    this.isTopContext = browsingContext.top === browsingContext;
+    this.isTopContext = this.browsingContext.top === this.browsingContext;
 
     this.extension.views.add(this);
 
@@ -1029,11 +1005,12 @@ class DevToolsExtensionPageContextParent extends ExtensionPageContextParent {
  * worker script.
  */
 class BackgroundWorkerContextParent extends ProxyContextParent {
-  constructor(envType, extension, params) {
+  constructor(envType, extension, params, actor) {
     // TODO: split out from ProxyContextParent a base class that
     // doesn't expect a browsingContext and one for contexts that are
     // expected to have a browsingContext associated.
-    super(envType, extension, params, null, extension.principal);
+    // ProxyContextParent still reads actor.browsingContext.
+    super(envType, extension, params, actor, extension.principal);
 
     this.viewType = params.viewType;
     this.workerDescriptorId = params.workerDescriptorId;
@@ -1148,14 +1125,14 @@ ParentAPIManager = {
             envType,
             extension,
             data,
-            actor.browsingContext
+            actor
           );
         } else if (envType == "devtools_parent") {
           context = new DevToolsExtensionPageContextParent(
             envType,
             extension,
             data,
-            actor.browsingContext
+            actor
           );
         }
       } else if (JSProcessActorParent.isInstance(actor)) {
@@ -1175,7 +1152,12 @@ ParentAPIManager = {
             `Unexpected viewType ${data.viewType} on an extension process actor`
           );
         }
-        context = new BackgroundWorkerContextParent(envType, extension, data);
+        context = new BackgroundWorkerContextParent(
+          envType,
+          extension,
+          data,
+          actor
+        );
       } else {
         // Unreacheable: JSWindowActorParent and JSProcessActorParent are the
         // only actors.
@@ -1189,7 +1171,7 @@ ParentAPIManager = {
         envType,
         extension,
         data,
-        actor.browsingContext,
+        actor,
         principal
       );
     } else {
@@ -1199,8 +1181,7 @@ ParentAPIManager = {
   },
 
   recvContextLoaded(data, { actor }) {
-    let context = this.getContextById(data.childId);
-    verifyActorForContext(actor, context);
+    let context = this.getContext(data.childId, actor);
     const { extension } = context;
     extension.emit("extension-proxy-context-load:completed", context);
   },
@@ -1255,10 +1236,8 @@ ParentAPIManager = {
   },
 
   async recvAPICall(data, { actor }) {
-    let context = this.getContextById(data.childId);
+    let context = this.getContext(data.childId, actor);
     let target = actor.browsingContext?.top.embedderElement;
-
-    verifyActorForContext(actor, context);
 
     let reply = result => {
       if (target && !context.parentMessageManager) {
@@ -1334,9 +1313,7 @@ ParentAPIManager = {
   },
 
   async recvAddListener(data, { actor }) {
-    let context = this.getContextById(data.childId);
-
-    verifyActorForContext(actor, context);
+    let context = this.getContext(data.childId, actor);
 
     let { childId, alreadyLogged = false } = data;
     let handlingUserInput = false;
@@ -1414,8 +1391,8 @@ ParentAPIManager = {
     }
   },
 
-  async recvRemoveListener(data) {
-    let context = this.getContextById(data.childId);
+  async recvRemoveListener(data, { actor }) {
+    let context = this.getContext(data.childId, actor);
     let listener = context.listenerProxies.get(data.listenerId);
 
     let handler = await context.apiCan.asyncFindAPIPath(data.path);
@@ -1433,12 +1410,17 @@ ParentAPIManager = {
     }
   },
 
-  getContextById(childId) {
+  getContext(childId, actor) {
     let context = this.proxyContexts.get(childId);
-    if (!context) {
+    if (!context || context.actor !== actor) {
       throw new Error("WebExtension context not found!");
     }
     return context;
+  },
+
+  // Only use when checking the actor is not needed.
+  getContextUnchecked(childId) {
+    return this.proxyContexts.get(childId);
   },
 };
 
@@ -2057,7 +2039,10 @@ async function promiseBackgroundViewLoaded(browser) {
   }
 
   if (childId) {
-    return ParentAPIManager.getContextById(childId);
+    let context = ParentAPIManager.getContextUnchecked(childId);
+    if (context && context.xulBrowser === browser) {
+      return context;
+    }
   }
 }
 

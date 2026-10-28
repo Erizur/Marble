@@ -740,6 +740,11 @@ class WorkerPrivate final
   // We would like to have stronger type-system annotated/enforced handling.
   WorkerPrivate* GetParent() const { return mParent; }
 
+  nsISerialEventTarget* GetSchedulingEventTarget() {
+    WorkerPrivate* parent = GetParent();
+    return parent ? parent->ControlEventTarget() : MainThreadEventTarget();
+  }
+
   // Returns the top level worker. It can be the current worker if it's the top
   // level one.
   WorkerPrivate* GetTopLevelWorker() const {

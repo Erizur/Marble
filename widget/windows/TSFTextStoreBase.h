@@ -120,14 +120,53 @@ class TSFTextStoreBase : public ITextStoreACP {
   // Note that mLock isn't cleared yet when this is called.
   virtual void DidLockGranted() {}
 
-  using AttrIndices = EnumSet<TSFUtils::AttrIndex>;
+  // Support retrieving attributes.
+  // TODO: We should support RightToLeft, perhaps.
+  enum class AttrIndex : int8_t {
+    // Used for result of GetRequestedAttrIndex()
+    NotSupported = -1,
+
+    // Supported attributes even in TSFEmptyTextStore.
+    InputScope = 0,
+    DocumentURL,
+
+    // Count of the supported attrs in empty text store
+    NumberOfSupportedAttrsInEmptyTextStore,
+
+    // Supported attributes in any TextStores.
+    TextVerticalWriting = NumberOfSupportedAttrsInEmptyTextStore,
+    TextOrientation,
+
+    // Count of the supported attributes
+    NumberOfSupportedAttrs,
+  };
+  constexpr static size_t NUM_OF_SUPPORTED_ATTRS_IN_EMPTY_TEXT_STORE =
+      static_cast<size_t>(AttrIndex::NumberOfSupportedAttrsInEmptyTextStore);
+  constexpr static size_t NUM_OF_SUPPORTED_ATTRS =
+      static_cast<size_t>(AttrIndex::NumberOfSupportedAttrs);
+
+  [[nodiscard]] size_t GetNumberOfSupportedAttrs() const {
+    return IsEditable() ? NUM_OF_SUPPORTED_ATTRS
+                        : NUM_OF_SUPPORTED_ATTRS_IN_EMPTY_TEXT_STORE;
+  }
+
+  /**
+   * Return AttrIndex fo aAttrID.
+   */
+  [[nodiscard]] AttrIndex GetRequestedAttrIndex(const TS_ATTRID& aAttrID) const;
+
+  /**
+   * Return TS_ATTRID for aIndex.
+   */
+  [[nodiscard]] TS_ATTRID GetAttrID(AttrIndex aIndex) const;
+
+  using AttrIndices = EnumSet<AttrIndex>;
   constexpr static auto NothingChanged = AttrIndices{};
-  constexpr static auto OnlyURLChanged =
-      AttrIndices{TSFUtils::AttrIndex::DocumentURL};
+  constexpr static auto OnlyURLChanged = AttrIndices{AttrIndex::DocumentURL};
   constexpr static auto OnlyInputScopeChanged =
-      AttrIndices{TSFUtils::AttrIndex::InputScope};
-  constexpr static auto URLAndInputScopeChanged = AttrIndices{
-      TSFUtils::AttrIndex::DocumentURL, TSFUtils::AttrIndex::InputScope};
+      AttrIndices{AttrIndex::InputScope};
+  constexpr static auto URLAndInputScopeChanged =
+      AttrIndices{AttrIndex::DocumentURL, AttrIndex::InputScope};
   /**
    * Called when either the URL or the input scope is changed.
    */
@@ -159,11 +198,9 @@ class TSFTextStoreBase : public ITextStoreACP {
   void PrintExposingURL(const char* aPrefix) const;
 
   HRESULT HandleRequestAttrs(DWORD aFlags, ULONG aFilterCount,
-                             const TS_ATTRID* aFilterAttrs,
-                             int32_t aNumOfSupportedAttrs);
+                             const TS_ATTRID* aFilterAttrs);
   HRESULT RetrieveRequestedAttrsInternal(ULONG ulCount, TS_ATTRVAL* paAttrVals,
-                                         ULONG* pcFetched,
-                                         int32_t aNumOfSupportedAttrs);
+                                         ULONG* pcFetched);
 
   /**
    * IsHandlingCompositionInParent() returns true if eCompositionStart is
@@ -218,7 +255,7 @@ class TSFTextStoreBase : public ITextStoreACP {
   // The URL cache of the focused document.
   nsString mDocumentURL;
 
-  bool mRequestedAttrs[TSFUtils::NUM_OF_SUPPORTED_ATTRS] = {false};
+  bool mRequestedAttrs[NUM_OF_SUPPORTED_ATTRS] = {false};
 
   bool mRequestedAttrValues = false;
 

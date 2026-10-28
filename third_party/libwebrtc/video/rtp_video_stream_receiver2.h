@@ -309,7 +309,7 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   // This function assumes that it's being called from only one thread.
   void ParseAndHandleEncapsulatingHeader(const RtpPacketReceived& packet)
       RTC_RUN_ON(packet_sequence_checker_);
-  void NotifyReceiverOfEmptyPacket(uint16_t seq_num, bool is_h26x)
+  void NotifyReceiverOfEmptyPacket(int64_t seq_number, bool is_h26x)
       RTC_RUN_ON(packet_sequence_checker_);
   bool IsRedEnabled() const;
   void InsertSpsPpsIntoTracker(uint8_t payload_type)

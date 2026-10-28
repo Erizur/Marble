@@ -9,7 +9,6 @@
 
 #include "base/file_path.h"
 #include "base/process_util.h"
-#include "base/waitable_event.h"
 #include "chrome/common/ipc_message.h"
 #include "mojo/core/ports/port_ref.h"
 

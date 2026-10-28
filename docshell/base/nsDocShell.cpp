@@ -11626,7 +11626,6 @@ nsresult nsDocShell::UpdateURLAndHistory(
 
       UpdateActiveEntry(false,
                         /* aPreviousScrollPos = */ Some(scrollPos), aNewURI,
-                        /* aOriginalURI = */ nullptr,
                         /* aReferrerInfo = */ referrerInfo,
                         /* aTriggeringPrincipal = */ aDocument->NodePrincipal(),
                         csp, title, scrollRestorationIsManual, aData,
@@ -11667,9 +11666,6 @@ nsresult nsDocShell::UpdateURLAndHistory(
     MOZ_LOG(gSHLog, LogLevel::Debug,
             ("nsDocShell %p UpdateActiveEntry (replacing) mActiveEntry %p",
              this, mActiveEntry.get()));
-    // Setting the resultPrincipalURI to nullptr is fine here: it will cause
-    // NS_GetFinalChannelURI to use the originalURI as the URI, which is aNewURI
-    // in our case.  We could also set it to aNewURI, with the same result.
     // We don't use aTitle here, see bug 544535.
     nsString title;
     nsCOMPtr<nsIReferrerInfo> referrerInfo;
@@ -11680,7 +11676,7 @@ nsresult nsDocShell::UpdateURLAndHistory(
       referrerInfo = nullptr;
     }
     UpdateActiveEntry(
-        true, /* aPreviousScrollPos = */ Nothing(), aNewURI, aNewURI,
+        true, /* aPreviousScrollPos = */ Nothing(), aNewURI,
         /* aReferrerInfo = */ referrerInfo, aDocument->NodePrincipal(),
         aDocument->GetCsp(), title,
         mActiveEntry && mActiveEntry->GetScrollRestorationIsManual(), aData,
@@ -12130,10 +12126,10 @@ nsresult nsDocShell::AddToSessionHistory(
 
 void nsDocShell::UpdateActiveEntry(
     bool aReplace, const Maybe<nsPoint>& aPreviousScrollPos, nsIURI* aURI,
-    nsIURI* aOriginalURI, nsIReferrerInfo* aReferrerInfo,
-    nsIPrincipal* aTriggeringPrincipal, nsIContentSecurityPolicy* aCsp,
-    const nsAString& aTitle, bool aScrollRestorationIsManual,
-    nsIStructuredCloneContainer* aData, bool aURIWasModified) {
+    nsIReferrerInfo* aReferrerInfo, nsIPrincipal* aTriggeringPrincipal,
+    nsIContentSecurityPolicy* aCsp, const nsAString& aTitle,
+    bool aScrollRestorationIsManual, nsIStructuredCloneContainer* aData,
+    bool aURIWasModified) {
   MOZ_ASSERT(mozilla::SessionHistoryInParent());
   MOZ_ASSERT(aURI, "uri is null");
   MOZ_ASSERT(mLoadType == LOAD_PUSHSTATE,
@@ -12161,7 +12157,6 @@ void nsDocShell::UpdateActiveEntry(
     mActiveEntry = MakeUnique<SessionHistoryInfo>(
         aURI, aTriggeringPrincipal, nullptr, nullptr, aCsp, mContentTypeHint);
   }
-  mActiveEntry->SetOriginalURI(aOriginalURI);
   mActiveEntry->SetUnstrippedURI(nullptr);
   mActiveEntry->SetReferrerInfo(aReferrerInfo);
   mActiveEntry->SetTitle(aTitle);
@@ -12226,40 +12221,16 @@ nsresult nsDocShell::LoadHistoryEntry(nsDocShellLoadState* aLoadState,
     return NS_OK;
   }
 
+  // https://html.spec.whatwg.org/#navigate-to-a-javascript:-url
+  // Step 13: historyEntry should store entryToReplace's URL.
+  if (aLoadState->URI()->SchemeIs("javascript")) {
+    MOZ_ASSERT_UNREACHABLE("javascript: URIs should not enter session history");
+    return NS_ERROR_FAILURE;
+  }
+
   // We are setting load type afterwards so we don't have to
   // send it in an IPC message
   aLoadState->SetLoadType(aLoadType);
-
-  nsresult rv;
-  if (aLoadState->URI()->SchemeIs("javascript")) {
-    // We're loading a URL that will execute script from inside asyncOpen.
-    // Replace the current document with about:blank now to prevent
-    // anything from the current document from leaking into any JavaScript
-    // code in the URL.
-    // Don't cache the presentation if we're going to just reload the
-    // current entry. Caching would lead to trying to save the different
-    // content viewers in the same nsISHEntry object.
-    rv = CreateAboutBlankDocumentViewer(
-        aLoadState->PrincipalToInherit(),
-        aLoadState->PartitionedPrincipalToInherit(), nullptr, nullptr,
-        /* aIsInitialDocument */ false, Nothing(), !aLoadingCurrentEntry);
-
-    if (NS_FAILED(rv)) {
-      // The creation of the intermittent about:blank content
-      // viewer failed for some reason (potentially because the
-      // user prevented it). Interrupt the history load.
-      return NS_OK;
-    }
-
-    if (!aLoadState->TriggeringPrincipal()) {
-      // Ensure that we have a triggeringPrincipal.  Otherwise javascript:
-      // URIs will pick it up from the about:blank page we just loaded,
-      // and we don't really want even that in this case.
-      nsCOMPtr<nsIPrincipal> principal =
-          NullPrincipal::Create(GetOriginAttributes());
-      aLoadState->SetTriggeringPrincipal(principal);
-    }
-  }
 
   /* If there is a valid postdata *and* the user pressed
    * reload or shift-reload, take user's permission before we
@@ -12267,7 +12238,7 @@ nsresult nsDocShell::LoadHistoryEntry(nsDocShellLoadState* aLoadState,
    */
   if ((aLoadType & LOAD_CMD_RELOAD) && aLoadState->PostDataStream()) {
     bool repost;
-    rv = ConfirmRepost(&repost);
+    nsresult rv = ConfirmRepost(&repost);
     if (NS_FAILED(rv)) {
       return rv;
     }

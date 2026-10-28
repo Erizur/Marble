@@ -319,6 +319,8 @@ class HTMLCanvasElement final : public nsGenericHTMLElement,
 
   CSSIntSize GetWidthHeight() override;
 
+  bool CanCreateContext() const override { return !mOffscreenCanvas; }
+
   virtual already_AddRefed<nsICanvasRenderingContextInternal> CreateContext(
       CanvasContextType aContextType) override;
 

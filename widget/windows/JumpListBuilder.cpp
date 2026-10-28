@@ -9,6 +9,7 @@
 #include <propvarutil.h>
 #include <shellapi.h>
 #include "JumpListBuilder.h"
+#include "mozilla/CmdLineAndEnvUtils.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/WindowsJumpListShortcutDescriptionBinding.h"
@@ -849,10 +850,20 @@ nsresult JumpListBuilder::GetShellLinkFromDescription(
 
   hr = psl->SetDescription(descriptionCopy.get());
 
-  if (aDesc.mArguments.WasPassed() && !aDesc.mArguments.Value().IsEmpty()) {
-    hr = psl->SetArguments(aDesc.mArguments.Value().get());
-  } else {
-    hr = psl->SetArguments(L"");
+  if (aDesc.mArguments.WasPassed()) {
+    const mozilla::dom::Sequence<nsString>& arguments =
+        aDesc.mArguments.Value();
+
+    // MakeCommandLine expects wchar_t**, but we have Sequence<nsString>, so
+    // convert it over.
+    AutoTArray<const wchar_t*, 8> flatArgs;
+    for (const nsString& arg : arguments) {
+      flatArgs.AppendElement(arg.get());
+    }
+
+    UniquePtr<wchar_t[]> commandLine = mozilla::MakeCommandLine(
+        AssertedCast<int>(flatArgs.Length()), flatArgs.Elements());
+    hr = psl->SetArguments(commandLine.get());
   }
 
   // Set up the fallback icon in the event that a valid icon URI has

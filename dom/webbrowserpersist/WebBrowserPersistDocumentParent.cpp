@@ -7,7 +7,7 @@
 #include "WebBrowserPersistDocumentParent.h"
 
 #include "mozilla/ipc/IPCStreamUtils.h"
-#include "mozilla/dom/PContentParent.h"
+#include "mozilla/dom/ContentParent.h"
 #include "nsIInputStream.h"
 #include "nsThreadUtils.h"
 #include "WebBrowserPersistResourcesParent.h"
@@ -53,14 +53,19 @@ WebBrowserPersistDocumentParent::~WebBrowserPersistDocumentParent() {
 }
 
 mozilla::ipc::IPCResult WebBrowserPersistDocumentParent::RecvAttributes(
-    const Attrs& aAttrs, const Maybe<IPCStream>& aPostStream) {
-  // Deserialize the postData unconditionally so that fds aren't leaked.
-  nsCOMPtr<nsIInputStream> postData =
-      mozilla::ipc::DeserializeIPCStream(aPostStream);
+    Attrs&& aAttrs, NotNull<nsIPrincipal*> aPrincipal,
+    nsIInputStream* aPostStream) {
   if (!mOnReady || mReflection) {
-    return IPC_FAIL_NO_REASON(this);
+    return IPC_FAIL(this, "invalid actor state");
   }
-  mReflection = new WebBrowserPersistRemoteDocument(this, aAttrs, postData);
+
+  auto* contentParent = dom::ContentParent::Cast(Manager());
+  if (!contentParent->ValidatePrincipal(aPrincipal, {})) {
+    return IPC_FAIL(this, "invalid principal");
+  }
+
+  mReflection = new WebBrowserPersistRemoteDocument(this, std::move(aAttrs),
+                                                    aPrincipal, aPostStream);
   RefPtr<WebBrowserPersistRemoteDocument> reflection = mReflection;
   mOnReady->OnDocumentReady(reflection);
   mOnReady = nullptr;

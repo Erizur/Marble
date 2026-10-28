@@ -2068,7 +2068,7 @@ void EventStateManager::DispatchCrossProcessEvent(WidgetEvent* aEvent,
   MOZ_ASSERT(aRemoteTarget);
   MOZ_ASSERT(aStatus);
 
-  BrowserParent* remote = aRemoteTarget;
+  RefPtr<BrowserParent> remote = aRemoteTarget;
 
   WidgetMouseEvent* mouseEvent = aEvent->AsMouseEvent();
   bool isContextMenuKey = mouseEvent && mouseEvent->IsContextMenuKeyEvent();
@@ -2082,10 +2082,10 @@ void EventStateManager::DispatchCrossProcessEvent(WidgetEvent* aEvent,
     // else there is a race between layout and focus tracking,
     // so fall back to delivering the event to the topmost child process.
   } else if (aEvent->mLayersId.IsValid()) {
-    BrowserParent* preciseRemote =
+    RefPtr<BrowserParent> preciseRemote =
         BrowserParent::GetBrowserParentFromLayersId(aEvent->mLayersId);
     if (preciseRemote) {
-      remote = preciseRemote;
+      remote = preciseRemote.forget();
     }
     // else there is a race between APZ and the LayersId to BrowserParent
     // mapping, so fall back to delivering the event to the topmost child
@@ -2544,6 +2544,8 @@ void EventStateManager::BeginTrackingDragGesture(nsPresContext* aPresContext,
     if (!mGestureDownFrameOwner) {
       mGestureDownFrameOwner = mGestureDownContent;
     }
+    mGestureDownTopLevelRemoteTarget =
+        BrowserParent::GetFrom(mGestureDownContent);
   }
   mGestureModifiers = inDownEvent->mModifiers;
   mGestureDownButtons = inDownEvent->mButtons;
@@ -2594,6 +2596,8 @@ void EventStateManager::StopTrackingDragGesture(bool aClearInChildProcesses) {
   if (!aClearInChildProcesses || !XRE_IsParentProcess()) {
     return;
   }
+
+  mGestureDownTopLevelRemoteTarget = nullptr;
 
   // Only notify if there is NOT a drag session active in the parent.
   RefPtr<nsIDragSession> dragSession =
@@ -2909,6 +2913,8 @@ void EventStateManager::DetermineDragTargetAndDefaultData(
   nsIContent* editingElement = aSelectionTarget->IsEditable()
                                    ? aSelectionTarget->GetEditingHost()
                                    : nullptr;
+  nsCOMPtr<nsIPrincipal> principal;
+  bool fromChildProcess = false;
 
   // In chrome, only allow dragging inside editable areas.
   bool isChromeContext = !aWindow->GetBrowsingContext()->IsContent();
@@ -2916,8 +2922,9 @@ void EventStateManager::DetermineDragTargetAndDefaultData(
     if (mGestureDownDragStartData) {
       // A child process started a drag so use any data it assigned for the dnd
       // session.
-      mGestureDownDragStartData->AddInitialDnDDataTo(aDataTransfer, aPrincipal,
-                                                     aCsp, aCookieJarSettings);
+      mGestureDownDragStartData->AddInitialDnDDataTo(
+          aDataTransfer, getter_AddRefs(principal), aCsp, aCookieJarSettings);
+      fromChildProcess = true;
       mGestureDownDragStartData.forget(aRemoteDragStartData);
       *aAllowEmptyDataTransfer = true;
     }
@@ -2994,6 +3001,10 @@ void EventStateManager::DetermineDragTargetAndDefaultData(
     if (dragContent != originalDragContent) aDataTransfer->ClearAll();
     *aTargetNode = dragContent;
     NS_ADDREF(*aTargetNode);
+    if (!fromChildProcess) {
+      principal = dragContent->NodePrincipal();
+    }
+    principal.forget(aPrincipal);
   }
 }
 
@@ -7709,6 +7720,7 @@ void EventStateManager::UpdateGestureContent(nsIContent* aContent) {
       aContent && aContent->IsInNativeAnonymousSubtree() &&
       TextControlElement::FromNodeOrNull(
           aContent->GetClosestNativeAnonymousSubtreeRootParentOrHost());
+  mGestureDownTopLevelRemoteTarget = BrowserParent::GetFrom(aContent);
 }
 
 void EventStateManager::NotifyContentWillBeRemovedForGesture(

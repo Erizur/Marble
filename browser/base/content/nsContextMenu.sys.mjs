@@ -91,6 +91,13 @@ XPCOMUtils.defineLazyServiceGetter(
 const PASSWORD_FIELDNAME_HINTS = ["current-password", "new-password"];
 const USERNAME_FIELDNAME_HINT = "username";
 
+const IMAGE_ONLY_PROTOCOLS = [
+  "cached-favicon:",
+  "moz-icon:",
+  "moz-page-thumb:",
+  "page-icon:",
+];
+
 export class nsContextMenu {
   /**
    * A promise to retrieve the translations language pair
@@ -729,6 +736,12 @@ export class nsContextMenu {
       this.onImage && !this.onCompletedImage
     );
 
+    // Some protocols only return images in an image context and can no longer
+    // be loaded otherwise.
+    const mediaURL = URL.parse(this.mediaURL);
+    const isImageOnlyProtocol =
+      mediaURL && IMAGE_ONLY_PROTOCOLS.includes(mediaURL.protocol);
+
     // View image depends on having an image that's not standalone
     // (or is in a frame), or a canvas. If this isn't an image, check
     // if there is a background image.
@@ -748,12 +761,16 @@ export class nsContextMenu {
       !this.onAudio &&
       !this.onLink &&
       !this.onTextInput;
-    this.showItem("context-viewimage", showViewImage || showBGImage);
+    this.showItem(
+      "context-viewimage",
+      (showViewImage || showBGImage) && !isImageOnlyProtocol
+    );
 
     // Save image depends on having loaded its content.
     this.showItem(
       "context-saveimage",
-      (this.onLoadedImage || this.onCanvas) && !this.inPDFEditor
+      ((this.onLoadedImage && !isImageOnlyProtocol) || this.onCanvas) &&
+        !this.inPDFEditor
     );
 
     if (Services.policies.status === Services.policies.ACTIVE) {

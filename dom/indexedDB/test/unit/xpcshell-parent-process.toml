@@ -64,6 +64,7 @@ skip-if = [
 ["test_file_copy_failure.js"]
 
 ["test_globalObjects_ipc.js"]
+prefs = ["dom.indexedDB.testing.allowContentSystem=true"]
 
 ["test_idbSubdirUpgrade.js"]
 

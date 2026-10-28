@@ -117,6 +117,7 @@
 #include "mozilla/Span.h"
 #include "mozilla/StaticAnalysisFunctions.h"
 #include "mozilla/StaticPrefs_browser.h"
+#include "mozilla/StaticPrefs_clipboard.h"
 #include "mozilla/StaticPrefs_dom.h"
 #ifdef FUZZING
 #  include "mozilla/StaticPrefs_fuzzing.h"
@@ -8878,11 +8879,33 @@ nsresult nsContentUtils::IPCTransferableDataToTransferable(
   nsresult rv;
   const nsTArray<IPCTransferableDataItem>& items = aTransferableData.items();
   for (const auto& item : items) {
-    if (aFilterUnknownFlavors && !IPCTransferableDataItemHasKnownFlavor(item)) {
-      NS_WARNING(
-          "Ignoring unknown flavor in "
-          "nsContentUtils::IPCTransferableDataToTransferable");
-      continue;
+    if (aFilterUnknownFlavors) {
+      if (item.flavor().EqualsLiteral(kFilePromiseDirectoryMime)) {
+        NS_WARNING(
+            "Ignoring unknown flavor in "
+            "nsContentUtils::IPCTransferableDataToTransferable");
+        continue;
+      }
+
+      if ((item.flavor().EqualsLiteral(kFilePromiseMime) ||
+           item.flavor().EqualsLiteral(kFilePromiseURLMime) ||
+           item.flavor().EqualsLiteral(kFilePromiseDestFilename))
+#ifdef XP_WIN
+          && !StaticPrefs::clipboard_imageAsFile_enabled()
+#endif
+      ) {
+        NS_WARNING(
+            "Ignoring unknown flavor in "
+            "nsContentUtils::IPCTransferableDataToTransferable");
+        continue;
+      }
+
+      if (!IPCTransferableDataItemHasKnownFlavor(item)) {
+        NS_WARNING(
+            "Ignoring unknown flavor in "
+            "nsContentUtils::IPCTransferableDataToTransferable");
+        continue;
+      }
     }
 
     if (aAddDataFlavor) {
@@ -9044,17 +9067,24 @@ nsresult nsContentUtils::CalculateBufferSizeForImage(
     const uint32_t& aStride, const IntSize& aImageSize,
     const SurfaceFormat& aFormat, size_t* aMaxBufferSize,
     size_t* aUsedBufferSize) {
-  CheckedInt32 requiredBytes =
-      CheckedInt32(aStride) * CheckedInt32(aImageSize.height);
-
-  CheckedInt32 usedBytes =
-      requiredBytes - aStride +
-      (CheckedInt32(aImageSize.width) * BytesPerPixel(aFormat));
-  if (!usedBytes.isValid()) {
+  if (aImageSize.width <= 0 || aImageSize.height <= 0) {
     return NS_ERROR_FAILURE;
   }
 
-  MOZ_ASSERT(requiredBytes.isValid(), "usedBytes valid but not required?");
+  CheckedInt32 rowBytes =
+      CheckedInt32(aImageSize.width) * BytesPerPixel(aFormat);
+  CheckedInt32 stride(aStride);
+  if (!rowBytes.isValid() || !stride.isValid() ||
+      stride.value() < rowBytes.value()) {
+    return NS_ERROR_FAILURE;
+  }
+
+  CheckedInt32 requiredBytes = stride * CheckedInt32(aImageSize.height);
+  CheckedInt32 usedBytes = requiredBytes - stride + rowBytes;
+  if (!requiredBytes.isValid() || !usedBytes.isValid()) {
+    return NS_ERROR_FAILURE;
+  }
+
   *aMaxBufferSize = requiredBytes.value();
   *aUsedBufferSize = usedBytes.value();
   return NS_OK;
@@ -9690,6 +9720,12 @@ bool nsContentUtils::IsPreloadType(nsContentPolicyType aType) {
           aType == nsIContentPolicy::TYPE_INTERNAL_FONT_PRELOAD ||
           aType == nsIContentPolicy::TYPE_INTERNAL_JSON_PRELOAD ||
           aType == nsIContentPolicy::TYPE_INTERNAL_FETCH_PRELOAD);
+}
+
+// static
+bool nsContentUtils::IsImageType(ExtContentPolicy aType) {
+  return aType == ExtContentPolicy::TYPE_IMAGE ||
+         aType == ExtContentPolicy::TYPE_IMAGESET;
 }
 
 // static

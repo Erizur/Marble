@@ -180,15 +180,27 @@ bool DMABufSurface::UseDmaBufGL(GLContext* aGLContext) {
     return false;
   }
 
-  static bool useDmabufGL = [&]() {
-    if (!aGLContext->IsExtensionSupported(gl::GLContext::OES_EGL_image)) {
-      gfxCriticalNote << "DMABufSurface::UseDmaBufGL(): no OES_EGL_image.";
-      return false;
-    }
-    return true;
-  }();
+  // dma-buf is only used with hardware GL rendering.
+  if (gfx::gfxVars::UseSoftwareWebRender()) {
+    gfxCriticalNote << "DMABufSurface::UseDmaBufGL(): refusing dma-buf with "
+                       "software rendering.";
+    return false;
+  }
 
-  return useDmabufGL;
+  // Checked per context (not cached): mGL and the snapshot context can differ.
+  if (!aGLContext->IsExtensionSupported(gl::GLContext::OES_EGL_image)) {
+    gfxCriticalNote << "DMABufSurface::UseDmaBufGL(): no OES_EGL_image.";
+    return false;
+  }
+
+  const auto& egl = gl::GLContextEGL::Cast(aGLContext)->mEgl;
+  if (!egl->IsExtensionSupported(EGLExtension::EXT_image_dma_buf_import)) {
+    gfxCriticalNote
+        << "DMABufSurface::UseDmaBufGL(): no EXT_image_dma_buf_import.";
+    return false;
+  }
+
+  return true;
 }
 
 bool DMABufSurface::UseDmaBufExportExtension(GLContext* aGLContext) {

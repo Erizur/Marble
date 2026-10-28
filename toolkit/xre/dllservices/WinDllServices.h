@@ -11,6 +11,7 @@
 #include "mozilla/Maybe.h"
 #include "mozilla/MozPromise.h"
 #include "mozilla/RefPtr.h"
+#include "nsTArray.h"
 
 namespace mozilla {
 
@@ -20,7 +21,10 @@ class UntrustedModulesProcessor;
 using UntrustedModulesPromise =
     MozPromise<Maybe<UntrustedModulesData>, nsresult, true>;
 
-struct ModulePaths;
+namespace ipc {
+class FileDescriptor;
+}  // namespace ipc
+
 class ModulesMapResult;
 
 using ModulesTrustPromise = MozPromise<ModulesMapResult, nsresult, true>;
@@ -39,8 +43,8 @@ class DllServices final : public glue::DllServices {
 
   RefPtr<UntrustedModulesPromise> GetUntrustedModulesData();
 
-  RefPtr<ModulesTrustPromise> GetModulesTrust(ModulePaths&& aModPaths,
-                                              bool aRunAtNormalPriority);
+  RefPtr<ModulesTrustPromise> GetModulesTrust(
+      nsTArray<ipc::FileDescriptor>&& aModIdents, bool aRunAtNormalPriority);
 
  private:
   DllServices() = default;

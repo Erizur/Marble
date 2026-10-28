@@ -191,6 +191,11 @@ void StorageActivityService::SendActivityToParent(nsIPrincipal* aPrincipal) {
     return;
   }
 
+  if (!::mozilla::ipc::BackgroundChild::ValidatePrincipal(aPrincipal, {})) {
+    MOZ_ASSERT_UNREACHABLE("ValidatePrincipal failure in SendActivityToParent");
+    return;
+  }
+
   actor->SendStorageActivity(principalInfo);
 }
 

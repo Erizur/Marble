@@ -53,6 +53,8 @@ class nsBaseFilePicker : public nsIFilePicker {
   NS_IMETHOD GetDomFilesInWebKitDirectory(
       nsISimpleEnumerator** aValue) override;
 
+  static bool IsReadableDirectory(nsIFile& aDirectory);
+
  protected:
   virtual ~nsBaseFilePicker();
 

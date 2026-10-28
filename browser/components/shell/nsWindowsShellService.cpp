@@ -94,24 +94,6 @@ using namespace ABI::Windows::UI::StartScreen;
 
 #define REG_FAILED(val) (val != ERROR_SUCCESS)
 
-#ifdef DEBUG
-#  define NS_ENSURE_HRESULT(hres, ret)                    \
-    do {                                                  \
-      HRESULT result = hres;                              \
-      if (MOZ_UNLIKELY(FAILED(result))) {                 \
-        mozilla::SmprintfPointer msg = mozilla::Smprintf( \
-            "NS_ENSURE_HRESULT(%s, %s) failed with "      \
-            "result 0x%" PRIX32,                          \
-            #hres, #ret, static_cast<uint32_t>(result));  \
-        NS_WARNING(msg.get());                            \
-        return ret;                                       \
-      }                                                   \
-    } while (false)
-#else
-#  define NS_ENSURE_HRESULT(hres, ret) \
-    if (MOZ_UNLIKELY(FAILED(hres))) return ret
-#endif
-
 using namespace mozilla;
 using mozilla::intl::Localization;
 

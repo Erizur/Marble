@@ -18,6 +18,7 @@
 #include "mozilla/dom/FileBlobImpl.h"
 #include "mozilla/dom/FileSystemSecurity.h"
 #include "mozilla/dom/IPCBlobUtils.h"
+#include "nsBaseFilePicker.h"
 
 using mozilla::Unused;
 using namespace mozilla::dom;
@@ -301,7 +302,8 @@ mozilla::ipc::IPCResult FilePickerParent::RecvOpen(
   if (!aDisplayDirectory.IsEmpty()) {
     nsCOMPtr<nsIFile> localFile;
     if (NS_SUCCEEDED(
-            NS_NewLocalFile(aDisplayDirectory, getter_AddRefs(localFile)))) {
+            NS_NewLocalFile(aDisplayDirectory, getter_AddRefs(localFile))) &&
+        localFile && nsBaseFilePicker::IsReadableDirectory(*localFile)) {
       mFilePicker->SetDisplayDirectory(localFile);
     }
   } else if (!aDisplaySpecialDirectory.IsEmpty()) {

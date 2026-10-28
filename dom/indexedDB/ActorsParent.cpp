@@ -9088,17 +9088,22 @@ Factory::AllocPBackgroundIDBFactoryRequestParent(
   MOZ_ASSERT(principalInfo.type() == PrincipalInfo::TSystemPrincipalInfo ||
              principalInfo.type() == PrincipalInfo::TContentPrincipalInfo);
 
-  if (NS_AUUF_OR_WARN_IF(
-          principalInfo.type() == PrincipalInfo::TSystemPrincipalInfo &&
-          metadata.persistenceType() != PERSISTENCE_TYPE_PERSISTENT)) {
+  if (!BackgroundParent::ValidatePrincipalInfo(Manager(), principalInfo,
+                                               PrincipalValidationOptions())) {
+    IPC_FAIL(this, "Invalid principal!");
     return nullptr;
   }
 
-  if (NS_AUUF_OR_WARN_IF(
-          principalInfo.type() == PrincipalInfo::TContentPrincipalInfo &&
-          QuotaManager::IsOriginInternal(
-              principalInfo.get_ContentPrincipalInfo().originNoSuffix()) &&
-          metadata.persistenceType() != PERSISTENCE_TYPE_PERSISTENT)) {
+  /* GetPersistenceType returns PERSISTENT for system principals and internal
+  content principals, PRIVATE for private-browsing content principals, and
+  DEFAULT for everything else. The sent value is technically redundant and
+  always deducible from the principal but we validate it here so that an
+  incorrect metadata value cannot reach other parts of the code.
+  TODO: Stop sending persistenceType from the content process and just derive it
+  on the parent side. */
+  if (metadata.persistenceType() !=
+      IDBFactory::GetPersistenceType(principalInfo)) {
+    IPC_FAIL(this, "Persistence type does not match principal!");
     return nullptr;
   }
 
@@ -9169,6 +9174,10 @@ mozilla::ipc::IPCResult Factory::RecvGetDatabases(
 
   MOZ_ASSERT(aPrincipalInfo.type() == PrincipalInfo::TSystemPrincipalInfo ||
              aPrincipalInfo.type() == PrincipalInfo::TContentPrincipalInfo);
+
+  QM_TRY(MOZ_TO_RESULT(BackgroundParent::ValidatePrincipalInfo(
+             Manager(), aPrincipalInfo, PrincipalValidationOptions())),
+         QM_IPC_FAIL(this));
 
   PersistenceType persistenceType =
       IDBFactory::GetPersistenceType(aPrincipalInfo);

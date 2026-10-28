@@ -112,6 +112,11 @@ bool FileSystemSecurity::ContentProcessHasAccessTo(ContentParentId aId,
   MOZ_ASSERT(NS_IsMainThread());
   mozilla::ipc::AssertIsInMainProcess();
 
+  // POSIX APIs accept all other characters than NUL
+  if (aPath.FindChar(char16_t(0)) != kNotFound) {
+    return false;
+  }
+
 #if defined(XP_WIN)
   if (StringBeginsWith(aPath, u"..\\"_ns) ||
       FindInReadable(u"\\..\\"_ns, aPath) ||

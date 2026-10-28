@@ -1207,8 +1207,8 @@ bool WebRenderBridgeParent::SetDisplayList(
         LayoutDeviceIntRect(LayoutDeviceIntPoint(), widgetSize);
     aTxn.SetDocumentView(rect);
   }
-  aTxn.SetDisplayList(aWrEpoch, mPipelineId, aDLDesc, dlItems, dlCache,
-                      dlSpatialTreeData);
+  aTxn.SetDisplayList(aWrEpoch, mIdNamespace, mPipelineId, aDLDesc, dlItems,
+                      dlCache, dlSpatialTreeData);
 
   MaybeNotifyOfLayers(aTxn, true);
 
@@ -2066,7 +2066,7 @@ mozilla::ipc::IPCResult WebRenderBridgeParent::RecvClearCachedResources() {
   // Clear resources
   wr::TransactionBuilder txn(mApi);
   txn.SetLowPriority(true);
-  txn.ClearDisplayList(GetNextWrEpoch(), mPipelineId);
+  txn.ClearDisplayList(GetNextWrEpoch(), mIdNamespace, mPipelineId);
   MaybeNotifyOfLayers(txn, false);
   mApi->SendTransaction(txn);
 
@@ -2871,7 +2871,7 @@ void WebRenderBridgeParent::ClearResources() {
 
   wr::TransactionBuilder txn(mApi);
   txn.SetLowPriority(true);
-  txn.ClearDisplayList(wrEpoch, mPipelineId);
+  txn.ClearDisplayList(wrEpoch, mIdNamespace, mPipelineId);
 
   for (const auto& entry : mAsyncCompositables) {
     wr::PipelineId pipelineId = wr::AsPipelineId(entry.first);

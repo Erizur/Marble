@@ -76,6 +76,12 @@ bool RenderTextureHostWrapper::LockSWGLCompositeSurface(
   return mTextureHost->LockSWGLCompositeSurface(aContext, aInfo);
 }
 
+void RenderTextureHostWrapper::UnlockSWGLCompositeSurface() {
+  if (mTextureHost) {
+    mTextureHost->UnlockSWGLCompositeSurface();
+  }
+}
+
 void RenderTextureHostWrapper::ClearCachedResources() {
   if (mTextureHost) {
     mTextureHost->ClearCachedResources();

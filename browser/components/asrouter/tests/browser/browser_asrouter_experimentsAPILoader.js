@@ -4,7 +4,7 @@ const { RemoteSettings } = ChromeUtils.importESModule(
 const { ASRouter } = ChromeUtils.importESModule(
   "resource:///modules/asrouter/ASRouter.sys.mjs"
 );
-const { EnrollmentType, ExperimentAPI } = ChromeUtils.importESModule(
+const { EnrollmentType } = ChromeUtils.importESModule(
   "resource://nimbus/ExperimentAPI.sys.mjs"
 );
 const { NimbusTestUtils } = ChromeUtils.importESModule(

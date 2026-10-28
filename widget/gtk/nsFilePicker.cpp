@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <utility>
+
 #include "mozilla/Types.h"
 #include "AsyncDBus.h"
 #include "nsGtkUtils.h"
@@ -476,7 +478,7 @@ nsFilePicker::Open(nsIFilePickerShownCallback* aCallback) {
     mPrevDisplayDirectory->Clone(getter_AddRefs(defaultPath));
   }
 
-  if (defaultPath) {
+  if (defaultPath && IsReadableDirectory(*defaultPath)) {
     if (!defaultName.IsEmpty() && mMode != nsIFilePicker::modeSave) {
       // Try to select the intended file. Even if it doesn't exist, GTK still
       // switches directories.
@@ -626,6 +628,12 @@ bool nsFilePicker::WarnForNonReadableFile(void* file_chooser) {
 }
 
 void nsFilePicker::Done(void* file_chooser, gint response) {
+  // A null callback means a re-entrant call; the outer one owns the teardown.
+  nsCOMPtr<nsIFilePickerShownCallback> callback = std::move(mCallback);
+  if (!callback) {
+    return;
+  }
+
   mFileChooser = nullptr;
 
   nsIFilePicker::ResultCode result;
@@ -690,10 +698,7 @@ void nsFilePicker::Done(void* file_chooser, gint response) {
     mFileChooserDelegate = nullptr;
   }
 
-  if (mCallback) {
-    mCallback->Done(result);
-    mCallback = nullptr;
-  }
+  callback->Done(result);
   NS_RELEASE_THIS();
 }
 

@@ -10,7 +10,6 @@
 #include "ClientOpPromise.h"
 #include "mozilla/AlreadyAddRefed.h"
 #include "mozilla/Assertions.h"
-#include "mozilla/Maybe.h"
 #include "mozilla/MozPromise.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/Variant.h"
@@ -153,7 +152,7 @@ class ClientManagerService final {
       ThreadsafeContentParentHandle* aOriginContent,
       const ClientOpenWindowArgs& aArgs);
 
-  bool HasWindow(const Maybe<ContentParentId>& aContentParentId,
+  bool HasWindow(ThreadsafeContentParentHandle* aContentParentHandle,
                  const mozilla::ipc::PrincipalInfo& aPrincipalInfo,
                  const nsID& aClientId);
 

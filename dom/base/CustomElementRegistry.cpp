@@ -1381,7 +1381,11 @@ void CustomElementRegistry::Upgrade(Element* aElement,
     return;
   }
 
-  // Step 9.
+  // 11. Set element's custom element state to "custom".
+  data->mState = CustomElementData::State::eCustom;
+  aElement->SetDefined(true);
+
+  // 10. If element is a form-associated custom element, then:
   if (data->IsFormAssociated()) {
     ElementInternals* internals = data->GetElementInternals();
     MOZ_ASSERT(internals);
@@ -1390,10 +1394,6 @@ void CustomElementRegistry::Upgrade(Element* aElement,
 
     internals->UpdateFormOwner();
   }
-
-  // Step 10.
-  data->mState = CustomElementData::State::eCustom;
-  aElement->SetDefined(true);
 }
 
 already_AddRefed<nsISupports> CustomElementRegistry::CallGetCustomInterface(

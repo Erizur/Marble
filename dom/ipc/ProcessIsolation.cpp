@@ -210,9 +210,14 @@ static const char* WorkerKindName(WorkerKind aWorkerKind) {
  * When handling a navigation, this method will be called twice: first with the
  * channel's creation URI, and then it will be called with a result principal's
  * URI.
+ *
+ * `aIsWorker` selects process isolation for a remote worker rather than for a
+ * document; see the file:// URI allowlist handling below for why the two
+ * differ.
  */
 static IsolationBehavior IsolationBehaviorForURI(nsIURI* aURI, bool aIsSubframe,
-                                                 bool aForChannelCreationURI) {
+                                                 bool aForChannelCreationURI,
+                                                 bool aIsWorker) {
   MOZ_ASSERT(NS_IsMainThread());
 
   nsAutoCString scheme;
@@ -308,7 +313,8 @@ static IsolationBehavior IsolationBehaviorForURI(nsIURI* aURI, bool aIsSubframe,
   nsCOMPtr<nsIURI> inner;
   if (nsCOMPtr<nsINestedURI> nested = do_QueryInterface(aURI);
       nested && NS_SUCCEEDED(nested->GetInnerURI(getter_AddRefs(inner)))) {
-    return IsolationBehaviorForURI(inner, aIsSubframe, aForChannelCreationURI);
+    return IsolationBehaviorForURI(inner, aIsSubframe, aForChannelCreationURI,
+                                   aIsWorker);
   }
 
   // If we're doing the initial check based on the channel creation URI, stop
@@ -360,12 +366,22 @@ static IsolationBehavior IsolationBehaviorForURI(nsIURI* aURI, bool aIsSubframe,
     }
   }
 
-  nsCOMPtr<nsIScriptSecurityManager> secMan =
-      nsContentUtils::GetSecurityManager();
-  bool inFileURIAllowList = false;
-  if (NS_SUCCEEDED(secMan->InFileURIAllowlist(aURI, &inFileURIAllowList)) &&
-      inFileURIAllowList) {
-    return IsolationBehavior::File;
+  // If the domain is allowlisted to allow it to use file:// URIs, then we have
+  // to run it in a file content process, in case it uses file:// sub-resources.
+  //
+  // This only applies to documents. A worker has no sub-resources of its own to
+  // render, and forcing it into the file process would additionally mean
+  // rejecting it outright whenever the requesting process isn't the file
+  // process (see ValidateBehaviorForWorker). Workers were likewise excluded
+  // from this rule back when it lived in E10SUtils; see bug 2064648.
+  if (!aIsWorker) {
+    nsCOMPtr<nsIScriptSecurityManager> secMan =
+        nsContentUtils::GetSecurityManager();
+    bool inFileURIAllowList = false;
+    if (NS_SUCCEEDED(secMan->InFileURIAllowlist(aURI, &inFileURIAllowList)) &&
+        inFileURIAllowList) {
+      return IsolationBehavior::File;
+    }
   }
 
   return IsolationBehavior::WebContent;
@@ -626,7 +642,8 @@ Result<NavigationIsolationOptions, nsresult> IsolationOptionsForNavigation(
   // First, check for any special cases which should be handled using the
   // channel creation URI, and handle them.
   auto behavior = IsolationBehaviorForURI(aChannelCreationURI, aParentWindow,
-                                          /* aForChannelCreationURI */ true);
+                                          /* aForChannelCreationURI */ true,
+                                          /* aIsWorker */ false);
   MOZ_LOG(gProcessIsolationLog, LogLevel::Verbose,
           ("Channel Creation Isolation Behavior: %s",
            IsolationBehaviorName(behavior)));
@@ -731,7 +748,8 @@ Result<NavigationIsolationOptions, nsresult> IsolationOptionsForNavigation(
       }
     } else if (nsCOMPtr<nsIURI> principalURI = resultOrPrecursor->GetURI()) {
       behavior = IsolationBehaviorForURI(principalURI, aParentWindow,
-                                         /* aForChannelCreationURI */ false);
+                                         /* aForChannelCreationURI */ false,
+                                         /* aIsWorker */ false);
     }
   }
 
@@ -926,6 +944,48 @@ Result<NavigationIsolationOptions, nsresult> IsolationOptionsForNavigation(
   return options;
 }
 
+static bool ValidateBehaviorForWorker(IsolationBehavior aBehavior,
+                                      const nsACString& aCurrentRemoteType) {
+  if (aCurrentRemoteType == NOT_REMOTE_TYPE) {
+    return true;
+  }
+
+  switch (aBehavior) {
+    case IsolationBehavior::Parent:
+      // Can't load in a parent process from any other process.
+      return false;
+
+    case IsolationBehavior::AboutReader:
+    case IsolationBehavior::Inherit:
+      // Not relevant for Workers.
+      return false;
+
+    case IsolationBehavior::WebContent:
+    case IsolationBehavior::ForceWebRemoteType:
+    case IsolationBehavior::Anywhere:
+      return true;
+
+    case IsolationBehavior::Extension:
+      // Extension iframes could be loaded in any process.
+      return true;
+
+    case IsolationBehavior::PrivilegedAbout:
+      return aCurrentRemoteType == PRIVILEGEDABOUT_REMOTE_TYPE;
+
+    case IsolationBehavior::File:
+      return !StaticPrefs::browser_tabs_remote_separateFileUriProcess() ||
+             aCurrentRemoteType == FILE_REMOTE_TYPE;
+
+    case IsolationBehavior::PrivilegedMozilla:
+      return aCurrentRemoteType == PRIVILEGEDMOZILLA_REMOTE_TYPE;
+
+    case IsolationBehavior::Error:
+      break;
+  }
+
+  return false;
+}
+
 Result<WorkerIsolationOptions, nsresult> IsolationOptionsForWorker(
     nsIPrincipal* aPrincipal, WorkerKind aWorkerKind,
     const nsACString& aCurrentRemoteType, bool aUseRemoteSubframes) {
@@ -989,7 +1049,8 @@ Result<WorkerIsolationOptions, nsresult> IsolationOptionsForWorker(
   if (resultOrPrecursor->GetIsContentPrincipal()) {
     nsCOMPtr<nsIURI> uri = resultOrPrecursor->GetURI();
     behavior = IsolationBehaviorForURI(uri, /* aIsSubframe */ false,
-                                       /* aForChannelCreationURI */ false);
+                                       /* aForChannelCreationURI */ false,
+                                       /* aIsWorker */ true);
   } else if (resultOrPrecursor->IsSystemPrincipal()) {
     MOZ_ASSERT(aWorkerKind == WorkerKindShared);
 
@@ -1034,6 +1095,15 @@ Result<WorkerIsolationOptions, nsresult> IsolationOptionsForWorker(
             ("Ensuring sandboxed null-principal shared worker doesn't load in "
              "the parent process"));
     behavior = IsolationBehavior::ForceWebRemoteType;
+  }
+
+  if (!ValidateBehaviorForWorker(behavior, aCurrentRemoteType)) {
+    MOZ_LOG(
+        gProcessIsolationLog, LogLevel::Warning,
+        ("Rejecting invalid worker isolation behavior %s for remote type %s",
+         IsolationBehaviorName(behavior),
+         PromiseFlatCString(aCurrentRemoteType).get()));
+    return Err(NS_ERROR_FAILURE);
   }
 
   if (behavior != IsolationBehavior::WebContent) {
@@ -1252,7 +1322,8 @@ bool ValidatePrincipalCouldPotentiallyBeLoadedBy(
     // NOTE: The logic for about URIs is somewhat complex, so we lean on
     // IsolationBehaviorForURI to ensure it matches.
     switch (IsolationBehaviorForURI(aboutURI, /* aIsSubframe */ false,
-                                    /* aForChannelCreationURI */ true)) {
+                                    /* aForChannelCreationURI */ true,
+                                    /* aIsWorker */ false)) {
       case IsolationBehavior::Parent:
         return false;
       case IsolationBehavior::Anywhere:

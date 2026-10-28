@@ -146,3 +146,8 @@ Finally, apply the patches:
 - opusenc-dtx.patch to allow enabling DTX in the opus encoder.
 - libaomenc-svc.patch to allow configuring SVC in the libaom encoder.
 - vp9-get-format-rollback.patch to fix a VP9 decoder error handling issue.
+- flac-alloc-failure.patch fix leak in flac decoder in case of alloc failure
+- cbs_decoder_sync.patch to keep CBS and the decoder in sync
+- vp9-flush-unref-next-refs.patch to clear VP9 frame-thread references on
+  flush. Cherry-pick of FFmpeg commit a024f8c5413d, which is not in the 9.0
+  release branch; drop this patch once ffvpx is updated past it.

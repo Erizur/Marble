@@ -7214,8 +7214,12 @@ std::pair<uint64_t, uint64_t> QuotaManager::GetUsageAndLimitForEstimate(
             RefPtr<OriginInfo> originInfo =
                 groupInfo->LockedGetOriginInfo(aOriginMetadata.mOrigin);
 
+            // A persisted origin is exempt from group-limit eviction and is
+            // bound by the global temporary storage limit instead, so it
+            // reports its own origin usage against that limit.
             if (originInfo && originInfo->LockedPersisted()) {
-              return std::pair(mTemporaryStorageUsage, mTemporaryStorageLimit);
+              return std::pair(originInfo->LockedUsage(),
+                               mTemporaryStorageLimit);
             }
           }
 

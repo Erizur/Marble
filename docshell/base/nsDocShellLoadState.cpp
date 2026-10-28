@@ -9,15 +9,18 @@
 #include "nsDocShell.h"
 #include "nsILoadInfo.h"
 #include "nsIProtocolHandler.h"
+#include "nsIScriptSecurityManager.h"
 #include "nsISHEntry.h"
 #include "nsIURIFixup.h"
 #include "nsIWebNavigation.h"
 #include "nsIChannel.h"
 #include "nsIURLQueryStringStripper.h"
 #include "nsIXULRuntime.h"
+#include "nsAboutProtocolUtils.h"
 #include "nsNetUtil.h"
 #include "nsQueryObject.h"
 #include "ReferrerInfo.h"
+#include "xpcpublic.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Components.h"
@@ -26,6 +29,7 @@
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/FormData.h"
 #include "mozilla/dom/LoadURIOptionsBinding.h"
+#include "mozilla/dom/ProcessIsolation.h"
 #include "mozilla/dom/nsHTTPSOnlyUtils.h"
 #include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/StaticPrefs_fission.h"
@@ -42,6 +46,69 @@ using namespace mozilla::dom;
 
 // Global reference to the URI fixup service.
 static mozilla::StaticRefPtr<nsIURIFixup> sURIFixup;
+
+namespace mozilla::dom {
+
+bool ContentTriggeredURILoadIsAllowed(nsIURI* aURI,
+                                      const nsACString& aEffectiveRemoteType) {
+  MOZ_ASSERT(aEffectiveRemoteType != NOT_REMOTE_TYPE);
+  MOZ_ASSERT(!aURI->SchemeIs("javascript"), "Should have been blocked already");
+
+  // view-source: URIs are not linkable from web content, but the "View Page
+  // Source" context menu has the content process itself load them,
+  // so decide based on the inner URI instead.
+  if (aURI->SchemeIs("view-source")) {
+    nsCOMPtr<nsINestedURI> nestedURI = do_QueryInterface(aURI);
+    MOZ_ASSERT(nestedURI);
+
+    nsCOMPtr<nsIURI> innerURI;
+    return NS_SUCCEEDED(nestedURI->GetInnerURI(getter_AddRefs(innerURI))) &&
+           ContentTriggeredURILoadIsAllowed(innerURI, aEffectiveRemoteType);
+  }
+
+  // A null principal is the least privileged principal there is, so any URI it
+  // is allowed to link to may be loaded from any content process.
+  nsCOMPtr<nsIPrincipal> genericNullPrincipal = NullPrincipal::Create({});
+
+  nsCOMPtr<nsIScriptSecurityManager> secMan =
+      do_GetService(NS_SCRIPTSECURITYMANAGER_CONTRACTID);
+
+  if (NS_SUCCEEDED(secMan->CheckLoadURIWithPrincipal(
+          genericNullPrincipal, aURI,
+          nsIScriptSecurityManager::DISALLOW_SCRIPT |
+              nsIScriptSecurityManager::DONT_REPORT_ERRORS,
+          0))) {
+    return true;
+  }
+
+  nsCOMPtr<nsIPrincipal> principal =
+      BasePrincipal::CreateContentPrincipal(aURI, {});
+  if (principal->GetIsNullPrincipal()) {
+    // Only allow null principals from URIs that have the
+    // URI_LOADABLE_BY_SUBSUMERS (i.e. blob:) flag. Other null principals likely
+    // correspond to internal, unsafe-to-load in content, resources.
+    bool loadableBySubsumers = false;
+    if (NS_FAILED(NS_URIChainHasFlags(
+            aURI, nsIProtocolHandler::URI_LOADABLE_BY_SUBSUMERS,
+            &loadableBySubsumers))) {
+      return false;
+    }
+    return loadableBySubsumers;
+  }
+
+  // Automation-Only: Allow loading of chrome://reftest/* URLs.
+  if (aURI->SchemeIs("chrome") && xpc::IsInAutomation()) {
+    nsAutoCString host;
+    if (NS_SUCCEEDED(aURI->GetHost(host)) && host.EqualsLiteral("reftest")) {
+      return true;
+    }
+  }
+
+  return ValidatePrincipalCouldPotentiallyBeLoadedBy(principal,
+                                                     aEffectiveRemoteType, {});
+}
+
+}  // namespace mozilla::dom
 
 nsDocShellLoadState::nsDocShellLoadState(nsIURI* aURI)
     : nsDocShellLoadState(aURI, nsContentUtils::GenerateLoadIdentifier()) {}
@@ -155,6 +222,73 @@ nsDocShellLoadState::nsDocShellLoadState(
       if (mRemoteTypeOverride.isSome()) {
         aActor->FatalError("RemoteTypeOverride can only be set by parent");
         return;
+      }
+    }
+
+    if (!ValidatePrincipalCouldPotentiallyBeLoadedBy(
+            mTriggeringPrincipal, GetEffectiveTriggeringRemoteType(),
+            {ValidatePrincipalOptions::AllowExpanded,
+             ValidatePrincipalOptions::AllowSystem})) {
+      aActor->FatalError(
+          "nsDocShellLoadState with invalid triggering principal");
+      return;
+    }
+    EnumSet<ValidatePrincipalOptions> principalToInheritOptions = {
+        ValidatePrincipalOptions::AllowNullPtr};
+    if (xpc::IsInAutomation()) {
+      // Bug 2011307, chrome reftests run in content.
+      principalToInheritOptions += ValidatePrincipalOptions::AllowSystem;
+    }
+    if (!ValidatePrincipalCouldPotentiallyBeLoadedBy(
+            mPrincipalToInherit, GetEffectiveTriggeringRemoteType(),
+            principalToInheritOptions)) {
+      aActor->FatalError("nsDocShellLoadState with invalid principalToInherit");
+      return;
+    }
+
+    const nsCString& effectiveRemoteType = GetEffectiveTriggeringRemoteType();
+    if (effectiveRemoteType != NOT_REMOTE_TYPE &&
+        !ContentTriggeredURILoadIsAllowed(mURI, effectiveRemoteType)) {
+      nsAutoCString aboutModuleOrScheme;
+      if (mURI->SchemeIs("about")) {
+        (void)NS_GetAboutModuleName(mURI, aboutModuleOrScheme);
+        aboutModuleOrScheme.InsertLiteral("about:", 0);
+      } else {
+        mURI->GetScheme(aboutModuleOrScheme);
+        aboutModuleOrScheme.AppendLiteral(":");
+      }
+      nsCString remotePrefix(RemoteTypePrefix(effectiveRemoteType));
+      aActor->FatalError(
+          nsPrintfCString("Illegal load attempt of %s URL from %s",
+                          aboutModuleOrScheme.get(), remotePrefix.get())
+              .get());
+      return;
+    }
+
+    if (effectiveRemoteType != NOT_REMOTE_TYPE) {
+      // Result and Original URI are mostly used by channels to track redirect
+      // information, which gets stored in session history.
+      // Content uses them rarely for meta-refresh or session history and
+      // should pass these checks.
+      if (mResultPrincipalURI) {
+        bool equal = false;
+        if (!mResultPrincipalURIIsSome ||
+            NS_FAILED(mResultPrincipalURI->Equals(mURI, &equal)) || !equal) {
+          CrashReporter::AppendAppNotesToCrashReport(
+              "nsDocShellLoadState with invalid mResultPrincipalURI"_ns);
+          *aReadSuccess = false;
+          return;
+        }
+      }
+
+      if (mOriginalURI && !mResultPrincipalURI) {
+        bool equal = false;
+        if (NS_FAILED(mOriginalURI->Equals(mURI, &equal)) || !equal) {
+          CrashReporter::AppendAppNotesToCrashReport(
+              "nsDocShellLoadState with invalid mOriginalURI"_ns);
+          *aReadSuccess = false;
+          return;
+        }
       }
     }
   }

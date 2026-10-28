@@ -778,9 +778,13 @@ already_AddRefed<gfx::SourceSurface> CanvasChild::SnapshotExternalCanvas(
   // running under the same thread, and that events can be paused or resumed
   // while synchronizing between WebGL and AC2D.
   if (!gfx::gfxVars::UseAcceleratedCanvas2D() ||
-      !StaticPrefs::gfx_canvas_remote_use_canvas_translator_event_AtStartup()) {
+      !StaticPrefs::gfx_canvas_remote_use_canvas_translator_event_AtStartup() ||
+      !aActor) {
     return nullptr;
   }
+
+  uint32_t managerId = static_cast<gfx::CanvasManagerChild*>(Manager())->Id();
+  ActorId canvasId = aActor->Id();
 
   gfx::SurfaceFormat format = aCanvas->GetIsOpaque()
                                   ? gfx::SurfaceFormat::B8G8R8X8
@@ -805,9 +809,6 @@ already_AddRefed<gfx::SourceSurface> CanvasChild::SnapshotExternalCanvas(
   // ensure this event is not translated until the snapshot is generated first.
   mRecorder->RecordEvent(
       RecordedResolveExternalSnapshot(syncId, gfx::ReferencePtr(surface)));
-
-  uint32_t managerId = static_cast<gfx::CanvasManagerChild*>(Manager())->Id();
-  ActorId canvasId = aActor->Id();
 
   // Actually send the request via IPDL to snapshot the external WebGL canvas.
   SendSnapshotExternalCanvas(syncId, managerId, canvasId);

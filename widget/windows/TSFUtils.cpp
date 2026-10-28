@@ -632,6 +632,14 @@ inline std::ostream& operator<<(
                  << (static_cast<bool>(aGotFocus) ? "Yes" : "No");
 }
 
+const GUID& TSFUtils::TSATTRID_Text_VerticalWriting_Ref() {
+  return TSATTRID_Text_VerticalWriting;
+}
+
+const GUID& TSFUtils::TSATTRID_Text_Orientation_Ref() {
+  return TSATTRID_Text_Orientation;
+}
+
 nsresult TSFUtils::OnFocusChange(GotFocus aGotFocus, nsWindow* aFocusedWindow,
                                  const InputContext& aContext) {
   MOZ_LOG(gIMELog, LogLevel::Debug,
@@ -996,38 +1004,6 @@ bool TSFUtils::ShouldSetInputScopeOfURLBarToDefault() {
       return true;
     default:
       return false;
-  }
-}
-
-TSFUtils::AttrIndex TSFUtils::GetRequestedAttrIndex(const TS_ATTRID& aAttrID) {
-  if (IsEqualGUID(aAttrID, GUID_PROP_INPUTSCOPE)) {
-    return AttrIndex::InputScope;
-  }
-  if (IsEqualGUID(aAttrID, sGUID_PROP_URL)) {
-    return AttrIndex::DocumentURL;
-  }
-  if (IsEqualGUID(aAttrID, TSATTRID_Text_VerticalWriting)) {
-    return AttrIndex::TextVerticalWriting;
-  }
-  if (IsEqualGUID(aAttrID, TSATTRID_Text_Orientation)) {
-    return AttrIndex::TextOrientation;
-  }
-  return AttrIndex::NotSupported;
-}
-
-TS_ATTRID TSFUtils::GetAttrID(AttrIndex aIndex) {
-  switch (aIndex) {
-    case AttrIndex::InputScope:
-      return GUID_PROP_INPUTSCOPE;
-    case AttrIndex::DocumentURL:
-      return sGUID_PROP_URL;
-    case AttrIndex::TextVerticalWriting:
-      return TSATTRID_Text_VerticalWriting;
-    case AttrIndex::TextOrientation:
-      return TSATTRID_Text_Orientation;
-    default:
-      MOZ_CRASH("Invalid index? Or not implemented yet?");
-      return GUID_NULL;
   }
 }
 

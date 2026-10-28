@@ -1577,6 +1577,12 @@ class HTMLMediaElement : public nsGenericHTMLElement,
   // redirects etc.
   nsCOMPtr<nsIURI> mLoadingSrc;
 
+  // The URI of the resource actually loaded. Starts equal to mLoadingSrc and
+  // is updated to the post-redirect URI on each redirect. Used to decide
+  // cross-origin load-error redaction; null means we have no captured URI, and
+  // is treated as cross-origin.
+  nsCOMPtr<nsIURI> mLoadingSrcFinalURI;
+
   // The triggering principal for the current source.
   nsCOMPtr<nsIPrincipal> mLoadingSrcTriggeringPrincipal;
 

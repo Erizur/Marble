@@ -1152,12 +1152,10 @@ class CanvasRenderingContext2D : public nsICanvasRenderingContextInternal,
 
   AutoTArray<ContextState, 3> mStyleStack;
 
-  inline ContextState& CurrentState() {
-    return mStyleStack[mStyleStack.Length() - 1];
-  }
+  inline ContextState& CurrentState() { return mStyleStack.LastElement(); }
 
   inline const ContextState& CurrentState() const {
-    return mStyleStack[mStyleStack.Length() - 1];
+    return mStyleStack.LastElement();
   }
 
   inline const ContextState& PreviousState() const {

@@ -82,6 +82,17 @@ static nsCString ServiceWorkerIsolatedRemoteType(nsIPrincipal* aPrincipal) {
   return SERVICEWORKER_REMOTE_TYPE + "="_ns + origin;
 }
 
+// When file URI process separation is disabled (as is the default on
+// Android), a file: shared worker is allowed to load in any remote type,
+// rather than being rejected when it isn't already in a file: process.
+static Result<RemoteTypes, nsresult> FileWorkerOutsideFileProcessExpected(
+    const nsCString& aFileRemoteType) {
+  if (StaticPrefs::browser_tabs_remote_separateFileUriProcess()) {
+    return Err(NS_ERROR_UNEXPECTED);
+  }
+  return RemoteTypes{aFileRemoteType, aFileRemoteType};
+}
+
 TEST(ProcessIsolationTest, WorkerOptions)
 {
   // Forcibly enable the privileged mozilla content process for the duration of
@@ -159,11 +170,16 @@ TEST(ProcessIsolationTest, WorkerOptions)
                        WEB_REMOTE_TYPE}},
       {.mPrincipal = extensionPrincipal,
        .mWorkerKind = WorkerKindService,
-       .mExpected = RemoteTypes{extensionRemoteType, extensionRemoteType}},
+       .mExpected = RemoteTypes{extensionRemoteType, extensionRemoteType},
+       .mCurrentRemoteType = EXTENSION_REMOTE_TYPE},
+      {.mPrincipal = privilegedMozillaPrincipal,
+       .mWorkerKind = WorkerKindService,
+       .mExpected = Err(NS_ERROR_UNEXPECTED)},
       {.mPrincipal = privilegedMozillaPrincipal,
        .mWorkerKind = WorkerKindService,
        .mExpected = RemoteTypes{PRIVILEGEDMOZILLA_REMOTE_TYPE,
-                                PRIVILEGEDMOZILLA_REMOTE_TYPE}},
+                                PRIVILEGEDMOZILLA_REMOTE_TYPE},
+       .mCurrentRemoteType = PRIVILEGEDMOZILLA_REMOTE_TYPE},
 
       // Shared Worker loaded from within a webCOOP+COEP remote type process,
       // should load elsewhere.
@@ -197,8 +213,7 @@ TEST(ProcessIsolationTest, WorkerOptions)
        .mWorkerKind = WorkerKindShared,
        .mExpected = Err(NS_ERROR_UNEXPECTED)},
 
-      // Content principals should load in the appropriate remote types,
-      // ignoring the current remote type.
+      // Content principals should load in the appropriate remote types.
       {.mPrincipal = secureComPrincipal,
        .mWorkerKind = WorkerKindShared,
        .mExpected = RemoteTypes{WebIsolatedRemoteType(secureComPrincipal),
@@ -213,18 +228,98 @@ TEST(ProcessIsolationTest, WorkerOptions)
                                 WEB_REMOTE_TYPE}},
       {.mPrincipal = filePrincipal,
        .mWorkerKind = WorkerKindShared,
-       .mExpected = RemoteTypes{fileRemoteType, fileRemoteType}},
+       .mExpected = FileWorkerOutsideFileProcessExpected(fileRemoteType)},
+      {.mPrincipal = filePrincipal,
+       .mWorkerKind = WorkerKindShared,
+       .mExpected = RemoteTypes{fileRemoteType, fileRemoteType},
+       .mCurrentRemoteType = FILE_REMOTE_TYPE},
       {.mPrincipal = extensionPrincipal,
        .mWorkerKind = WorkerKindShared,
-       .mExpected = RemoteTypes{extensionRemoteType, extensionRemoteType}},
+       .mExpected = RemoteTypes{extensionRemoteType, extensionRemoteType},
+       .mCurrentRemoteType = EXTENSION_REMOTE_TYPE},
+      {.mPrincipal = privilegedMozillaPrincipal,
+       .mWorkerKind = WorkerKindShared,
+       .mExpected = Err(NS_ERROR_UNEXPECTED)},
       {.mPrincipal = privilegedMozillaPrincipal,
        .mWorkerKind = WorkerKindShared,
        .mExpected = RemoteTypes{PRIVILEGEDMOZILLA_REMOTE_TYPE,
-                                PRIVILEGEDMOZILLA_REMOTE_TYPE}},
+                                PRIVILEGEDMOZILLA_REMOTE_TYPE},
+       .mCurrentRemoteType = PRIVILEGEDMOZILLA_REMOTE_TYPE},
       {.mPrincipal = nullSecureComPrecursorPrincipal,
        .mWorkerKind = WorkerKindShared,
        .mExpected = RemoteTypes{WebIsolatedRemoteType(secureComPrincipal),
                                 WEB_REMOTE_TYPE}},
+  };
+
+  for (auto& expectation : expectations) {
+    expectation.Check(true);
+    expectation.Check(false);
+  }
+}
+
+// The file:// URI allowlist is populated from the `capability.policy.*` prefs,
+// which in practice are written by the LocalFileLinks enterprise policy so that
+// an intranet origin may link to files on a network share. Historically that
+// allowlist only made documents load in the file: content process; workers were
+// explicitly excluded (see the `!aIsWorker` guard that used to live in
+// E10SUtils). Since bug 1850589 dropped that exclusion, a service worker on an
+// allowlisted origin resolves to IsolationBehavior::File and is then rejected
+// outright by ValidateBehaviorForWorker, because ServiceWorkerPrivate passes
+// the shared "web" remote type rather than the file remote type.
+TEST(ProcessIsolationTest, FileURIAllowlistedWorkerOptions)
+{
+  MOZ_ALWAYS_SUCCEEDS(Preferences::SetCString("capability.policy.policynames",
+                                              "localfilelinks_policy"));
+  MOZ_ALWAYS_SUCCEEDS(Preferences::SetCString(
+      "capability.policy.localfilelinks_policy.checkloaduri.enabled",
+      "allAccess"));
+  MOZ_ALWAYS_SUCCEEDS(Preferences::SetCString(
+      "capability.policy.localfilelinks_policy.sites", "https://example.com"));
+  auto cleanup = MakeScopeExit([&] {
+    MOZ_ALWAYS_SUCCEEDS(
+        Preferences::ClearUser("capability.policy.policynames"));
+    MOZ_ALWAYS_SUCCEEDS(Preferences::ClearUser(
+        "capability.policy.localfilelinks_policy.checkloaduri.enabled"));
+    MOZ_ALWAYS_SUCCEEDS(Preferences::ClearUser(
+        "capability.policy.localfilelinks_policy.sites"));
+  });
+
+  nsCOMPtr<nsIPrincipal> allowlistedPrincipal =
+      MakeTestPrincipal("https://example.com");
+  nsCOMPtr<nsIPrincipal> filePrincipal =
+      MakeTestPrincipal("file:///path/to/dir");
+
+  nsCString fileRemoteType =
+      StaticPrefs::browser_tabs_remote_separateFileUriProcess()
+          ? FILE_REMOTE_TYPE
+          : WEB_REMOTE_TYPE;
+
+  WorkerExpectation expectations[] = {
+      // Being in the file:// URI allowlist must not change worker process
+      // selection: these are the same expectations as for a principal which
+      // isn't allowlisted at all. The current remote type mirrors what
+      // ServiceWorkerPrivate::Initialize() passes for a service worker.
+      {.mPrincipal = allowlistedPrincipal,
+       .mWorkerKind = WorkerKindService,
+       .mExpected =
+           RemoteTypes{ServiceWorkerIsolatedRemoteType(allowlistedPrincipal),
+                       WEB_REMOTE_TYPE},
+       .mCurrentRemoteType = WEB_REMOTE_TYPE},
+      {.mPrincipal = allowlistedPrincipal,
+       .mWorkerKind = WorkerKindShared,
+       .mExpected = RemoteTypes{WebIsolatedRemoteType(allowlistedPrincipal),
+                                WEB_REMOTE_TYPE},
+       .mCurrentRemoteType = WEB_REMOTE_TYPE},
+
+      // An actual file: principal is still confined to the file process,
+      // regardless of the allowlist.
+      {.mPrincipal = filePrincipal,
+       .mWorkerKind = WorkerKindShared,
+       .mExpected = FileWorkerOutsideFileProcessExpected(fileRemoteType)},
+      {.mPrincipal = filePrincipal,
+       .mWorkerKind = WorkerKindShared,
+       .mExpected = RemoteTypes{fileRemoteType, fileRemoteType},
+       .mCurrentRemoteType = FILE_REMOTE_TYPE},
   };
 
   for (auto& expectation : expectations) {

@@ -5,6 +5,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <utility>
+
 #include "nsColorPicker.h"
 #include "nsCocoaUtils.h"
 #include "nsThreadUtils.h"
@@ -144,14 +146,22 @@ nsresult nsColorPicker::OpenNative() {
 
 void nsColorPicker::Update(NSColor* aColor) {
   GetHexStringFromNSColor(aColor, mInitialColor);
-  mCallback->Update(mInitialColor);
+  if (mCallback) {
+    mCallback->Update(mInitialColor);
+  }
 }
 
 void nsColorPicker::Done() {
+  // A null callback means a re-entrant call; the outer one owns the teardown.
+  nsCOMPtr<nsIColorPickerShownCallback> callback = std::move(mCallback);
+  if (!callback) {
+    return;
+  }
+
   [mColorPanelWrapper close];
   [mColorPanelWrapper release];
   mColorPanelWrapper = nullptr;
-  mCallback->Done(u""_ns);
-  mCallback = nullptr;
+
+  callback->Done(u""_ns);
   NS_RELEASE_THIS();
 }

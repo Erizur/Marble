@@ -3198,6 +3198,12 @@
   value: false
   mirror: always
 
+# Whether or not system IndexedDB access from a content process is allowed.
+- name: dom.indexedDB.testing.allowContentSystem
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 # Whether or not indexedDB experimental features are enabled.
 - name: dom.indexedDB.experimental
   type: RelaxedAtomicBool
@@ -13090,6 +13096,14 @@
 # When true, the hashing of the certificate will be done with the hashing
 # algorithm specified in the cert instead of SHA256.
 - name: network.auth.sspi_detect_hash
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
+# When true, Negotiate authentication sends a tls-server-end-point channel
+# binding token, as required by servers with Windows Extended Protection
+# enabled. Only has an effect when the SSPI auth module is in use.
+- name: network.auth.negotiate_channel_binding
   type: RelaxedAtomicBool
   value: true
   mirror: always

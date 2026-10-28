@@ -779,7 +779,6 @@ enum class RecorderType : int8_t {
 
 enum class FontType : int8_t {
   DWRITE,
-  GDI,
   MAC,
   FONTCONFIG,
   FREETYPE,

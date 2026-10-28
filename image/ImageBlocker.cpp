@@ -25,9 +25,7 @@ ImageBlocker::ShouldLoad(nsIURI* aContentLocation, nsILoadInfo* aLoadInfo,
     return NS_OK;
   }
 
-  ExtContentPolicyType contentType = aLoadInfo->GetExternalContentPolicyType();
-  if (contentType != ExtContentPolicy::TYPE_IMAGE &&
-      contentType != ExtContentPolicy::TYPE_IMAGESET) {
+  if (!nsContentUtils::IsImageType(aLoadInfo->GetExternalContentPolicyType())) {
     return NS_OK;
   }
 

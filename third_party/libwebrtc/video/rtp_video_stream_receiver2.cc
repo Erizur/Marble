@@ -872,13 +872,13 @@ void RtpVideoStreamReceiver2::OnInsertedPacket(
 
       const video_coding::PacketBuffer::Packet& last_packet = *packet;
       OnAssembledFrame(std::make_unique<RtpFrameObject>(
-          first_packet->seq_num(),                              //
-          last_packet.seq_num(),                                //
-          last_packet.marker_bit,                               //
-          max_nack_count,                                       //
-          min_recv_time,                                        //
-          max_recv_time,                                        //
-          first_packet->timestamp,                              //
+          static_cast<uint16_t>(first_packet->seq_num()),  //
+          static_cast<uint16_t>(last_packet.seq_num()),    //
+          last_packet.marker_bit,                          //
+          max_nack_count,                                  //
+          min_recv_time,                                   //
+          max_recv_time,                                   //
+          first_packet->timestamp,                         //
           ntp_estimator_.Estimate(first_packet->timestamp),     //
           last_packet.video_header.video_timing,                //
           first_packet->payload_type,                           //
@@ -1159,8 +1159,9 @@ void RtpVideoStreamReceiver2::ReceivePacket(const RtpPacketReceived& packet) {
     // Padding or keep-alive packet.
     // TODO(nisse): Could drop empty packets earlier, but need to figure out how
     // they should be counted in stats.
-    NotifyReceiverOfEmptyPacket(packet.SequenceNumber(),
-                                IsH26xPayloadType(packet.PayloadType()));
+    NotifyReceiverOfEmptyPacket(
+        rtp_seq_num_unwrapper_.Unwrap(packet.SequenceNumber()),
+        IsH26xPayloadType(packet.PayloadType()));
     return;
   }
   if (packet.PayloadType() == red_payload_type_) {
@@ -1230,8 +1231,9 @@ void RtpVideoStreamReceiver2::ParseAndHandleEncapsulatingHeader(
   if (packet.payload()[0] == ulpfec_receiver_->ulpfec_payload_type()) {
     // Notify video_receiver about received FEC packets to avoid NACKing these
     // packets.
-    NotifyReceiverOfEmptyPacket(packet.SequenceNumber(),
-                                IsH26xPayloadType(packet.PayloadType()));
+    NotifyReceiverOfEmptyPacket(
+        rtp_seq_num_unwrapper_.Unwrap(packet.SequenceNumber()),
+        IsH26xPayloadType(packet.PayloadType()));
   }
   if (ulpfec_receiver_->AddReceivedRedPacket(packet)) {
     ulpfec_receiver_->ProcessReceivedFec();
@@ -1241,8 +1243,9 @@ void RtpVideoStreamReceiver2::ParseAndHandleEncapsulatingHeader(
 // In the case of a video stream without picture ids and no rtx the
 // RtpFrameReferenceFinder will need to know about padding to
 // correctly calculate frame references.
-void RtpVideoStreamReceiver2::NotifyReceiverOfEmptyPacket(uint16_t seq_num,
+void RtpVideoStreamReceiver2::NotifyReceiverOfEmptyPacket(int64_t seq_number,
                                                           bool is_h26x) {
+  uint16_t seq_num = static_cast<uint16_t>(seq_number);
   RTC_DCHECK_RUN_ON(&packet_sequence_checker_);
   RTC_DCHECK_RUN_ON(&worker_task_checker_);
 
@@ -1251,7 +1254,7 @@ void RtpVideoStreamReceiver2::NotifyReceiverOfEmptyPacket(uint16_t seq_num,
   if (is_h26x && h26x_packet_buffer_) {
     OnInsertedPacket(h26x_packet_buffer_->InsertPadding(seq_num));
   } else {
-    OnInsertedPacket(packet_buffer_.InsertPadding(seq_num));
+    OnInsertedPacket(packet_buffer_.InsertPadding(seq_number));
   }
   if (nack_module_) {
     nack_module_->OnReceivedPacket(seq_num, /*is_recovered=*/false);
@@ -1330,7 +1333,7 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
     int64_t unwrapped_rtp_seq_num = rtp_seq_num_unwrapper_.Unwrap(seq_num);
     packet_infos_.erase(packet_infos_.begin(),
                         packet_infos_.upper_bound(unwrapped_rtp_seq_num));
-    uint32_t num_packets_cleared = packet_buffer_.ClearTo(seq_num);
+    uint32_t num_packets_cleared = packet_buffer_.ClearTo(unwrapped_rtp_seq_num);
     if (num_packets_cleared > 0) {
       TRACE_EVENT2("webrtc",
                    "RtpVideoStreamReceiver2::FrameDecoded Cleared Old Packets",

@@ -127,7 +127,7 @@ using mozilla::dom::geolocation::GeolocationPermissionStatus from "mozilla/dom/G
 
 #if defined(XP_WIN)
 [MoveOnly] using mozilla::UntrustedModulesData from "mozilla/UntrustedModulesData.h";
-[MoveOnly] using mozilla::ModulePaths from "mozilla/UntrustedModulesData.h";
+[MoveOnly] using mozilla::ModuleIdentifiers from "mozilla/UntrustedModulesData.h";
 [MoveOnly] using mozilla::ModulesMapResult from "mozilla/UntrustedModulesData.h";
 #endif  // defined(XP_WIN)
 
@@ -1158,8 +1158,8 @@ parent:
     async StartVisitedQueries(nullable nsIURI[] uri);
     async SetURITitle(nullable nsIURI uri, nsString title);
 
-    async LoadURIExternal(nullable nsIURI uri,
-                          nullable nsIPrincipal triggeringPrincipal,
+    async LoadURIExternal(nsIURI uri,
+                          nsIPrincipal triggeringPrincipal,
                           nullable nsIPrincipal redirectPrincipal,
                           MaybeDiscardedBrowsingContext browsingContext,
                           bool wasExternallyTriggered,
@@ -1736,8 +1736,12 @@ parent:
      * obtain enough information about a DLL file to determine its
      * trustworthiness. This API asks the chrome process to perform that
      * evaluation.
+     *
+     * Each entry carries a handle to the file backing the module, captured by
+     * the DLL blocklist from the handle the loader opened. The parent derives
+     * the module's path from the handle and evaluates the module it targets.
      */
-    async GetModulesTrust(ModulePaths aModPaths, bool aRunAtNormalPriority)
+    async GetModulesTrust(ModuleIdentifiers aModIdents, bool aRunAtNormalPriority)
         returns (ModulesMapResult? modMapResult);
 #endif  // defined(XP_WIN)
 

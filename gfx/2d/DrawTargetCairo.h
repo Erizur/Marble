@@ -154,6 +154,8 @@ class DrawTargetCairo final : public DrawTarget {
       const NativeSurface& aSurface) const override;
   virtual already_AddRefed<DrawTarget> CreateSimilarDrawTarget(
       const IntSize& aSize, SurfaceFormat aFormat) const override;
+  virtual bool CanCreateSimilarDrawTarget(const IntSize& aSize,
+                                          SurfaceFormat aFormat) const override;
   virtual already_AddRefed<DrawTarget> CreateShadowDrawTarget(
       const IntSize& aSize, SurfaceFormat aFormat, float aSigma) const override;
   virtual RefPtr<DrawTarget> CreateClippedDrawTarget(

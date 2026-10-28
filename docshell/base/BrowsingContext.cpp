@@ -71,6 +71,7 @@
 #include "nsIURIFixup.h"
 #include "nsIXULRuntime.h"
 
+#include "nsAboutProtocolUtils.h"
 #include "nsDocShell.h"
 #include "nsDocShellLoadState.h"
 #include "nsFocusManager.h"
@@ -863,6 +864,17 @@ const char* BrowsingContext::BrowsingContextCoherencyChecks(
     COHERENCY_ASSERT(parent->mPrivateBrowsingId == mPrivateBrowsingId);
     COHERENCY_ASSERT(
         parent->mOriginAttributes.EqualsIgnoringFPD(mOriginAttributes));
+  }
+
+  if (aOriginProcess) {
+    if (GetBrowserId() == 0) {
+      return "Content BC must have a nonzero BrowserId";
+    }
+    if (!GetParent()) {
+      uint64_t browserProc =
+          std::get<0>(nsContentUtils::SplitProcessSpecificId(GetBrowserId()));
+      COHERENCY_ASSERT(browserProc == aOriginProcess->ChildID());
+    }
   }
 
   // UseRemoteSubframes and UseRemoteTabs must match.
@@ -2068,6 +2080,31 @@ nsresult BrowsingContext::LoadURI(nsDocShellLoadState* aLoadState,
     MOZ_DIAGNOSTIC_ASSERT(!sourceBC,
                           "Should never see a cross-process javascript: load "
                           "triggered from content");
+  } else {
+    // We do the same check in the nsDocShellLoadState constructor when
+    // deserializing, but that check causes parent processes crashes for loads
+    // started in the parent with a remote effectiveRemoteType.
+    const nsCString& effectiveRemoteType =
+        aLoadState->GetEffectiveTriggeringRemoteType();
+    if (effectiveRemoteType != NOT_REMOTE_TYPE &&
+        !ContentTriggeredURILoadIsAllowed(aLoadState->URI(),
+                                          effectiveRemoteType)) {
+#ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
+      nsAutoCString aboutModuleOrScheme;
+      if (aLoadState->URI()->SchemeIs("about")) {
+        (void)NS_GetAboutModuleName(aLoadState->URI(), aboutModuleOrScheme);
+        aboutModuleOrScheme.InsertLiteral("about:", 0);
+      } else {
+        aLoadState->URI()->GetScheme(aboutModuleOrScheme);
+        aboutModuleOrScheme.AppendLiteral(":");
+      }
+      nsCString remotePrefix(RemoteTypePrefix(effectiveRemoteType));
+      MOZ_CRASH_UNSAFE_PRINTF("Illegal load attempt of %s URL from %s",
+                              aboutModuleOrScheme.get(), remotePrefix.get());
+#endif
+
+      return NS_ERROR_UNEXPECTED;
+    }
   }
 
   MOZ_DIAGNOSTIC_ASSERT(!sourceBC || sourceBC->Group() == Group());

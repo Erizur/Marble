@@ -277,6 +277,12 @@ function makeMockContentAnalysis() {
         Services.obs.notifyObservers(request, "dlp-request-made");
       }
 
+      // If we are checking a file, make sure it exists.
+      if (request.filePath) {
+        const nsiFile = new FileUtils.File(request.filePath);
+        ok(nsiFile.exists(), "File to check exists");
+      }
+
       // Use setTimeout to simulate an async activity.
       setTimeout(async () => {
         if (this.waitForEvent) {

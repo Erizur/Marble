@@ -20,6 +20,7 @@
 #  include "mozilla/Variant.h"
 #  include "mozilla/Vector.h"
 #  include "mozilla/WinHeaderOnlyUtils.h"
+#  include "mozilla/ipc/FileDescriptor.h"
 #  include "nsCOMPtr.h"
 #  include "nsHashKeys.h"
 #  include "nsIFile.h"
@@ -105,28 +106,12 @@ class ModuleRecord final {
 };
 
 /**
- * This type holds module path data using one of two internal representations.
- * It may be created from either a nsTHashtable or a Vector, and may be
- * serialized from either representation into a common format over the wire.
- * Deserialization always uses the Vector representation.
+ * The set of modules a child process wants trust information for. The child
+ * asks about each distinct module once per batch, identifying it by a
+ * read-only duplicate of the section handle it was mapped from, taken by the
+ * DLL blocklist's NtMapViewOfSection hook.
  */
-struct ModulePaths final {
-  using SetType = nsTHashtable<nsStringCaseInsensitiveHashKey>;
-  using VecType = Vector<nsString>;
-
-  Variant<SetType, VecType> mModuleNtPaths;
-
-  template <typename T>
-  explicit ModulePaths(T&& aPaths)
-      : mModuleNtPaths(AsVariant(std::forward<T>(aPaths))) {}
-
-  ModulePaths() : mModuleNtPaths(VecType()) {}
-
-  ModulePaths(const ModulePaths& aOther) = delete;
-  ModulePaths(ModulePaths&& aOther) = default;
-  ModulePaths& operator=(const ModulePaths&) = delete;
-  ModulePaths& operator=(ModulePaths&&) = default;
-};
+using ModuleIdentifiers = nsTArray<mozilla::ipc::FileDescriptor>;
 
 class ProcessedModuleLoadEvent final {
  public:
@@ -412,64 +397,6 @@ struct ParamTraits<mozilla::ModulesMap> {
 };
 
 template <>
-struct ParamTraits<mozilla::ModulePaths> {
-  typedef mozilla::ModulePaths paramType;
-
-  static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    aParam.mModuleNtPaths.match(
-        [aWriter](const paramType::SetType& aSet) { WriteSet(aWriter, aSet); },
-        [aWriter](const paramType::VecType& aVec) {
-          WriteVector(aWriter, aVec);
-        });
-  }
-
-  static bool Read(MessageReader* aReader, paramType* aResult) {
-    uint32_t len;
-    if (!aReader->ReadUInt32(&len)) {
-      return false;
-    }
-
-    // As noted in the comments for ModulePaths, we only deserialize using the
-    // Vector representation.
-    auto& vec = aResult->mModuleNtPaths.as<paramType::VecType>();
-    if (!vec.reserve(len)) {
-      return false;
-    }
-
-    for (uint32_t idx = 0; idx < len; ++idx) {
-      nsString str;
-      if (!ReadParam(aReader, &str)) {
-        return false;
-      }
-
-      if (!vec.emplaceBack(std::move(str))) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
- private:
-  // NB: This function must write out the set in the same format as WriteVector
-  static void WriteSet(MessageWriter* aWriter, const paramType::SetType& aSet) {
-    aWriter->WriteUInt32(aSet.Count());
-    for (const auto& key : aSet.Keys()) {
-      WriteParam(aWriter, key);
-    }
-  }
-
-  // NB: This function must write out the vector in the same format as WriteSet
-  static void WriteVector(MessageWriter* aWriter,
-                          const paramType::VecType& aVec) {
-    aWriter->WriteUInt32(aVec.length());
-    for (auto const& item : aVec) {
-      WriteParam(aWriter, item);
-    }
-  }
-};
-
-template <>
 struct ParamTraits<mozilla::UntrustedModulesData> {
   typedef mozilla::UntrustedModulesData paramType;
 
@@ -652,7 +579,7 @@ namespace mozilla {
 
 // For compiling IPDL on non-Windows platforms
 using UntrustedModulesData = uint32_t;
-using ModulePaths = uint32_t;
+using ModuleIdentifiers = uint32_t;
 using ModulesMapResult = uint32_t;
 
 }  // namespace mozilla

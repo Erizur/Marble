@@ -467,6 +467,7 @@ export class RemoteSettingsExperimentLoader {
       recipes = await client.get({
         forceSync,
         emptyListFallback: false, // Throw instead of returning an empty list.
+        verifySignature: true,
       });
       lazy.log.debug(
         `Got ${recipes.length} recipes from ${client.collectionName}`

@@ -7614,7 +7614,7 @@ void HTMLEditor::NotifyEditingHostMaybeChanged() {
   }
 
   // Compute current editing host.
-  Element* const editingHost = ComputeEditingHost();
+  const RefPtr<Element> editingHost = ComputeEditingHost();
   if (NS_WARN_IF(!editingHost)) {
     return;
   }

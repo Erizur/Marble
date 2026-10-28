@@ -216,13 +216,6 @@ add_task(async function process_switching_through_navigation_features() {
       BrowserTestUtils.startLoadingURIString(browser, TEST_HTTP);
       await BrowserTestUtils.browserLoaded(browser, false, TEST_HTTP);
       checkBrowserRemoteType(browser, E10SUtils.WEB_REMOTE_TYPE);
-
-      // Check that location change causes a change in process type as well.
-      await SpecialPowers.spawn(browser, [ABOUT_NEWTAB], uri => {
-        content.location = uri;
-      });
-      await BrowserTestUtils.browserLoaded(browser, false, ABOUT_NEWTAB);
-      assertIsPrivilegedProcess(browser, "about:newtab after location change");
     }
   );
 

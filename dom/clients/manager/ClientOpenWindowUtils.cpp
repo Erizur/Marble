@@ -409,6 +409,16 @@ RefPtr<ClientOpPromise> ClientOpenWindow(
   nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
   MOZ_DIAGNOSTIC_ASSERT(principal);
 
+  rv = nsContentUtils::GetSecurityManager()->CheckLoadURIWithPrincipal(
+      principal, uri, nsIScriptSecurityManager::DONT_REPORT_ERRORS, 0);
+  if (NS_FAILED(rv)) {
+    nsPrintfCString err("Opening \"%s\" is not allowed", aArgs.url().get());
+    CopyableErrorResult errResult;
+    errResult.ThrowTypeError(err);
+    promise->Reject(errResult, __func__);
+    return promise;
+  }
+
   nsCOMPtr<nsIContentSecurityPolicy> csp;
   if (aArgs.cspInfo().isSome()) {
     csp = CSPInfoToCSP(aArgs.cspInfo().ref(), nullptr);

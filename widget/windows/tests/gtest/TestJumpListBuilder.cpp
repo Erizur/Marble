@@ -17,7 +17,7 @@ PSSTDAPI PropVariantToString(REFPROPVARIANT propvar, PWSTR psz, UINT cch);
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
-
+#include "mozilla/CmdLineAndEnvUtils.h"
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/PromiseNativeHandler.h"
@@ -115,7 +115,17 @@ MATCHER_P(ShellLinksEq, descs,
     }
 
     if (desc.mArguments.WasPassed()) {
-      if (!desc.mArguments.Value().Equals(argsBuf)) {
+      mozilla::CommandLineParserWin<char16_t> parser;
+      parser.HandleCommandLine(nsDependentString(argsBuf));
+
+      const mozilla::dom::Sequence<nsString>& args = desc.mArguments.Value();
+
+      bool same = std::equal(
+          parser.Argv(), parser.Argv() + parser.Argc(), args.cbegin(),
+          args.cend(), [](const char16_t* aParsed, const nsAString& aExpected) {
+            return aExpected == nsDependentString(aParsed);
+          });
+      if (!same) {
         return false;
       }
     } else {
@@ -312,8 +322,8 @@ void GenerateWindowsJumpListShortcutDescriptions(
     desc.mFallbackIconIndex = 0;
 
     if (!(i % 2)) {
-      nsAutoString arguments(u"-arg1 -arg2 -arg3");
-      desc.mArguments.Construct(arguments);
+      desc.mArguments.Construct(nsTArray<nsString>{
+          u"-arg1"_ns, u"argument with a space"_ns, u"-arg3"_ns});
       nsAutoString iconPath(u"C:\\Some\\icon.png");
       desc.mIconPath.Construct(iconPath);
     }

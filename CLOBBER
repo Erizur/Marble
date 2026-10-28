@@ -21,5 +21,4 @@
 # Are you updating CLOBBER because you think it's needed for your WebIDL
 # changes to stick? As of bug 928195, this shouldn't be necessary! Please
 # don't change CLOBBER for WebIDL changes any more.
-
-Merge day clobber 2026-07-20
+Bug 2061009 - Rename of nsMacShellService.cpp to .mm

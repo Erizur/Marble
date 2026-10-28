@@ -284,7 +284,7 @@ already_AddRefed<Promise> ExecuteOpOnMainOrWorkerThread(
       return nullptr;
     }
 
-    nsCOMPtr<nsIPrincipal> principal = doc->NodePrincipal();
+    nsCOMPtr<nsIPrincipal> principal = doc->EffectiveStoragePrincipal();
     MOZ_ASSERT(principal);
 
     // Storage Standard 7. API
@@ -608,7 +608,7 @@ bool EstimateWorkerMainThreadRunnable::MainThreadRun() {
     if (mProxy->CleanedUp()) {
       return true;
     }
-    principal = mProxy->GetWorkerPrivate()->GetPrincipal();
+    principal = mProxy->GetWorkerPrivate()->GetEffectiveStoragePrincipal();
   }
 
   MOZ_ASSERT(principal);
@@ -635,7 +635,7 @@ bool PersistedWorkerMainThreadRunnable::MainThreadRun() {
     if (mProxy->CleanedUp()) {
       return true;
     }
-    principal = mProxy->GetWorkerPrivate()->GetPrincipal();
+    principal = mProxy->GetWorkerPrivate()->GetEffectiveStoragePrincipal();
   }
 
   MOZ_ASSERT(principal);

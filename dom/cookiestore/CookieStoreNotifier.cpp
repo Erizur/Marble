@@ -12,6 +12,7 @@
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/Unused.h"
+#include "nsContentUtils.h"
 #include "nsICookie.h"
 #include "nsICookieNotification.h"
 #include "nsISerialEventTarget.h"
@@ -49,7 +50,9 @@ already_AddRefed<CookieStoreNotifier> CookieStoreNotifier::Create(
   }
 
   nsCString host;
-  if (NS_WARN_IF(NS_FAILED(principal->GetAsciiHost(host))) || host.IsEmpty()) {
+  if (NS_WARN_IF(NS_FAILED(
+          nsContentUtils::GetHostOrIPv6WithBrackets(principal, host))) ||
+      host.IsEmpty()) {
     return nullptr;
   }
 

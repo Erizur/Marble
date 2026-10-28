@@ -17,11 +17,12 @@ namespace mozilla::dom {
 
 class ClientHandleParent;
 class ClientManagerService;
+class ThreadsafeContentParentHandle;
 
 class ClientSourceParent final : public PClientSourceParent {
   ClientInfo mClientInfo;
   Maybe<ServiceWorkerDescriptor> mController;
-  const Maybe<ContentParentId> mContentParentId;
+  const RefPtr<ThreadsafeContentParentHandle> mContentParentHandle;
   RefPtr<ClientManagerService> mService;
   nsTArray<ClientHandleParent*> mHandleList;
   MozPromiseHolder<GenericNonExclusivePromise> mExecutionReadyPromise;
@@ -57,8 +58,9 @@ class ClientSourceParent final : public PClientSourceParent {
  public:
   NS_INLINE_DECL_REFCOUNTING(ClientSourceParent, override)
 
-  explicit ClientSourceParent(const ClientSourceConstructorArgs& aArgs,
-                              const Maybe<ContentParentId>& aContentParentId);
+  explicit ClientSourceParent(
+      const ClientSourceConstructorArgs& aArgs,
+      ThreadsafeContentParentHandle* aContentParentHandle);
 
   mozilla::ipc::IPCResult Init();
 
@@ -74,8 +76,9 @@ class ClientSourceParent final : public PClientSourceParent {
 
   void ClearController();
 
-  bool IsOwnedByProcess(ContentParentId aContentParentId) const {
-    return mContentParentId && mContentParentId.value() == aContentParentId;
+  bool IsOwnedByProcess(
+      ThreadsafeContentParentHandle* aContentParentHandle) const {
+    return mContentParentHandle == aContentParentHandle;
   }
 
   void AttachHandle(ClientHandleParent* aClientSource);

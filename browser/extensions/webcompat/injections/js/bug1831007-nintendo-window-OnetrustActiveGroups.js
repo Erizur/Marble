@@ -21,4 +21,6 @@ console.info(
   "The window.OnetrustActiveGroups property has been shimmed for compatibility reasons. See https://bugzilla.mozilla.org/show_bug.cgi?id=1831007 for details."
 );
 
-window.wrappedJSObject.OnetrustActiveGroups = "";
+if (typeof window.wrappedJSObject.OnetrustActiveGroups == "undefined") {
+  window.wrappedJSObject.OnetrustActiveGroups = null;
+}

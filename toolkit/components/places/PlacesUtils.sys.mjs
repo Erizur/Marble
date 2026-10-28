@@ -437,6 +437,21 @@ export var PlacesUtils = {
   // Deprecated: This is only used for supporting import from older datasets.
   MOBILE_ROOT_ANNO: "mobile/bookmarksRoot",
 
+  /**
+   * Escapes a string for safe use in HTML text content or attribute values.
+   *
+   * @param {string} text
+   * @returns {string}
+   */
+  escapeHtmlEntities(text) {
+    return (text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  },
+
   TOPIC_SHUTDOWN: "places-shutdown",
   TOPIC_INIT_COMPLETE: "places-init-complete",
   TOPIC_DATABASE_LOCKED: "places-database-locked",
@@ -1109,16 +1124,8 @@ export var PlacesUtils = {
     }
 
     function gatherDataHtml(node, recursiveOpen = true) {
-      let htmlEscape = s =>
-        s
-          .replace(/&/g, "&amp;")
-          .replace(/>/g, "&gt;")
-          .replace(/</g, "&lt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&apos;");
-
       // escape out potential HTML in the title
-      let escapedTitle = node.title ? htmlEscape(node.title) : "";
+      let escapedTitle = PlacesUtils.escapeHtmlEntities(node.title);
 
       if (PlacesUtils.nodeIsContainer(node)) {
         asContainer(node);
@@ -1146,7 +1153,7 @@ export var PlacesUtils = {
         return childString + "</DL>" + NEWLINE;
       }
       if (PlacesUtils.nodeIsURI(node)) {
-        return `<A HREF="${node.uri}">${escapedTitle}</A>${NEWLINE}`;
+        return `<A HREF="${PlacesUtils.escapeHtmlEntities(node.uri)}">${escapedTitle}</A>${NEWLINE}`;
       }
       if (PlacesUtils.nodeIsSeparator(node)) {
         return "<HR>" + NEWLINE;

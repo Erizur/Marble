@@ -64,6 +64,7 @@
 #include "mozilla/TouchEvents.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Unused.h"
+#include "nsBaseDragService.h"
 #include "nsCOMPtr.h"
 #include "nsContentPermissionHelper.h"
 #include "nsContentUtils.h"
@@ -120,6 +121,7 @@
 #include "nsPIWindowRoot.h"
 #include "nsReadableUtils.h"
 #include "nsIAuthPrompt2.h"
+#include "nsIScriptSecurityManager.h"
 #include "gfxDrawable.h"
 #include "ImageOps.h"
 #include "UnitTransforms.h"
@@ -278,6 +280,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(BrowserParent)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mBrowsingContext)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFrameElement)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mBrowserDOMWindow)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mBrowserHost)
   tmp->UnlinkManager();
   NS_IMPL_CYCLE_COLLECTION_UNLINK_WEAK_REFERENCE
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
@@ -287,6 +290,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(BrowserParent)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBrowsingContext)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFrameElement)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBrowserDOMWindow)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBrowserHost)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE_RAWPTR(Manager())
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
@@ -304,8 +308,6 @@ BrowserParent::BrowserParent(ContentParent* aManager, const TabId& aTabId,
       mBrowserDOMWindow(nullptr),
       mFrameLoader(nullptr),
       mChromeFlags(aChromeFlags),
-      mBrowserBridgeParent(nullptr),
-      mBrowserHost(nullptr),
       mContentCache(*this),
       mRect(0, 0, 0, 0),
       mDimensions(0, 0),
@@ -357,6 +359,9 @@ BrowserParent::BrowserParent(ContentParent* aManager, const TabId& aTabId,
 }
 
 BrowserParent::~BrowserParent() {
+  if (mRemoteLayerTreeOwner.IsInitialized()) {
+    RemoveBrowserParentFromTable(mRemoteLayerTreeOwner.GetLayersId());
+  }
   RequestingAccessKeyEventData::OnBrowserParentDestroyed();
 }
 
@@ -392,12 +397,17 @@ BrowserParent* BrowserParent::GetFrom(nsIContent* aContent) {
 }
 
 /* static */
-BrowserParent* BrowserParent::GetBrowserParentFromLayersId(
+already_AddRefed<BrowserParent> BrowserParent::GetBrowserParentFromLayersId(
     layers::LayersId aLayersId) {
   if (!sLayerToBrowserParentTable) {
     return nullptr;
   }
-  return sLayerToBrowserParentTable->Get(uint64_t(aLayersId));
+  nsWeakPtr weak = sLayerToBrowserParentTable->Get(uint64_t(aLayersId));
+  if (!weak) {
+    return nullptr;
+  }
+  RefPtr<BrowserParent> browserParent = do_QueryReferent(weak);
+  return browserParent.forget();
 }
 
 /*static*/
@@ -418,8 +428,8 @@ void BrowserParent::AddBrowserParentToTable(layers::LayersId aLayersId,
   if (!sLayerToBrowserParentTable) {
     sLayerToBrowserParentTable = new LayerToBrowserParentTable();
   }
-  sLayerToBrowserParentTable->InsertOrUpdate(uint64_t(aLayersId),
-                                             aBrowserParent);
+  sLayerToBrowserParentTable->InsertOrUpdate(
+      uint64_t(aLayersId), do_GetWeakReference(aBrowserParent));
 }
 
 void BrowserParent::RemoveBrowserParentFromTable(layers::LayersId aLayersId) {
@@ -567,7 +577,7 @@ LayersId BrowserParent::GetLayersId() const {
 }
 
 BrowserBridgeParent* BrowserParent::GetBrowserBridgeParent() const {
-  return mBrowserBridgeParent;
+  return mBrowserBridgeParent.get();
 }
 
 BrowserHost* BrowserParent::GetBrowserHost() const { return mBrowserHost; }
@@ -795,6 +805,13 @@ mozilla::ipc::IPCResult BrowserParent::RecvEnsureLayersConnected(
   return IPC_OK();
 }
 
+mozilla::ipc::IPCResult BrowserParent::Recv__delete__() {
+  if (!mIsDestroyed) {
+    return IPC_FAIL(this, "BrowserParent delete was initiated by the child");
+  }
+  return IPC_OK();
+}
+
 void BrowserParent::ActorDestroy(ActorDestroyReason why) {
   // Need to close undeleted ContentPermissionRequestParents before tab is
   // closed.
@@ -887,6 +904,10 @@ void BrowserParent::ActorDestroy(ActorDestroyReason why) {
   // and it may confuse the frontend.
   mBrowsingContext->BrowserParentDestroyed(
       this, why == AbnormalShutdown || why == ManagedEndpointDropped);
+
+  // BrowserHost::DestroyComplete() has usually cleared this already, but it is
+  // never reached if we had no frame loader.
+  mBrowserHost = nullptr;
 }
 
 mozilla::ipc::IPCResult BrowserParent::RecvMoveFocus(
@@ -930,17 +951,18 @@ mozilla::ipc::IPCResult BrowserParent::RecvDropLinks(
     // not been modified then it's safe to load those links using the
     // SystemPrincipal. If they have been modified by web content, then
     // we use a NullPrincipal which still allows to load web links.
-    bool loadUsingSystemPrincipal = true;
-    if (aLinks.Length() != mVerifyDropLinks.Length()) {
-      loadUsingSystemPrincipal = false;
-    }
-    for (uint32_t i = 0; i < aLinks.Length(); i++) {
-      if (loadUsingSystemPrincipal) {
+    const bool loadUsingSystemPrincipal = [&]() {
+      if (aLinks.Length() != mVerifyDropLinks.Length()) {
+        return false;
+      }
+      for (uint32_t i = 0; i < aLinks.Length(); i++) {
         if (!aLinks[i].Equals(mVerifyDropLinks[i])) {
-          loadUsingSystemPrincipal = false;
+          return false;
         }
       }
-    }
+      return true;
+    }();
+
     mVerifyDropLinks.Clear();
     nsCOMPtr<nsIPrincipal> triggeringPrincipal;
     if (loadUsingSystemPrincipal) {
@@ -991,6 +1013,9 @@ void BrowserParent::ResumeLoad(uint64_t aPendingSwitchID) {
 }
 
 void BrowserParent::InitRendering() {
+  if (!CanSend()) {
+    return;
+  }
   if (mRemoteLayerTreeOwner.IsInitialized()) {
     return;
   }
@@ -1065,6 +1090,20 @@ mozilla::ipc::IPCResult BrowserParent::RecvSetDimensions(
   docShell->GetTreeOwner(getter_AddRefs(treeOwner));
   nsCOMPtr<nsIBaseWindow> treeOwnerAsWin = do_QueryInterface(treeOwner);
   NS_ENSURE_TRUE(treeOwnerAsWin, IPC_OK());
+
+  if (nsCOMPtr<nsIDragService> dragService =
+          do_GetService("@mozilla.org/widget/dragservice;1")) {
+    RefPtr<nsIWidget> widget = GetTopLevelWidget();
+    if (RefPtr<nsIDragSession> session =
+            dragService->GetCurrentSession(widget)) {
+      session->EndDragSession(false, 0);
+    }
+  }
+
+  if (nsPresContext* presContext =
+          mFrameElement->OwnerDoc()->GetPresContext()) {
+    presContext->EventStateManager()->StopTrackingDragGesture(true);
+  }
 
   // `BrowserChild` only sends the values to actually be changed, see more
   // details in `BrowserChild::SetDimensions()`.
@@ -1615,6 +1654,27 @@ bool BrowserParent::QueryDropLinksForVerification() {
     return false;
   }
 
+  nsCOMPtr<nsIPrincipal> triggeringPrincipal;
+  dragSession->GetTriggeringPrincipal(getter_AddRefs(triggeringPrincipal));
+
+  nsIScriptSecurityManager* secMan = nullptr;
+  if (triggeringPrincipal) {
+    if (!(secMan = nsContentUtils::GetSecurityManager())) {
+      NS_WARNING("No ScriptSecurityManager for links verification");
+      return false;
+    }
+  } else {
+    RefPtr<WindowContext> sourceWC = dragSession->GetSourceWindowContext();
+    RefPtr<WindowContext> sourceTopWC =
+        dragSession->GetSourceTopWindowContext();
+    if (sourceWC || sourceTopWC) {
+      NS_WARNING(
+          "How can we have a source window context while no triggering "
+          "principal?");
+      return false;
+    }
+  }
+
   // No more than one drop event can happen simultaneously; reset the link
   // verification array and store all links that are being dragged.
   mVerifyDropLinks.Clear();
@@ -1633,6 +1693,22 @@ bool BrowserParent::QueryDropLinksForVerification() {
       NS_WARNING("Failed to query url for verification");
       break;
     }
+
+    if (triggeringPrincipal) {
+      MOZ_ASSERT(secMan);
+      if (NS_FAILED(secMan->CheckLoadURIStrWithPrincipal(
+              triggeringPrincipal, NS_ConvertUTF16toUTF8(tmp),
+              nsIScriptSecurityManager::STANDARD |
+                  nsIScriptSecurityManager::DISALLOW_INHERIT_PRINCIPAL))) {
+        MOZ_DRAGSERVICE_LOG("[%p] %s | dragSession: %p | Bad URI %s from %p",
+                            this, __FUNCTION__, dragSession.get(),
+                            NS_ConvertUTF16toUTF8(tmp).get(),
+                            triggeringPrincipal.get());
+        mVerifyDropLinks.Clear();
+        return true;
+      }
+    }
+
     mVerifyDropLinks.AppendElement(tmp);
 
     rv = item->GetName(tmp);
@@ -3894,8 +3970,29 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
     const CookieJarSettingsArgs& aCookieJarSettingsArgs,
     const MaybeDiscarded<WindowContext>& aSourceWindowContext,
     const MaybeDiscarded<WindowContext>& aSourceTopWindowContext) {
-  PresShell* presShell = mFrameElement->OwnerDoc()->GetPresShell();
-  if (!presShell) {
+  nsCOMPtr<nsIDragService> dragService =
+      do_GetService("@mozilla.org/widget/dragservice;1");
+  nsPresContext* presContext = mFrameElement->OwnerDoc()->GetPresContext();
+  const bool isValidRemoteDrag = [&]() {
+    if (!dragService || !presContext) {
+      return false;
+    }
+
+    if (dragService->GetIsSuppressed()) {
+      return false;
+    }
+
+    BrowserParent* dragTopLevelRemoteTarget =
+        presContext->EventStateManager()
+            ->GetTrackingDragGestureTopLevelRemoteTarget();
+    if (NS_WARN_IF(dragTopLevelRemoteTarget != TopLevelBrowserParent())) {
+      return false;
+    }
+
+    return true;
+  }();
+
+  if (!isValidRemoteDrag) {
     Unused << SendEndDragSession(true, true, LayoutDeviceIntPoint(), 0,
                                  nsIDragService::DRAGDROP_ACTION_NONE);
     // Continue sending input events with input priority when stopping the dnd
@@ -3904,8 +4001,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
     return IPC_OK();
   }
 
-  if (!Manager()->ValidatePrincipal(aPrincipal,
-                                    {ValidatePrincipalOptions::AllowNullPtr})) {
+  if (!Manager()->ValidatePrincipal(aPrincipal, {})) {
     return ContentParent::PrincipalValidationIpcFail(aPrincipal, this,
                                                      __func__);
   }
@@ -3934,15 +4030,10 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
     }
   }
 
-  nsCOMPtr<nsIDragService> dragService =
-      do_GetService("@mozilla.org/widget/dragservice;1");
-  if (dragService) {
-    dragService->MaybeAddBrowser(this);
-  }
+  dragService->MaybeAddBrowser(this);
 
-  presShell->GetPresContext()
-      ->EventStateManager()
-      ->BeginTrackingRemoteDragGesture(mFrameElement, dragStartData);
+  presContext->EventStateManager()->BeginTrackingRemoteDragGesture(
+      mFrameElement, dragStartData);
 
   nsCOMPtr<nsIObserverService> os = services::GetObserverService();
   os->NotifyObservers(nullptr, "content-invoked-drag", nullptr);
@@ -4150,16 +4241,14 @@ void BrowserParent::LiveResizeStopped() { SuppressDisplayport(false); }
 void BrowserParent::SetBrowserBridgeParent(BrowserBridgeParent* aBrowser) {
   // We should either be clearing out our reference to a browser bridge, or not
   // have either a browser bridge, browser host, or owner content yet.
-  MOZ_ASSERT(!aBrowser ||
-             (!mBrowserBridgeParent && !mBrowserHost && !mFrameElement));
+  MOZ_RELEASE_ASSERT(!aBrowser || !IsEmbedded());
   mBrowserBridgeParent = aBrowser;
 }
 
 void BrowserParent::SetBrowserHost(BrowserHost* aBrowser) {
   // We should either be clearing out our reference to a browser host, or not
   // have either a browser bridge, browser host, or owner content yet.
-  MOZ_ASSERT(!aBrowser ||
-             (!mBrowserBridgeParent && !mBrowserHost && !mFrameElement));
+  MOZ_RELEASE_ASSERT(!aBrowser || !IsEmbedded());
   mBrowserHost = aBrowser;
 }
 
@@ -4238,9 +4327,8 @@ mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingWebVR(
   return IPC_OK();
 }
 
-static BrowserParent* GetTopLevelBrowserParent(BrowserParent* aBrowserParent) {
-  MOZ_ASSERT(aBrowserParent);
-  BrowserParent* parent = aBrowserParent;
+BrowserParent* BrowserParent::TopLevelBrowserParent() {
+  BrowserParent* parent = this;
   while (BrowserBridgeParent* bridge = parent->GetBrowserBridgeParent()) {
     parent = bridge->Manager();
   }
@@ -4249,7 +4337,7 @@ static BrowserParent* GetTopLevelBrowserParent(BrowserParent* aBrowserParent) {
 
 mozilla::ipc::IPCResult BrowserParent::RecvRequestPointerLock(
     RequestPointerLockResolver&& aResolve) {
-  if (sTopLevelWebFocus != GetTopLevelBrowserParent(this)) {
+  if (sTopLevelWebFocus != TopLevelBrowserParent()) {
     aResolve("PointerLockDeniedNotFocused"_ns);
     return IPC_OK();
   }

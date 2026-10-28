@@ -16,13 +16,14 @@ using Microsoft::WRL::ComPtr;
           ("MFCDMProxy=%p, " msg, this, ##__VA_ARGS__))
 
 MFCDMProxy::MFCDMProxy(IMFContentDecryptionModule* aCDM, uint64_t aCDMParentId)
-    : mCDM(aCDM), mCDMParentId(aCDMParentId) {
+    : mMutex("MFCDMProxy::mMutex"), mCDM(aCDM), mCDMParentId(aCDMParentId) {
   LOG("MFCDMProxy created, created by %" PRId64 " MFCDMParent", mCDMParentId);
 }
 
 MFCDMProxy::~MFCDMProxy() { LOG("MFCDMProxy destroyed"); }
 
 void MFCDMProxy::Shutdown() {
+  MutexAutoLock lock(mMutex);
   if (mTrustedInput) {
     mTrustedInput = nullptr;
   }
@@ -35,6 +36,10 @@ void MFCDMProxy::Shutdown() {
 }
 
 HRESULT MFCDMProxy::GetPMPServer(REFIID aRiid, LPVOID* aPMPServerOut) {
+  MutexAutoLock lock(mMutex);
+  if (!mCDM) {
+    return MF_E_SHUTDOWN;
+  }
   ComPtr<IMFGetService> cdmServices;
   RETURN_IF_FAILED(mCDM.As(&cdmServices));
   RETURN_IF_FAILED(cdmServices->GetService(MF_CONTENTDECRYPTIONMODULE_SERVICE,
@@ -47,6 +52,7 @@ HRESULT MFCDMProxy::GetInputTrustAuthority(uint32_t aStreamId,
                                            uint32_t aContentInitDataSize,
                                            REFIID aRiid,
                                            IUnknown** aInputTrustAuthorityOut) {
+  MutexAutoLock lock(mMutex);
   if (mInputTrustAuthorities.count(aStreamId)) {
     RETURN_IF_FAILED(
         mInputTrustAuthorities[aStreamId].CopyTo(aInputTrustAuthorityOut));
@@ -76,6 +82,10 @@ HRESULT MFCDMProxy::GetInputTrustAuthority(uint32_t aStreamId,
 HRESULT MFCDMProxy::SetContentEnabler(IUnknown* aRequest,
                                       IMFAsyncResult* aResult) {
   LOG("SetContentEnabler");
+  MutexAutoLock lock(mMutex);
+  if (!mCDM) {
+    return MF_E_SHUTDOWN;
+  }
   ComPtr<IMFContentEnabler> contentEnabler;
   RETURN_IF_FAILED(aRequest->QueryInterface(IID_PPV_ARGS(&contentEnabler)));
   return mCDM->SetContentEnabler(contentEnabler.Get(), aResult);
@@ -85,6 +95,7 @@ void MFCDMProxy::OnHardwareContextReset() {
   LOG("OnHardwareContextReset");
   // Hardware context reset happens, all the crypto sessions are in invalid
   // states. So drop everything here.
+  MutexAutoLock lock(mMutex);
   mTrustedInput.Reset();
   mInputTrustAuthorities.clear();
 }

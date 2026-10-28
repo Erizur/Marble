@@ -81,6 +81,19 @@ bool FilesystemDispatcher::SetupService(InterceptionManager* manager,
   }
 }
 
+void RestrictDirectoryAccess(uint32_t options, uint32_t* access) {
+  if (options & FILE_NON_DIRECTORY_FILE) {
+    return;
+  }
+
+  static constexpr uint32_t kAllowedDirReadFlags =
+      FILE_LIST_DIRECTORY | FILE_TRAVERSE | FILE_READ_ATTRIBUTES |
+      FILE_READ_EA | READ_CONTROL | SYNCHRONIZE | GENERIC_READ |
+      GENERIC_EXECUTE;
+
+  *access &= kAllowedDirReadFlags;
+}
+
 bool FilesystemDispatcher::NtCreateFile(IPCInfo* ipc,
                                         std::wstring* name,
                                         uint32_t attributes,
@@ -93,6 +106,20 @@ bool FilesystemDispatcher::NtCreateFile(IPCInfo* ipc,
     ipc->return_info.nt_status = STATUS_ACCESS_DENIED;
     return true;
   }
+
+  // Only allow read only open for directories.
+  if (create_options & FILE_DIRECTORY_FILE) {
+    // Reject any flags that can only create or overwrite.
+    if (create_disposition != FILE_OPEN && create_disposition != FILE_OPEN_IF) {
+      ipc->return_info.nt_status = STATUS_ACCESS_DENIED;
+      return true;
+    }
+
+    // Force to open only.
+    create_disposition = FILE_OPEN;
+  }
+
+  RestrictDirectoryAccess(create_options, &desired_access);
 
   const wchar_t* filename = name->c_str();
 
@@ -136,6 +163,8 @@ bool FilesystemDispatcher::NtOpenFile(IPCInfo* ipc,
     ipc->return_info.nt_status = STATUS_ACCESS_DENIED;
     return true;
   }
+
+  RestrictDirectoryAccess(open_options, &desired_access);
 
   const wchar_t* filename = name->c_str();
 

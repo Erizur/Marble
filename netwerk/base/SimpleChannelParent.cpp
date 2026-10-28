@@ -7,6 +7,7 @@
 #include "SimpleChannelParent.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/dom/ContentParent.h"
+#include "mozilla/net/NeckoParent.h"
 #include "nsNetUtil.h"
 #include "nsIChannel.h"
 

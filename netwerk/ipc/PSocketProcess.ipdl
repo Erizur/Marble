@@ -51,7 +51,7 @@ using nsIDNSService::DNSFlags from "nsIDNSService.h";
 
 #if defined(XP_WIN)
 [MoveOnly] using mozilla::UntrustedModulesData from "mozilla/UntrustedModulesData.h";
-[MoveOnly] using mozilla::ModulePaths from "mozilla/UntrustedModulesData.h";
+[MoveOnly] using mozilla::ModuleIdentifiers from "mozilla/UntrustedModulesData.h";
 [MoveOnly] using mozilla::ModulesMapResult from "mozilla/UntrustedModulesData.h";
 #endif  // defined(XP_WIN)
 
@@ -137,7 +137,7 @@ parent:
   async FOGData(ByteBuf buf);
 
 #if defined(XP_WIN)
-  async GetModulesTrust(ModulePaths aModPaths, bool aRunAtNormalPriority)
+  async GetModulesTrust(ModuleIdentifiers aModIdents, bool aRunAtNormalPriority)
       returns (ModulesMapResult? modMapResult);
 #endif  // defined(XP_WIN)
 

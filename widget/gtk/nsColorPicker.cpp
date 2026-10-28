@@ -5,6 +5,8 @@
 
 #include <gtk/gtk.h>
 
+#include <utility>
+
 #ifdef MOZ_X11
 #  include "X11UndefineNone.h"
 #endif
@@ -208,6 +210,12 @@ void nsColorPicker::OnDestroy(GtkWidget* color_chooser, gpointer user_data) {
 }
 
 void nsColorPicker::Done(GtkWidget* color_chooser, gint response) {
+  // A null callback means a re-entrant call; the outer one owns the teardown.
+  nsCOMPtr<nsIColorPickerShownCallback> callback = std::move(mCallback);
+  if (!callback) {
+    return;
+  }
+
   switch (response) {
     case GTK_RESPONSE_OK:
     case GTK_RESPONSE_ACCEPT:
@@ -234,10 +242,8 @@ void nsColorPicker::Done(GtkWidget* color_chooser, gint response) {
                                        this);
 
   gtk_widget_destroy(color_chooser);
-  if (mCallback) {
-    mCallback->Done(mColor);
-    mCallback = nullptr;
-  }
+
+  callback->Done(mColor);
 
   NS_RELEASE_THIS();
 }

@@ -56,7 +56,7 @@ add_task(async function () {
       let blob = new Blob([JSON.stringify(debug, null, 2)], {
         type: "application/json",
       });
-      let blobUri = URL.createObjectURL(blob);
+      let blobUri = content.URL.createObjectURL(blob);
       content.document.location = blobUri;
     });
     await BrowserTestUtils.browserLoaded(browser);

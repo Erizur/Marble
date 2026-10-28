@@ -1006,7 +1006,7 @@ class ContentParent final : public PContentParent,
   mozilla::ipc::IPCResult RecvSetURITitle(nsIURI* uri, const nsAString& title);
 
   mozilla::ipc::IPCResult RecvLoadURIExternal(
-      nsIURI* uri, nsIPrincipal* triggeringPrincipal,
+      NotNull<nsIURI*> uri, NotNull<nsIPrincipal*> triggeringPrincipal,
       nsIPrincipal* redirectPrincipal,
       const MaybeDiscarded<BrowsingContext>& aContext,
       bool aWasExternallyTriggered, bool aHasValidUserGestureActivation,
@@ -1278,7 +1278,7 @@ class ContentParent final : public PContentParent,
 
 #if defined(XP_WIN)
   mozilla::ipc::IPCResult RecvGetModulesTrust(
-      ModulePaths&& aModPaths, bool aRunAtNormalPriority,
+      ModuleIdentifiers&& aModIdents, bool aRunAtNormalPriority,
       GetModulesTrustResolver&& aResolver);
 #endif  // defined(XP_WIN)
 

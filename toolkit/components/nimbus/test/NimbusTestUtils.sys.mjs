@@ -964,6 +964,36 @@ export const NimbusTestUtils = {
       return slugs.length === 0;
     }, "Waiting for unenrollments to sync to database");
   },
+
+  /**
+   * Temporarily disable signature verification for Remote Settings clients used
+   * by Nimbus.
+   *
+   * NB: This is only required for browser tests.
+   *
+   * @returns {() => void} A callback that will restore signature verification
+   * to its previous state.
+   */
+  disableSignatureVerification() {
+    const { remoteSettingsClients } = ExperimentAPI._rsLoader;
+
+    const originalValues = Object.fromEntries(
+      Object.entries(remoteSettingsClients).map(([key, collection]) => [
+        key,
+        collection.verifySignature,
+      ])
+    );
+
+    for (const client of Object.values(remoteSettingsClients)) {
+      client.verifySignature = false;
+    }
+
+    return () => {
+      for (const [key, client] of Object.entries(remoteSettingsClients)) {
+        client.verifySignature = originalValues[key];
+      }
+    };
+  },
 };
 
 Object.defineProperties(NimbusTestUtils.factories.experiment, {

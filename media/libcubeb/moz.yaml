@@ -22,9 +22,12 @@ vendoring:
     - 0003-audiounit-ios-compile-fixes.patch
     - 0004-disable-cubeb_one_duplex_one_input-macos10.15.patch
     - 0005-increase-aaudio-powersaving-buffering.patch
+    - 0006-fix-loopback-separate-streams-flakiness-windows.patch
     - frame-sample.patch
     - delay-line-bounds.patch
     - wasapi-async-reconfigure-on-start.patch
+    - wasapi-output-mix-channel-count.patch
+    - winmm-destroy-work-item-uaf.patch
   skip-vendoring-steps:
     - update-moz-build
   exclude:

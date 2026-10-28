@@ -37,12 +37,6 @@ support-files = [
   "empty_worker.js",
 ]
 
-["browser_privilegedmozilla_remoteworker.js"]
-support-files = [
-  "file_service_worker.js",
-  "file_service_worker_container.html",
-]
-
 ["browser_serviceworker_fetch_new_process.js"]
 support-files = [
   "file_service_worker_fetch_synthetic.js",

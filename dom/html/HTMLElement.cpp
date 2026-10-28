@@ -293,6 +293,9 @@ void HTMLElement::AfterClearForm(bool aUnbindOrDelete) {
 
 void HTMLElement::UpdateFormOwner() {
   MOZ_ASSERT(IsFormAssociatedElement());
+  MOZ_ASSERT(GetCustomElementData());
+  MOZ_ASSERT(GetCustomElementData()->mState ==
+             CustomElementData::State::eCustom);
 
   // If @form is set, the element *has* to be in a composed document,
   // otherwise it wouldn't be possible to find an element with the
@@ -394,6 +397,13 @@ void HTMLElement::UpdateDisabledState(bool aNotify) {
 }
 
 void HTMLElement::UpdateFormOwner(bool aBindToTree, Element* aFormIdElement) {
+  MOZ_ASSERT(IsFormAssociatedElement());
+
+  CustomElementData* data = GetCustomElementData();
+  if (data->mState != CustomElementData::State::eCustom) {
+    return;
+  }
+
   HTMLFormElement* oldForm = GetFormInternal();
   nsGenericHTMLFormElement::UpdateFormOwner(aBindToTree, aFormIdElement);
   HTMLFormElement* newForm = GetFormInternal();
@@ -406,8 +416,7 @@ void HTMLElement::UpdateFormOwner(bool aBindToTree, Element* aFormIdElement) {
 }
 
 bool HTMLElement::IsFormAssociatedElement() const {
-  CustomElementData* data = GetCustomElementData();
-  return data && data->IsFormAssociated();
+  return IsFormAssociatedCustomElements();
 }
 
 void HTMLElement::FieldSetDisabledChanged(bool aNotify) {

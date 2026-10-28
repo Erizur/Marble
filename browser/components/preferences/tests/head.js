@@ -486,6 +486,9 @@ const DEFAULT_LABS_RECIPES = [
 ];
 
 async function setupLabsTest(recipes) {
+  const restoreSignatureVerification =
+    NimbusTestUtils.disableSignatureVerification();
+
   await SpecialPowers.pushPrefEnv({
     set: [
       ["app.normandy.run_interval_seconds", 0],
@@ -517,6 +520,7 @@ async function setupLabsTest(recipes) {
   return async function cleanup() {
     await NimbusTestUtils.removeStore(ExperimentAPI.manager.store);
     await SpecialPowers.popPrefEnv();
+    restoreSignatureVerification();
   };
 }
 

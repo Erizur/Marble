@@ -11,11 +11,11 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/dom/ClientInfo.h"
+#include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/MessageChannel.h"
 #include "mozilla/dom/MessagePort.h"
 #include "mozilla/dom/PMessagePort.h"
-#include "mozilla/dom/RemoteWorkerManager.h"  // RemoteWorkerManager::GetRemoteType
 #include "mozilla/dom/RemoteWorkerTypes.h"
 #include "mozilla/dom/SharedWorkerBinding.h"
 #include "mozilla/dom/SharedWorkerChild.h"
@@ -208,6 +208,14 @@ already_AddRefed<SharedWorker> SharedWorker::Constructor(
                   BasePrincipal::Cast(windowPartitionedPrincipal)
                       ->OriginAttributesRef());
     }
+  }
+
+  // Throw early if this process would not be allowed to start a shared worker.
+  if (!BackgroundChild::ValidatePrincipal(loadInfo.mLoadingPrincipal, {})) {
+    MOZ_ASSERT_UNREACHABLE(
+        "ValidatePrincipal failure in SharedWorker::Constructor");
+    aRv.ThrowSecurityError("SharedWorker access not available.");
+    return nullptr;
   }
 
   PrincipalInfo partitionedPrincipalInfo;

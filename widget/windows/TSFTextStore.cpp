@@ -1786,8 +1786,7 @@ STDMETHODIMP TSFTextStore::RequestSupportedAttrs(
            "cFilterAttrs=%lu)",
            this, AutoFindFlagsCString(dwFlags).get(), cFilterAttrs));
 
-  return HandleRequestAttrs(dwFlags, cFilterAttrs, paFilterAttrs,
-                            TSFUtils::NUM_OF_SUPPORTED_ATTRS);
+  return HandleRequestAttrs(dwFlags, cFilterAttrs, paFilterAttrs);
 }
 
 STDMETHODIMP TSFTextStore::RequestAttrsAtPosition(
@@ -1799,14 +1798,13 @@ STDMETHODIMP TSFTextStore::RequestAttrsAtPosition(
            this, acpPos, cFilterAttrs, AutoFindFlagsCString(dwFlags).get()));
 
   return HandleRequestAttrs(dwFlags | TS_ATTR_FIND_WANT_VALUE, cFilterAttrs,
-                            paFilterAttrs, TSFUtils::NUM_OF_SUPPORTED_ATTRS);
+                            paFilterAttrs);
 }
 
 STDMETHODIMP TSFTextStore::RetrieveRequestedAttrs(ULONG ulCount,
                                                   TS_ATTRVAL* paAttrVals,
                                                   ULONG* pcFetched) {
-  HRESULT hr = RetrieveRequestedAttrsInternal(ulCount, paAttrVals, pcFetched,
-                                              TSFUtils::NUM_OF_SUPPORTED_ATTRS);
+  HRESULT hr = RetrieveRequestedAttrsInternal(ulCount, paAttrVals, pcFetched);
   if (FAILED(hr)) {
     return hr;
   }

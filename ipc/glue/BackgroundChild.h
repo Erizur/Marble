@@ -9,6 +9,8 @@
 
 #include "mozilla/Attributes.h"
 
+#include "mozilla/dom/ProcessIsolation.h"
+
 class nsIEventTarget;
 
 namespace mozilla {
@@ -64,6 +66,17 @@ class BackgroundChild final {
 
   // See above.
   static void InitContentStarter(mozilla::dom::ContentChild* aContent);
+
+  // Helpers for doing ValidatePrincipal checks within the content process.
+  //
+  // These can be called from any thread, and validate the given principal
+  // against the process's current remote type.
+  static bool ValidatePrincipal(
+      nsIPrincipal* aPrincipal,
+      const EnumSet<dom::ValidatePrincipalOptions>& aOptions);
+  static bool ValidatePrincipalInfo(
+      const PrincipalInfo& aPrincipalInfo,
+      const EnumSet<dom::ValidatePrincipalOptions>& aOptions);
 
  private:
   // Only called by this class's friends.
