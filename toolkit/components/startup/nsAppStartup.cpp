@@ -23,6 +23,7 @@
 #include "nsThreadUtils.h"
 #include "nsString.h"
 #include "mozilla/AppShutdown.h"
+#include "mozilla/Omnijar.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/ProfilerMarkers.h"
 #include "mozilla/ResultExtensions.h"
@@ -1008,6 +1009,9 @@ nsAppStartup::TrackStartupCrashEnd() {
   mStartupCrashTrackingEnded = true;
 
   StartupTimeline::Record(StartupTimeline::STARTUP_CRASH_DETECTION_END);
+
+  // The Brightwork package (if any) started fine.
+  Omnijar::BrightworkStartupFinished();
 
   // Remove the incomplete startup canary file, so the next startup doesn't
   // detect a recent startup crash.

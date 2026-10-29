@@ -32,6 +32,11 @@ ChromeUtils.defineLazyGetter(lazy, "l10n", function () {
 const PACKAGES_DIRNAME = "packages";
 const METADATA_FILE = "brightwork.json";
 const ACTIVE_PREF = "browser.brightwork.active";
+// Written by the native loader (xpcom/build/Omnijar.cpp) as "<id> <count>":
+// launches of the package that never finished starting. At kMaxFailedStarts
+// it stops loading the package.
+const STARTUP_ATTEMPTS_FILE = "startup-attempts";
+const MAX_FAILED_STARTS = 3;
 // Sent by BrightworkContentHandler when a bwpkg is downloaded from the net.
 const MSG_INSTALL_FROM_WEB = "Brightwork:InstallFromWeb";
 
@@ -319,6 +324,9 @@ class BrightworkWrapper {
     let frag = doc.createDocumentFragment();
     let p = doc.createElementNS("http://www.w3.org/1999/xhtml", "p");
     let bits = [];
+    if (this._provider.failedId === this._id) {
+      bits.push(lazy.l10n.formatValueSync("brightwork-startup-failed-description"));
+    }
     if (!this.isCompatible) {
       bits.push(lazy.l10n.formatValueSync("brightwork-incompatible-description"));
     }
@@ -337,6 +345,8 @@ export const BrightworkProvider = {
   _wrappers: new Map(),
   sessionActiveId: null,
   desiredActiveId: null,
+  // A package the native loader gave up on, see STARTUP_ATTEMPTS_FILE.
+  failedId: null,
   _uninstalling: new Set(),
   _startPromise: null,
 
@@ -353,6 +363,7 @@ export const BrightworkProvider = {
           this.sessionActiveId = this._readActive();
           this.desiredActiveId = this.sessionActiveId;
           await this._reload();
+          await this._checkFailedStarts();
         } catch (e) {
           // Never let a profile-state hiccup reject the Add-ons Manager view.
           console.error("BrightworkProvider startup failed", e);
@@ -417,6 +428,34 @@ export const BrightworkProvider = {
     return id || null;
   },
 
+  // The bundled front-end is running because the active package kept failing
+  // to start: turn it off so the manager shows it as disabled and says why.
+  // The file stays as the record until the package is turned on again.
+  async _checkFailedStarts() {
+    let text = await IOUtils.readUTF8(
+      PathUtils.join(brightworkDir(), STARTUP_ATTEMPTS_FILE)
+    ).catch(() => "");
+    let [id, count] = text.trim().split(/\s+/);
+    if (!id || !(Number(count) >= MAX_FAILED_STARTS)) {
+      return;
+    }
+    this.failedId = id;
+    if (this.sessionActiveId === id) {
+      this.sessionActiveId = null;
+      await this.setDesiredActive(null, { prompt: false });
+    }
+  },
+
+  async _clearFailedStarts(id) {
+    if (this.failedId !== id) {
+      return;
+    }
+    this.failedId = null;
+    await IOUtils.remove(PathUtils.join(brightworkDir(), STARTUP_ATTEMPTS_FILE), {
+      ignoreAbsent: true,
+    });
+  },
+
   async _reload() {
     this._wrappers.clear();
     let dir = packagesDir();
@@ -443,6 +482,10 @@ export const BrightworkProvider = {
     let previous = this.desiredActiveId;
     if (previous === id) {
       return;
+    }
+    // Turning it back on means trying it again.
+    if (id) {
+      await this._clearFailedStarts(id);
     }
     // Only one package can be active, so writing the single-valued pref implicitly disables whatever was active before.
     // This means we should flush prefs.js synchronously so the native loader sees the change on the next startup.
@@ -723,6 +766,7 @@ export const BrightworkProvider = {
       await IOUtils.remove(dest, { recursive: true, ignoreAbsent: true });
       await IOUtils.move(staging, dest);
       staging = null;
+      await this._clearFailedStarts(id);
 
       await this._reload();
       let wrapper = this._wrappers.get(id);

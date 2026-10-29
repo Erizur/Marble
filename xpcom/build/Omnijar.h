@@ -183,6 +183,17 @@ class Omnijar {
   static void ComputeBrightworkFingerprint(nsIFile* aProfileDir,
                                             nsACString& aResult);
 
+  /**
+   * Never load a Brightwork package in this process (safe mode).
+   */
+  static void DisableBrightwork();
+
+  /**
+   * Startup got far enough: clear the failed-start count of the loaded
+   * Brightwork package. Called from nsAppStartup::TrackStartupCrashEnd.
+   */
+  static void BrightworkStartupFinished();
+
  private:
   /**
    * Used internally, respectively by Init() and CleanUp()

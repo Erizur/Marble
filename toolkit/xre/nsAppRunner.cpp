@@ -4453,6 +4453,11 @@ int XREMain::XRE_mainInit(bool* aExitFlag) {
 #endif
 
   gSafeMode = safeModeRequested.value();
+  if (gSafeMode) {
+    // Safe mode is the stock front-end, which is also the way out of a
+    // Brightwork package that breaks startup.
+    mozilla::Omnijar::DisableBrightwork();
+  }
 
   MaybeAddCPUMicrocodeCrashAnnotation();
   CrashReporter::RegisterAnnotationBool(CrashReporter::Annotation::SafeMode,

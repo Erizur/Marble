@@ -285,6 +285,10 @@ brightwork-restart-prompt-message = Brightwork changes take effect after { -bran
 brightwork-restart-prompt-restart-button = Restart
 brightwork-restart-prompt-later-button = Later
 
+# Shown on a package's card when it was turned off because it kept failing to
+# start on this build.
+brightwork-startup-failed-description = Turned off because it failed to start on this version of { -brand-short-name }. Turn it on to try again.
+
 # Shown on a package's card when its ABI does not match the running build.
 brightwork-incompatible-description = Version incompatible.
 

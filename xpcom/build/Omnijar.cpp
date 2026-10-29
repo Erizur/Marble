@@ -14,9 +14,12 @@
 #include "nsIFile.h"
 #include "nsZipArchive.h"
 #include "nsNetUtil.h"
+#include "nsPrintfCString.h"
 
 #include "mozilla/Debug.h"
+#include "mozilla/Maybe.h"
 #include "nsTArray.h"
+#include "nsXULAppAPI.h"
 #include "prenv.h"
 #include "prio.h"
 
@@ -120,11 +123,88 @@ static bool ReadActiveId(nsIFile* aPrefsJs, nsACString& aId) {
   return true;
 }
 
+static already_AddRefed<nsIFile> BrightworkProfileDir(
+    nsIFile* aProfileOverride) {
+  nsCOMPtr<nsIFile> profDir = aProfileOverride;
+  if (!profDir && nsDirectoryService::gService) {
+    nsDirectoryService::gService->Get(NS_APP_USER_PROFILE_50_DIR,
+                                      NS_GET_IID(nsIFile),
+                                      getter_AddRefs(profDir));
+  }
+  return profDir.forget();
+}
+
+// A profile package that keeps failing to start (a crash, a hang, or a front
+// end that never reaches trackStartupCrashEnd) is skipped after
+// kMaxFailedStarts launches in a row, so the bundled UI comes back on its own.
+// The count lives in <profile>/brightwork/startup-attempts as "<id> <count>".
+// It is bumped whenever the package is loaded and removed once startup
+// finishes. BrightworkProvider reads the same file to turn the package off
+// and say why, and deletes it when the package is turned back on.
+static constexpr uint32_t kMaxFailedStarts = 3;  // see BrightworkProvider
+static bool sBrightworkAllowed = true;
+// Decided once per process, so the startup-cache fingerprint, the GRE jar and
+// the APP jar all agree even after this launch bumps the count.
+static Maybe<bool> sStartupBlocked;
+static bool sStartupCounted = false;
+
+static already_AddRefed<nsIFile> StartupAttemptsFile(nsIFile* aProfDir) {
+  nsCOMPtr<nsIFile> file;
+  aProfDir->Clone(getter_AddRefs(file));
+  if (!file) {
+    return nullptr;
+  }
+  file->AppendNative("brightwork"_ns);
+  file->AppendNative("startup-attempts"_ns);
+  return file.forget();
+}
+
+static uint32_t ReadFailedStarts(nsIFile* aProfDir, const nsACString& aId) {
+  nsCOMPtr<nsIFile> file = StartupAttemptsFile(aProfDir);
+  PRFileDesc* fd = nullptr;
+  if (!file || NS_FAILED(file->OpenNSPRFileDesc(PR_RDONLY, 0, &fd)) || !fd) {
+    return 0;
+  }
+  char buf[256];
+  int32_t n = PR_Read(fd, buf, sizeof(buf) - 1);
+  PR_Close(fd);
+  if (n <= 0) {
+    return 0;
+  }
+  nsAutoCString contents(buf, n);
+  int32_t sp = contents.FindChar(' ');
+  if (sp <= 0 || !Substring(contents, 0, sp).Equals(aId)) {
+    return 0;
+  }
+  nsAutoCString count(Substring(contents, sp + 1));
+  count.Trim(" \t\r\n");
+  nsresult rv;
+  int32_t value = count.ToInteger(&rv);
+  return NS_SUCCEEDED(rv) && value > 0 ? static_cast<uint32_t>(value) : 0;
+}
+
+static bool StartupBlocked(nsIFile* aProfDir, const nsACString& aId) {
+  if (sStartupBlocked.isNothing()) {
+    sStartupBlocked = Some(ReadFailedStarts(aProfDir, aId) >= kMaxFailedStarts);
+    if (*sStartupBlocked) {
+      printf_stderr(
+          "brightwork: package %s failed to start %u times in a row; using "
+          "bundled\n",
+          PromiseFlatCString(aId).get(), kMaxFailedStarts);
+    }
+  }
+  return *sStartupBlocked;
+}
+
 // Resolve the directory that should contain the active custom omni.jas.
 // Returns nullptr when nothing is opted in. Every directory-service lookup is
 // guarded so absent state (e.g. no profile yet) simply falls through.
 static already_AddRefed<nsIFile> ResolveBrightworkPackageDir(
     nsIFile* aProfileOverride) {
+  if (!sBrightworkAllowed) {
+    return nullptr;
+  }
+
   // Environment override
   const char* env = PR_GetEnv("MOZ_BRIGHTWORK_DIR");
   if (env && *env) {
@@ -142,12 +222,7 @@ static already_AddRefed<nsIFile> ResolveBrightworkPackageDir(
   // startup-cache check runs before SetProfile, so it passes the profile dir
   // explicitly. Either way the pref service does not exist yet, so we read the
   // persisted value from prefs.js directly.
-  nsCOMPtr<nsIFile> profDir = aProfileOverride;
-  if (!profDir && nsDirectoryService::gService) {
-    nsDirectoryService::gService->Get(NS_APP_USER_PROFILE_50_DIR,
-                                      NS_GET_IID(nsIFile),
-                                      getter_AddRefs(profDir));
-  }
+  nsCOMPtr<nsIFile> profDir = BrightworkProfileDir(aProfileOverride);
   if (profDir) {
     nsCOMPtr<nsIFile> prefsJs;
     profDir->Clone(getter_AddRefs(prefsJs));
@@ -160,6 +235,9 @@ static already_AddRefed<nsIFile> ResolveBrightworkPackageDir(
         pkg->AppendNative("brightwork"_ns);
         pkg->AppendNative("packages"_ns);
         pkg->AppendNative(id);
+        if (StartupBlocked(profDir, id)) {
+          return nullptr;
+        }
         return pkg.forget();
       }
     }
@@ -211,6 +289,32 @@ static already_AddRefed<nsIFile> ResolveBrightworkCandidate(
   return BrightworkJarPath(dir, aType, nullptr);
 }
 
+// Called once the GRE package jar is accepted.
+static void CountStartupAttempt() {
+  const char* env = PR_GetEnv("MOZ_BRIGHTWORK_DIR");
+  if ((env && *env) || !XRE_IsParentProcess()) {
+    return;  // dev overrides are never counted
+  }
+  nsCOMPtr<nsIFile> profDir = BrightworkProfileDir(nullptr);
+  nsCOMPtr<nsIFile> pkg = ResolveBrightworkPackageDir(nullptr);
+  nsAutoCString id;
+  if (!profDir || !pkg || NS_FAILED(pkg->GetNativeLeafName(id))) {
+    return;
+  }
+  nsPrintfCString line("%s %u\n", id.get(), ReadFailedStarts(profDir, id) + 1);
+  nsCOMPtr<nsIFile> file = StartupAttemptsFile(profDir);
+  PRFileDesc* fd = nullptr;
+  if (!file ||
+      NS_FAILED(file->OpenNSPRFileDesc(PR_WRONLY | PR_CREATE_FILE | PR_TRUNCATE,
+                                       0644, &fd)) ||
+      !fd) {
+    return;
+  }
+  PR_Write(fd, line.get(), static_cast<int32_t>(line.Length()));
+  PR_Close(fd);
+  sStartupCounted = true;
+}
+
 static const char kBrightworkCanary[] = "modules/AppConstants.sys.mjs";
 static bool sBrightworkGreAccepted = false;
 
@@ -253,6 +357,7 @@ static already_AddRefed<nsIFile> TryBrightwork(mozilla::Omnijar::Type aType) {
       return nullptr;
     }
     sBrightworkGreAccepted = true;
+    CountStartupAttempt();
   }
   printf_stderr("brightwork: using custom %s omni.ja (abi %u)\n",
                 aType == mozilla::Omnijar::GRE ? "GRE" : "APP", abi);
@@ -268,6 +373,20 @@ void Omnijar::CleanUpOne(Type aType) {
   }
   sPath[aType] = nullptr;
   sBrightworkActive[aType] = false;
+}
+
+void Omnijar::DisableBrightwork() { sBrightworkAllowed = false; }
+
+void Omnijar::BrightworkStartupFinished() {
+  if (!sStartupCounted) {
+    return;
+  }
+  sStartupCounted = false;
+  nsCOMPtr<nsIFile> profDir = BrightworkProfileDir(nullptr);
+  if (nsCOMPtr<nsIFile> file =
+          profDir ? StartupAttemptsFile(profDir) : nullptr) {
+    file->Remove(false);
+  }
 }
 
 void Omnijar::ComputeBrightworkFingerprint(nsIFile* aProfileDir,
