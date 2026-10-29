@@ -288,12 +288,6 @@
 
 /* Address bar */
 
-@media not (prefers-contrast) {
-  :root:not([lwtheme]) #urlbar {
-    --urlbar-box-bgcolor: white;
-  }
-}
-
 /* Bookmarks roots menu-items */
 
 #bookmarksToolbarFolderMenu,
