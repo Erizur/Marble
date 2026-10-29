@@ -181,6 +181,7 @@ for entry in sorted(os.listdir(os.path.join(HERE, "tools"))):
         sys.path.insert(0, p)
 
 from mozpack.brightwork.build import build_from_recipe  # noqa: E402
+from mozpack.brightwork.recipe import BrightworkRecipe  # noqa: E402
 from mozpack.brightwork.token import (  # noqa: E402
     BrightworkToken,
     write_metadata_into_dir,
@@ -193,6 +194,25 @@ def _available_platforms():
         if name.startswith("adk-") and os.path.isdir(os.path.join(HERE, name)):
             out.append(name[len("adk-"):])
     return out
+
+
+def _check_stamps(targets):
+    # An ADK pair from two different Marble releases still packs (each jar
+    # only has to match its own platform's browser), so that is a warning.
+    # A split ABI means one platform's jars get rejected at startup.
+    stamps = {p: BrightworkRecipe.load(os.path.join(HERE, "adk-" + p)).stamp
+              for p in targets}
+    abis = {s.get("abi") for s in stamps.values() if s.get("abi") is not None}
+    if len(abis) > 1:
+        sys.exit("The ADKs target different brightwork ABIs (%s); re-export "
+                 "them from the same Marble release." %
+                 ", ".join("%s=%s" % (p, s.get("abi")) for p, s in stamps.items()))
+    builds = {(s.get("version"), s.get("commit")) for s in stamps.values()}
+    if len(builds) > 1:
+        print("warning: the ADKs come from different Marble builds:")
+        for p, s in stamps.items():
+            print("    %s: %s (%s)" % (p, s.get("version_display") or "unknown",
+                                       s.get("commit") or "no commit"))
 
 
 def main():
@@ -218,6 +238,7 @@ def main():
     if not avail:
         sys.exit("No adk-<platform> directories found next to build.py.")
     targets = args.platform or avail
+    _check_stamps(targets)
 
     with open(args.metadata, "rb") as fh:
         token = BrightworkToken.from_metadata_bytes(fh.read())

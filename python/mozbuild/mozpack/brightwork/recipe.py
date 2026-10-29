@@ -51,6 +51,9 @@ class BrightworkRecipe:
     defines: dict = field(default_factory=dict)
     # Which platform this ADK was exported for ("win" / "linux").
     platform: str = ""
+    # Which Marble build this ADK came from (version, commit, abi, date).
+    # Informational: packs warn when their ADKs disagree, nothing refuses.
+    stamp: dict = field(default_factory=dict)
     recipe_version: int = RECIPE_VERSION
 
     def to_json(self):
@@ -124,6 +127,31 @@ def rebase_source(source, old_root, new_root):
         return None
     return mozpath.join(new_root, source[len(prefix) :])
 
+def _stamp(buildconfig):
+    import datetime
+    import subprocess
+
+    from mozpack.brightwork import BRIGHTWORK_ABI
+
+    substs = buildconfig.substs
+    try:
+        top = buildconfig.topsrcdir
+        commit = subprocess.check_output(
+            ["git", "-C", top, "rev-parse", "HEAD"], text=True
+        ).strip()
+        if subprocess.call(["git", "-C", top, "diff", "--quiet", "HEAD"]):
+            commit += "+dirty"
+    except (OSError, subprocess.CalledProcessError):
+        commit = ""
+    return {
+        "version": substs.get("MOZ_APP_VERSION", ""),
+        "version_display": substs.get("MOZ_APP_VERSION_DISPLAY", ""),
+        "commit": commit,
+        "abi": BRIGHTWORK_ABI,
+        "exported": datetime.date.today().isoformat(),
+    }
+
+
 def export_recipe(buildconfig, output_dir, manifest_paths):
     os.makedirs(output_dir, exist_ok=True)
     substs = buildconfig.substs
@@ -142,6 +170,7 @@ def export_recipe(buildconfig, output_dir, manifest_paths):
         manifests=bundled,
         defines=dict(buildconfig.defines),
         platform=platform_from_defines(buildconfig.defines),
+        stamp=_stamp(buildconfig),
     )
     recipe.save(output_dir)
     _bundle_generated(buildconfig, output_dir, recipe)

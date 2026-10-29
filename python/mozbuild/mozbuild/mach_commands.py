@@ -3719,7 +3719,7 @@ def repackage_flatpak(
 
 
 # init Brightwork:
-def _brightwork_manifests(command_context):
+def _brightwork_manifests(topobjdir):
     """
     Locate the FasterMake install manifests describing the chrome resources.
 
@@ -3727,7 +3727,7 @@ def _brightwork_manifests(command_context):
     (GRE + browser + the src/localization components), so it alone captures
     all resources. Returns [] if the tree hasn't been staged yet.
     """
-    faster_dir = os.path.join(command_context.topobjdir, "faster")
+    faster_dir = os.path.join(topobjdir, "faster")
     unified = os.path.join(faster_dir, "unified_install_dist_bin")
     if os.path.exists(unified):
         return [unified]
@@ -3751,39 +3751,101 @@ def _brightwork_manifests(command_context):
     default=None,
     help="Directory to write the standalone repo into. ",
 )
-def brightwork_extract(command_context, output=None):
-    from mozpack.brightwork.extract import extract_standalone
+@CommandArgument(
+    "--objdir",
+    dest="objdirs",
+    action="append",
+    default=None,
+    help="Extract the ADK of this objdir too (repeatable), e.g. a Windows "
+    "cross-build's objdir, to get every platform in one run.",
+)
+@CommandArgument(
+    "--zip",
+    dest="zip_path",
+    default=None,
+    help="Also write the SDK to this .zip, with a .sha256 next to it.",
+)
+def brightwork_extract(command_context, output=None, objdirs=None, zip_path=None):
+    import hashlib
 
-    config = command_context.config_environment
+    from mozbuild.backend.configenvironment import ConfigEnvironment
+    from mozpack.brightwork.append import _zip_dir
+    from mozpack.brightwork.extract import extract_standalone
+    from mozpack.brightwork.recipe import BrightworkRecipe
+
     output = output or os.path.join(command_context.distdir, "bw-pkg")
 
-    manifests = _brightwork_manifests(command_context)
-    if not manifests:
-        print(
-            "No FasterMake install manifests found under %s/faster. Run "
-            "./mach build first."
-            % command_context.topobjdir
+    configs = [command_context.config_environment]
+    for objdir in objdirs or []:
+        configs.append(
+            ConfigEnvironment.from_config_status(
+                os.path.join(os.path.abspath(objdir), "config.status")
+            )
         )
-        return 1
 
-    summary = extract_standalone(config, manifests, output)
+    for config in configs:
+        manifests = _brightwork_manifests(config.topobjdir)
+        if not manifests:
+            print(
+                "No FasterMake install manifests found under %s/faster. Run "
+                "./mach build first." % config.topobjdir
+            )
+            return 1
+
+        summary = extract_standalone(config, manifests, output)
+        print(
+            "Captured the %s ADK (adk-%s) from %s\n"
+            "  source files: %d (%.1f MiB)"
+            % (
+                summary["platform"],
+                summary["platform"],
+                config.topobjdir,
+                summary["source_files"],
+                summary["source_bytes"] / (1024 * 1024),
+            )
+        )
+
     print(
-        "Captured the %s ADK (adk-%s) into %s\n"
-        "  source files: %d (%.1f MiB)\n"
-        "  platforms now in this SDK: %s\n"
-        "  Multi-target: re-run this on the other platform's build (same"
-        " --output) to add its ADK; src/ is shared.\n"
+        "SDK in %s, platforms: %s\n"
+        "  Multi-target: pass --objdir for the other platform's build (or"
+        " re-run with the same --output) to add its ADK; src/ is shared.\n"
         "  To build, run python build.py in the root folder (packs all"
         " available platforms; --platform to pick one)."
-        % (
-            summary["platform"],
-            summary["platform"],
-            output,
-            summary["source_files"],
-            summary["source_bytes"] / (1024 * 1024),
-            ", ".join(summary["platforms"]),
-        )
+        % (output, ", ".join(summary["platforms"]))
     )
+    for plat in summary["platforms"]:
+        stamp = BrightworkRecipe.load(os.path.join(output, "adk-" + plat)).stamp
+        print(
+            "  adk-%s: %s, %s, abi %s"
+            % (
+                plat,
+                stamp.get("version_display") or "unstamped",
+                stamp.get("commit") or "no commit",
+                stamp.get("abi"),
+            )
+        )
+
+    if zip_path:
+        # The SDK's own dist/ and caches don't belong in the archive.
+        import shutil
+        import tempfile
+
+        tmp = tempfile.mkdtemp(prefix="bw-sdk-zip-")
+        try:
+            root = os.path.join(tmp, os.path.splitext(os.path.basename(zip_path))[0])
+            shutil.copytree(
+                output,
+                root,
+                ignore=shutil.ignore_patterns("dist", ".git", "__pycache__", "*.pyc"),
+            )
+            _zip_dir(tmp, zip_path)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        with open(zip_path, "rb") as fh:
+            digest = hashlib.sha256(fh.read()).hexdigest()
+        with open(zip_path + ".sha256", "w") as fh:
+            fh.write("%s  %s\n" % (digest, os.path.basename(zip_path)))
+        print("Wrote %s (sha256 %s)" % (zip_path, digest))
     return 0
 
 
