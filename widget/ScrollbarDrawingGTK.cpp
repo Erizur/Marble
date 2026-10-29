@@ -5,6 +5,7 @@
 
 #include "ScrollbarDrawingGTK.h"
 
+#include "gfxPlatform.h"
 #include "mozilla/gfx/Helpers.h"
 #include "mozilla/StaticPrefs_widget.h"
 #include "nsLayoutUtils.h"
@@ -182,10 +183,11 @@ void ScrollbarDrawingGTK::RecomputeScrollbarParams() {
     defaultSize = overrideSize;
   }
 #ifdef MOZ_WIDGET_GTK
-  else if (StaticPrefs::widget_native_controls_scrollbar_style() == 0) {
+  else if (StaticPrefs::widget_native_controls_scrollbar_style() == 0 &&
+           !gfxPlatform::IsHeadless()) {
     // Native GTK drawing sizes the scrollbar parts from the GTK metrics, so
     // the scrollbar itself has to come from the same place or the box and its
-    // contents disagree.
+    // contents disagree. Headless has no GTK display to measure widgets on.
     const ScrollbarGTKMetrics* metrics =
         GetActiveScrollbarMetrics(GTK_ORIENTATION_VERTICAL);
     if (metrics->size.scrollbar.width > 0) {
