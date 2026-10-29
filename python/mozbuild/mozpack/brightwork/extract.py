@@ -82,6 +82,16 @@ def _copy_source_closure(dadir, recipe, src_out):
                     sources.add(src)
                     if itype == InstallManifest.PREPROCESS:
                         _collect_includes(src, top, sources)
+                        # Files named by defines, e.g. #includesubst
+                        # @APP_LICENSE_BLOCK@ in license.html.
+                        for value in manifest._decode_field_entry(entry[4]).values():
+                            if (
+                                isinstance(value, str)
+                                and rebase_source(value, top, "/__p__") is not None
+                                and os.path.isfile(value)
+                            ):
+                                sources.add(value)
+                                _collect_includes(value, top, sources)
             elif itype in (InstallManifest.PATTERN_LINK, InstallManifest.PATTERN_COPY):
                 _, base, pattern, _dest = entry
                 if rebase_source(base, top, "/__p__") is None or not os.path.isdir(

@@ -538,6 +538,28 @@ def _missing_local_include(error):
     return getattr(error, "line", inner[1]), missing
 
 
+def _portable_defines(defines, recipe, src_root):
+    """Defines hold paths from the machine that exported the ADK: TOPOBJDIR,
+    and srcdir files such as APP_LICENSE_BLOCK. Rebase srcdir paths into src
+    and drop TOPOBJDIR, so objdir #includes fall back to generated/ instead of
+    reading whatever sits at that path here. Returns None when a srcdir file a
+    define names isn't in src, as preprocessing without it would silently
+    drop content.
+    """
+    out = {}
+    for key, value in defines.items():
+        if key == "TOPOBJDIR":
+            continue
+        if isinstance(value, str):
+            rebased = rebase_source(value, recipe.topsrcdir, src_root)
+            if rebased is not None:
+                if not os.path.exists(rebased):
+                    return None
+                value = rebased
+        out[key] = value
+    return out
+
+
 def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
                      skipped, errors, resources_only):
     from mozpack.files import File, FileFinder, GeneratedFile
@@ -573,9 +595,13 @@ def _replay_manifest(manifest, recipe, src_root, generated_root, registry,
             if rebased is not None and os.path.isfile(rebased):
                 defines = dict(recipe.defines)
                 defines.update(manifest._decode_field_entry(entry[4]))
-                data, pp_error = _preprocess_or_none(
-                    rebased, entry[3], defines, bool(int(entry[5]))
-                )
+                defines = _portable_defines(defines, recipe, src_root)
+                if defines is None:
+                    pp_error = "a file named by its defines is missing from src"
+                else:
+                    data, pp_error = _preprocess_or_none(
+                        rebased, entry[3], defines, bool(int(entry[5]))
+                    )
             if data is not None:
                 registry.add(dest, GeneratedFile(data))
             else:
