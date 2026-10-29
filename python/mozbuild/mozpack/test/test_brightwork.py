@@ -19,6 +19,7 @@ from mozpack.brightwork.build import (
 from mozpack.brightwork.recipe import (
     BrightworkRecipe,
     _bundle_generated,
+    _portable_defines,
     _source_stageable_dests,
     is_resource_dest,
     platform_from_defines,
@@ -270,6 +271,23 @@ class TestBrightworkRecipe(unittest.TestCase):
             "/new/tree/browser/a.css",
         )
         self.assertIsNone(rebase_source("/obj/gen.js", "/old/src", "/new/tree"))
+
+    def test_portable_defines(self):
+        src = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, src)
+        os.makedirs(os.path.join(src, "b"))
+        open(os.path.join(src, "b", "lic.html"), "w").close()
+        r = BrightworkRecipe(topsrcdir="/old/src")
+        self.assertEqual(
+            _portable_defines(
+                {"TOPOBJDIR": "/old/obj", "LIC": "/old/src/b/lic.html", "X": "1"},
+                r,
+                src,
+            ),
+            {"LIC": os.path.join(src, "b", "lic.html"), "X": "1"},
+        )
+        # A srcdir file that didn't make it into src: don't preprocess.
+        self.assertIsNone(_portable_defines({"LIC": "/old/src/gone"}, r, src))
 
     def test_recipe_json_roundtrip(self):
         r = BrightworkRecipe(
