@@ -306,6 +306,23 @@ Files under `overlay/common/` and `overlay/<platform>/` are laid out like the
 installed tree (the browser jar lives under `browser/`) and are copied over the
 built result, replacing whatever `src/` produced for the same path. Use them for
 files that already come packaged, such as ones taken from another omni.ja.
+
+## Updating to a new Marble release
+A package keeps loading on newer Marble releases as long as the brightwork ABI
+stays the same, but it keeps the front-end of the release it was built from.
+If a package fails to start several times in a row, Marble turns it off and
+goes back to its own interface. To bring your package up to date:
+
+- Start your package from a clone of the SDK repository (or keep its history),
+  so git can tell which files you changed.
+- Add the SDK as a remote once: `git remote add sdk <SDK repository URL>`
+- Each SDK release is a commit on its ESR branch (`esr140`, `esr153`, ...)
+  and is tagged with its Marble version.
+- To update, run `git fetch sdk`, then `git merge sdk/esr153` (or a release
+  tag). Git only stops on files that both you and Marble changed; fix those,
+  then run `python build.py` again.
+- Each `adk-<platform>/recipe.json` has a `stamp` that says which Marble build
+  it came from.
 """
 
 
