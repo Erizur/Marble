@@ -303,6 +303,12 @@ static void CountStartupAttempt() {
   }
   nsPrintfCString line("%s %u\n", id.get(), ReadFailedStarts(profDir, id) + 1);
   nsCOMPtr<nsIFile> file = StartupAttemptsFile(profDir);
+  nsCOMPtr<nsIFile> dir;
+  // A built-in package runs on profiles that never installed one, so the
+  // brightwork dir may not exist yet.
+  if (file && NS_SUCCEEDED(file->GetParent(getter_AddRefs(dir)))) {
+    (void)dir->Create(nsIFile::DIRECTORY_TYPE, 0755);
+  }
   PRFileDesc* fd = nullptr;
   if (!file ||
       NS_FAILED(file->OpenNSPRFileDesc(PR_WRONLY | PR_CREATE_FILE | PR_TRUNCATE,
